@@ -23,10 +23,6 @@ Example:
             a.t = noca.Op.blend(b.ty - 2 * c.tz, c.s, 0.3)
         with noca.Tracer(pprint_trace=True) as tracer:
             a.s = noca.Op.condition(b.ty - 2 > c.tz, c.sy, [1, 2, 3])
-
-ToDo:
-    - Try to reduce connections of compound-attributes (plusMinusAverage, etc.)
-    - Not depend on name of object..?
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
