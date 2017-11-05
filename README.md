@@ -2,9 +2,9 @@
 Create Maya node-network by entering a math-formula.
 
 ### Why use it?
-Reduce those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr to straight-forward math formulas.
+Turn those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr into readable math formulas.
 
-### Features
+### Features:
 * Supports 
   * basic math operators: +, -, *, /, **
   * conditions
@@ -14,7 +14,7 @@ Reduce those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr to s
   * blend
   * remap
   * clamp
-* Easy to add proprietary math-nodes
+* Easy to add proprietary nodes
 * Tracer
 * Container (this is pretty useless until Maya revamps them!)
 
@@ -24,10 +24,10 @@ Vimeo link coming soon
 ### Install:
 Simply save the node_calculator.py to your \Documents\maya\scripts folder and load it in a python-tab in mayas script editor via **import node_calculator**
 
-### Tested with Maya
-* 2016
+### Tested with:
+* Maya 2016
 
-### To Do
+### To Do:
 * Reduce connections of compound-attributes (plusMinusAverage, etc.)
 * Node-name independence -> PyMel
 
