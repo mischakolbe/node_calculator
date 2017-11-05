@@ -21,12 +21,15 @@ Reduce those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr to s
 ### Tutorial:
 Vimeo link coming soon
 
+### Install:
+Simply save the node_calculator.py to your \Documents\maya\scripts folder and load it in a python-tab in mayas script editor via **import node_calculator**
+
 ### Tested with Maya
 * 2016
 
 ### To Do
 * Reduce connections of compound-attributes (plusMinusAverage, etc.)
-* Not depend on name of nodes -> PyMel
+* Node-name independence -> PyMel
 
 ### Think this is useful? Share the love and buy me a hot chocolate :)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
