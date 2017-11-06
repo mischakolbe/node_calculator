@@ -681,9 +681,9 @@ class Node(object):
             String of concatenated node- & attr-attributes
         """
         if self.node is None:
-            return self.attr
+            return str(self.attr)
         elif self.attr is None:
-            return self.node
+            return str(self.node)
         else:
             return str(self.plug())
 
@@ -1173,7 +1173,8 @@ def _traced_create_node(operation, involved_attributes):
     )[0]
 
     if Node.trace_commands:
-        if not Node.traced_variables:
+        current_variable = Node.traced_variables
+        if not current_variable:
             current_variable = "var1"
         else:
             current_variable = "var{}".format(
@@ -1266,7 +1267,6 @@ def _set_or_connect_a_to_b(obj_a, obj_b):
     """
     # #######################
     # Make sure inputs are ok to process
-
     logger.debug('_set_or_connect_a_to_b({}, {}) - RAW INPUT'.format(obj_a, obj_b))
 
     # Make sure obj_a and obj_b aren't unspecified
