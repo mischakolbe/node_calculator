@@ -44,23 +44,31 @@ __author__ = "Mischa Kolbe"
 __credits__ = [
     "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner"
 ]
-__version__ = "1.0.0"
+__version__ = "1.0.3"
 __maintainer__ = "Mischa Kolbe"
 __email__ = "mischakolbe@gmail.com"
-
+__updated__ = "2017 12 01"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # LOGGING
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Configure logging and create logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%m/%d/%Y %H:%M:%S',
-    # filename="noca_logging",
-    # stream=logging.INFO
-)
+# Get the logger of __name__ (most likely; __main__)
 logger = logging.getLogger(__name__)
-logger.setLevel("WARN")  # Options: DEBUG, INFO, WARN, ERROR, CRITICAL
+# Create an I/O stream handler
+io_handler = logging.StreamHandler()
+# Create a logging formatter
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    '%m/%d/%Y %H:%M:%S',
+)
+# Assign the formatter to the io_handler
+io_handler.setFormatter(formatter)
+# Add the io_handler to the logger
+logger.addHandler(io_handler)
+# Only change the logging-level if it's above what we want it to be
+noca_logging_level = logging.WARN  # Options: DEBUG, INFO, WARN, ERROR, CRITICAL
+if logger.getEffectiveLevel() > noca_logging_level:
+    logger.setLevel(noca_logging_level)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -277,9 +285,7 @@ class OperatorMetaClass(object):
             Node-object with blend-node and outputR-attribute
 
         Example:
-            ::
-
-                Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
+            >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
         """
         return _create_and_connect_node('blend', attr_a, attr_b, blend_value)
 
@@ -296,9 +302,7 @@ class OperatorMetaClass(object):
             Node-object with distanceBetween-node and distance-attribute
 
         Example:
-            ::
-
-                Op.len(Node("pCube.t"), [1, 2, 3])
+            >>> Op.len(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('length', attr_a, attr_b)
 
@@ -316,9 +320,7 @@ class OperatorMetaClass(object):
             Node-object with clamp-node and output-attribute(s)
 
         Example:
-            ::
-
-                Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
+            >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
         """
         return _create_and_connect_node('clamp', attr_a, min_value, max_value)
 
@@ -338,9 +340,7 @@ class OperatorMetaClass(object):
             Node-object with setRange-node and output-attribute(s)
 
         Example:
-            ::
-
-                Op.remap(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
+            >>> Op.remap(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
         """
         return _create_and_connect_node(
             'remap', attr_a, min_value, max_value, old_min_value, old_max_value
@@ -359,9 +359,7 @@ class OperatorMetaClass(object):
             Node-object with vectorProduct-node and output-attribute(s)
 
         Example:
-            ::
-
-                Op.dot(Node("pCube.t"), [1, 2, 3])
+            >>> Op.dot(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('dot', attr_a, attr_b)
 
@@ -378,9 +376,7 @@ class OperatorMetaClass(object):
             Node-object with vectorProduct-node and output-attribute(s)
 
         Example:
-            ::
-
-                Op.cross(Node("pCube.t"), [1, 2, 3])
+            >>> Op.cross(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('cross', attr_a, attr_b)
 
@@ -396,9 +392,7 @@ class OperatorMetaClass(object):
             Node-object with plusMinusAverage-node and output-attribute(s)
 
         Example:
-            ::
-
-                Op.average(Node("pCube.t"), [1, 2, 3])
+            >>> Op.average(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('average', *attrs)
 
@@ -509,9 +503,7 @@ class Node(object):
         Regular addition operator.
 
         Example:
-            ::
-
-                Node("pCube1.ty") + 4
+            >>> Node("pCube1.ty") + 4
         """
         return _create_and_connect_node("add", self, other)
 
@@ -521,9 +513,7 @@ class Node(object):
         Fall-back method in case regular addition is not defined & fails.
 
         Example:
-            ::
-
-                4 + Node("pCube1.ty")
+            >>> 4 + Node("pCube1.ty")
         """
         return _create_and_connect_node("add", other, self)
 
@@ -532,9 +522,7 @@ class Node(object):
         Regular subtraction operator.
 
         Example:
-            ::
-
-                Node("pCube1.ty") - 4
+            >>> Node("pCube1.ty") - 4
         """
         return _create_and_connect_node("sub", self, other)
 
@@ -544,9 +532,7 @@ class Node(object):
         Fall-back method in case regular subtraction is not defined & fails.
 
         Example:
-            ::
-
-                4 - Node("pCube1.ty")
+            >>> 4 - Node("pCube1.ty")
         """
         return _create_and_connect_node("sub", other, self)
 
@@ -555,9 +541,7 @@ class Node(object):
         Regular multiplication operator.
 
         Example:
-            ::
-
-                Node("pCube1.ty") * 4
+            >>> Node("pCube1.ty") * 4
         """
         return _create_and_connect_node("mul", self, other)
 
@@ -567,9 +551,7 @@ class Node(object):
         Fall-back method in case regular multiplication is not defined & fails.
 
         Example:
-            ::
-
-                4 * Node("pCube1.ty")
+            >>> 4 * Node("pCube1.ty")
         """
         return _create_and_connect_node("mul", other, self)
 
@@ -578,9 +560,7 @@ class Node(object):
         Regular division operator.
 
         Example:
-            ::
-
-                Node("pCube1.ty") / 4
+            >>> Node("pCube1.ty") / 4
         """
         return _create_and_connect_node("div", self, other)
 
@@ -590,9 +570,7 @@ class Node(object):
         Fall-back method in case regular division is not defined & fails.
 
         Example:
-            ::
-
-                4 / Node("pCube1.ty")
+            >>> 4 / Node("pCube1.ty")
         """
         return _create_and_connect_node("div", other, self)
 
@@ -601,9 +579,7 @@ class Node(object):
         Regular power operator.
 
         Example:
-            ::
-
-                Node("pCube1.ty") ** 4
+            >>> Node("pCube1.ty") ** 4
         """
         return _create_and_connect_node("pow", self, other)
 
@@ -613,9 +589,7 @@ class Node(object):
         Fall-back method in case regular power is not defined & fails.
 
         Example:
-            ::
-
-                4 ** Node("pCube1.ty")
+            >>> 4 ** Node("pCube1.ty")
         """
         return _create_and_connect_node("pow", other, self)
 
@@ -887,6 +861,7 @@ class Tracer(object):
                 a.tx = b.ty - 2 * c.tz
             print s
     """
+
     def __init__(self, trace=True, print_trace=False, pprint_trace=False):
         # Allow either note or notes as keywords
         self.trace = trace
@@ -917,17 +892,17 @@ class Tracer(object):
         """
         # Tell the user if he/she wants to print results but they were not traced!
         if not self.trace and (self.print_trace or self.pprint_trace):
-            print "node_calculator commands were not traced!"
+            print("node_calculator commands were not traced!")
         else:
             # Print executed commands as list
             if self.print_trace:
-                print "node_calculator command-stack:", Node.executed_commands_stack
+                print("node_calculator command-stack:", Node.executed_commands_stack)
             # Print executed commands on separate lines
             if self.pprint_trace:
-                print "~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~"
+                print("~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~")
                 for item in Node.executed_commands_stack:
-                    print item
-                print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                    print(item)
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         Node.trace_commands = False
 
 
@@ -944,6 +919,7 @@ class Container(object):
             with Container(name="my_cont", notes="Formula: b.ty-2*c.tz", create=True) as cont:
                 a.tx = b.ty - 2 * c.tz
     """
+
     def __init__(self, name="noca_formula_container", notes="", create=True, note=None):
         # Allow either note or notes as keywords
         if not notes and note is not None:
@@ -1041,11 +1017,11 @@ def _create_and_connect_node(operation, *args):
     Generic function to create properly named Maya nodes
 
     Args:
-        node_type (str): Type of node to be created
+        operation (str): Operation the new node has to perform
         *args (Node, string): Attributes involved in the newly created node
 
     Returns:
-        New Maya-node of type node_type
+        New Maya-node of type NODE_LOOKUP_TABLE[operation]["node"]
     """
     # If a multi_index-attribute is given; create list with it of same length than args
     logger.debug("Creating a new {}-operationNode with args: {}".format(operation, args))
@@ -1086,7 +1062,11 @@ def _create_and_connect_node(operation, *args):
                 logger.debug("Directly connecting 1D input to 1D obj!")
                 _set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
                 continue
-        # [['input3D[{multi_index}].input3Dx', 'input3D[{multi_index}].input3Dy', 'input3D[{multi_index}].input3Dz']]
+        # [[
+        #     'input3D[{multi_index}].input3Dx',
+        #     'input3D[{multi_index}].input3Dy',
+        #     'input3D[{multi_index}].input3Dz'
+        # ]]
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
 
         if NODE_LOOKUP_TABLE[operation].get("multi_index", False):
@@ -1164,13 +1144,9 @@ def _traced_create_node(operation, involved_attributes):
     Maya-createNode that adds the executed command to the command_stack if Tracer is active
     Creates a named node of appropriate type for the necessary operation
     """
-    new_node = cmds.ls(
-        cmds.createNode(
-            NODE_LOOKUP_TABLE[operation]["node"],
-            name=_create_node_name(operation, involved_attributes)
-        ),
-        long=True
-    )[0]
+    node_type = NODE_LOOKUP_TABLE[operation]["node"]
+    node_name = _create_node_name(operation, involved_attributes)
+    new_node = cmds.ls(cmds.createNode(node_type, name=node_name), long=True)[0]
 
     if Node.trace_commands:
         current_variable = Node.traced_variables
@@ -1234,10 +1210,8 @@ def _traced_connect_attr(attr_a, attr_b):
             node = attr.split(".")[0]
             # ...if it is already part of the traced nodes: Use its variable instead...
             if node in Node.traced_nodes:
-                formatted_attr = "{} + '.{}'".format(
-                    Node.traced_variables[Node.traced_nodes.index(node)],
-                    ".".join(attr.split(".")[1:])
-                )
+                node_variable = Node.traced_variables[Node.traced_nodes.index(node)]
+                formatted_attr = "{} + '.{}'".format(node_variable, ".".join(attr.split(".")[1:]))
             # ...otherwise make sure it's stored as a string
             else:
                 formatted_attr = "'{}'".format(attr)
