@@ -22,7 +22,8 @@ Example:
         with noca.Container(name="my_cont", notes="Formula: b.ty-2*c.tz", create=True) as cont:
             a.t = noca.Op.blend(b.ty - 2 * c.tz, c.s, 0.3)
         with noca.Tracer(pprint_trace=True) as tracer:
-            a.s = noca.Op.condition(b.ty - 2 > c.tz, c.sy, [1, 2, 3])
+            e = b.customAttr.as_float(value=c.tx)
+            a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,10 +45,10 @@ __author__ = "Mischa Kolbe"
 __credits__ = [
     "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner"
 ]
-__version__ = "1.0.3"
+__version__ = "1.1.0"
 __maintainer__ = "Mischa Kolbe"
 __email__ = "mischakolbe@gmail.com"
-__updated__ = "2017 12 01"
+__updated__ = "2017 12 03"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # LOGGING
@@ -74,7 +75,57 @@ if logger.getEffectiveLevel() > noca_logging_level:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-NODE_LOOKUP_TABLE = {}  # Dict of all available operations: used node-type, inputs, outputs, etc.
+# Dict of all available operations: used node-type, inputs, outputs, etc.
+NODE_LOOKUP_TABLE = {}
+
+# All attribute types that can be created by the node_calculator and their default creation values
+ATTR_LOOKUP_TABLE = {
+    # General settings - Applies to ALL attribute types!
+    "base_attr": {
+        "keyable": True,
+    },
+    # Individual settings - Applies only to that specific type
+    "bool": {
+        "attributeType": "bool",
+    },
+    "int": {
+        "attributeType": "long",
+    },
+    "float": {
+        "attributeType": "double",
+    },
+    "enum": {
+        "attributeType": "enum",
+    },
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ADD ATTR
+
+# ToDo:
+# Add short, byte, vector, matrix, ...
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# "attributeType": "bool",
+# "keyable": True,  # Is attribute keyable?
+# "displayable": True,
+# "hasSoftMinValue": False,
+# "softMinValue": None,
+# "hasMinValue": False,
+# "min": None,
+# "hasSoftMaxValue": False,
+# "softMaxValue": None,
+# "hasMaxValue": False,
+# "max": None,
+# "defaultValue": None,
+# "multi": False,  # Multi-Attribute?
+# "hidden": False,  # Hidden from UI?
+# "readable": True,  # output connections possible?
+# "writable": True,  # input connections possible?
+# "enumName": None,  # Colon-separated list of enum-options. Specify index-values with =
+# # For setAttr
+# "channelBox": True,  # Display attr in channelBox
+# "lock": False,  # Is attribute locked?
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -411,6 +462,7 @@ class Node(object):
 
     Note:
         Each Node-object has a mandatory node-attribute and an optional attr-attribute.
+        The attr "attr" is a keyword!!! Node().attr returns the currently stored node/attr-combo!
     """
     # Stack that keeps track of the created nodes. Used for Container-class
     created_nodes_stack = []
@@ -454,13 +506,14 @@ class Node(object):
 
     def __getattr__(self, name):
         """
-        A getattr of a Node-object returns a new Node-object
+        A getattr of a Node-object returns a Node-object. Always returns a new
+        Node-instance, EXCEPT when keyword "attr" is used to return itself!
 
         Args:
             name (str): Name of requested attribute
 
         Returns:
-            New Node-object
+            New Node-object OR itself, if keyword "attr" was used!
 
         Example:
             ::
@@ -469,7 +522,12 @@ class Node(object):
                 a.tx  # invokes __getattr__ and returns a new Node-object.
                         It's the same as typing Node("a.tx")
         """
-        return Node(self.node, name)
+        if name == "attr":
+            if self.attr is None:
+                logger.error("No attribute on requested Node-object! {}".format(self.node))
+            return self
+        else:
+            return Node(self.node, name)
 
     def __setattr__(self, name, value):
         """
@@ -732,63 +790,6 @@ class Node(object):
         else:
             return Node(self.node, self.attr[index])
 
-    def _compare(self, other, operator):
-        """
-        Create a Maya condition node set to the correct operation-type.
-
-        Args:
-            other (Node, int, float): Attr or value to compare self-attr with
-            operator (string): Operation type available in Maya condition-nodes
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        # Create new condition node set to the appropriate operation-type
-        return _create_and_connect_node(operator, self, other)
-
-    @classmethod
-    def add_to_node_stack(cls, node):
-        """
-        Add a node to the class-variable created_nodes_stack
-        """
-        cls.created_nodes_stack.append(node)
-
-    @classmethod
-    def flush_node_stack(cls):
-        """
-        Reset the class-variable created_nodes_stack to an empty list
-        """
-        cls.created_nodes_stack = []
-
-    @classmethod
-    def add_to_command_stack(cls, command):
-        """
-        Add a command to the class-variable executed_commands_stack
-        """
-        cls.executed_commands_stack.append(command)
-
-    @classmethod
-    def flush_command_stack(cls):
-        """
-        Reset the class-variable executed_commands_stack to an empty list
-        """
-        cls.executed_commands_stack = []
-
-    @staticmethod
-    def _get_maya_attr(attr):
-        """
-        Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
-        """
-        if _is_valid_maya_attr(attr):
-            return_value = cmds.getAttr(attr)
-            # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
-            if isinstance(return_value, list):
-                if len(return_value) == 1 and isinstance(return_value[0], tuple):
-                    return_value = list(return_value[0])
-            return return_value
-        else:
-            return attr
-
     def get(self):
         """
         Helper function to allow easy access to the value of a Node-attribute.
@@ -838,6 +839,198 @@ class Node(object):
             return ["{n}.{a}".format(n=self.node, a=a) for a in self.attr]
         else:
             return "{n}.{a}".format(n=self.node, a=self.attr)
+
+    def as_bool(self, **kwargs):
+        """
+        Create a boolean-attribute for the given attribute
+
+        Args:
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").userAttr.as_bool(value=True)
+        """
+        self._add_traced_attr("bool", **kwargs)
+        return self
+
+    def as_int(self, **kwargs):
+        """
+        Create an integer-attribute for the given attribute
+
+        Args:
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").userAttr.as_int(value=123)
+        """
+        self._add_traced_attr("int", **kwargs)
+        return self
+
+    def as_float(self, **kwargs):
+        """
+        Create a float-attribute for the given attribute
+
+        Args:
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").userAttr.as_float(value=3.21)
+        """
+        self._add_traced_attr("float", **kwargs)
+        return self
+
+    def as_enum(self, enumName=["Off", "On"], cases=None, **kwargs):
+        """
+        Create a boolean-attribute for the given attribute
+
+        Args:
+            enumName (list, str): User-choices for the resulting enum-attribute
+            cases (list, str): Overrides enumName, which I find a horrific name
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").userAttr.as_enum(cases=["A", "B", "C"], value=2)
+        """
+        if cases is not None:
+            enumName = cases
+        if isinstance(enumName, (list, tuple)):
+            enumName = ":".join(enumName)
+
+        self._add_traced_attr("enum", enumName=enumName, **kwargs)
+        return self
+
+    @classmethod
+    def add_to_node_stack(cls, node):
+        """
+        Add a node to the class-variable created_nodes_stack
+        """
+        cls.created_nodes_stack.append(node)
+
+    @classmethod
+    def flush_node_stack(cls):
+        """
+        Reset the class-variable created_nodes_stack to an empty list
+        """
+        cls.created_nodes_stack = []
+
+    @classmethod
+    def add_to_command_stack(cls, command):
+        """
+        Add a command to the class-variable executed_commands_stack
+        """
+        cls.executed_commands_stack.append(command)
+
+    @classmethod
+    def flush_command_stack(cls):
+        """
+        Reset the class-variable executed_commands_stack to an empty list
+        """
+        cls.executed_commands_stack = []
+
+    def _compare(self, other, operator):
+        """
+        Create a Maya condition node set to the correct operation-type.
+
+        Args:
+            other (Node, int, float): Attr or value to compare self-attr with
+            operator (string): Operation type available in Maya condition-nodes
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        # Create new condition node set to the appropriate operation-type
+        return _create_and_connect_node(operator, self, other)
+
+    @staticmethod
+    def _get_maya_attr(attr):
+        """
+        Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
+        """
+        if _is_valid_maya_attr(attr):
+            return_value = cmds.getAttr(attr)
+            # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
+            if isinstance(return_value, list):
+                if len(return_value) == 1 and isinstance(return_value[0], tuple):
+                    return_value = list(return_value[0])
+            return return_value
+        else:
+            return attr
+
+    def _add_traced_attr(self, attr_type, **kwargs):
+        """
+        Create an attribute of type attr_type for the given node/attr-combination of self.
+
+        Args:
+            attr_type (str): Attribute type. Must be specified in the ATTR_LOOKUP_TABLE!
+            kwargs (dict): Any user specified flags & their values.
+                           Gets combined with values in ATTR_LOOKUP_TABLE!
+
+        Returns:
+            Boolean: True if the attribute was created/existed. False if creation failed.
+        """
+        if self.attr is None:
+            logger.error("No attribute specified for {}".format(self.node))
+            return False
+
+        # Check whether attribute already exists. If so; return early!
+        attr_name = self.plug()
+        if cmds.objExists(attr_name):
+            logger.warn("Attribute {} already existed!".format(attr_name))
+            return True
+
+        # Replace spaces in name not to cause Maya-warnings
+        attr = self.attr.replace(' ', '_')
+
+        # Make a copy of the default values for the given attrType
+        attr_variables = ATTR_LOOKUP_TABLE["base_attr"].copy()
+        attr_variables.update(ATTR_LOOKUP_TABLE[attr_type])
+        logger.debug("Copied default attr_variables:", attr_variables)
+
+        # Add the attr variable into the dictionary
+        attr_variables["longName"] = attr
+        # Override default values with kwargs
+        attr_variables.update(kwargs)
+        logger.debug("Added custom attr_variables:", attr_variables)
+
+        # Extract attributes that need to be set via setAttr-command
+        set_attr_values = {
+            "channelBox": attr_variables.pop("channelBox", None),
+            "lock": attr_variables.pop("lock", None),
+        }
+        attr_value = attr_variables.pop("value", None)
+        logger.debug("Extracted set_attr-variables from attr_variables:", attr_variables)
+        logger.debug("set_attr-variables:", set_attr_values)
+
+        # Add the attribute
+        _traced_add_attr(self.node, **attr_variables)
+
+        # Filter for any values that need to be set via the setAttr command. Oh Maya...
+        set_attr_values = {
+            key: val for key, val in set_attr_values.items()
+            if val is not None
+        }
+        logger.debug("Pruned set_attr-variables:", set_attr_values)
+
+        # If there is no value to be set; set any attribute flags directly
+        if attr_value is None:
+            _traced_set_attr(attr_name, **set_attr_values)
+        else:
+            # If a value is given; use the set_or_connect function
+            _set_or_connect_a_to_b(attr_name, attr_value, **set_attr_values)
+
+        return True
 
 
 def _is_valid_maya_attr(attr):
@@ -1169,12 +1362,39 @@ def _traced_create_node(operation, involved_attributes):
     return new_node
 
 
-def _traced_set_attr(attr, value):
+def _traced_add_attr(node, **kwargs):
+    """
+    Maya-addAttr that adds the executed command to the command_stack if Tracer is active
+    """
+    cmds.addAttr(node, **kwargs)
+
+    # If commands are traced...
+    if Node.trace_commands:
+
+        if node in Node.traced_nodes:
+            # ...check if node is already part of the traced nodes: Use its variable instead
+            node = Node.traced_variables[Node.traced_nodes.index(node)]
+        else:
+            # ...otherwise add quotes around it
+            node = "'{}'".format(node)
+
+        # Join any given kwargs so they can be passed on to the addAttr-command
+        joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+
+        # Add the addAttr-command to the command stack
+        Node.add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
+
+
+def _traced_set_attr(attr, value=None, **kwargs):
     """
     Maya-setAttr that adds the executed command to the command_stack if Tracer is active
     """
+
     # Set attr to value
-    cmds.setAttr(attr, value)
+    if value is None:
+        cmds.setAttr(attr, edit=True, **kwargs)
+    else:
+        cmds.setAttr(attr, value, edit=True, **kwargs)
 
     # If commands are traced...
     if Node.trace_commands:
@@ -1187,9 +1407,51 @@ def _traced_set_attr(attr, value):
                 Node.traced_variables[Node.traced_nodes.index(node)],
                 ".".join(attr.split(".")[1:])
             )
+        else:
+            # ...otherwise add quotes around original attr
+            attr = "'{}'".format(attr)
+
+        # Join any given kwargs so they can be passed on to the setAttr-command
+        joined_kwargs = _join_kwargs_for_cmds(**kwargs)
 
         # Add the setAttr-command to the command stack
-        Node.add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
+        if value is not None:
+            if joined_kwargs:
+                # If both value and kwargs were given
+                Node.add_to_command_stack("cmds.setAttr({}, {}, edit=True, {})".format(attr, value, joined_kwargs))
+            else:
+                # If only a value was given
+                Node.add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
+        else:
+            if joined_kwargs:
+                # If only kwargs were given
+                Node.add_to_command_stack("cmds.setAttr({}, edit=True, {})".format(attr, joined_kwargs))
+            else:
+                # If neither value or kwargs were given it was a redundant setAttr. Don't store!
+                pass
+
+
+def _join_kwargs_for_cmds(**kwargs):
+    """
+    Concatenates kwargs for Tracer.
+
+    Args:
+        kwargs (dict): Keyword-pairs that should be converted to a string
+
+    Returns:
+        str: A string that can be directly fed into the command of the Tracer-stack
+    """
+    prepared_kwargs = []
+
+    for key, val in kwargs.iteritems():
+        if isinstance(val, basestring):
+            prepared_kwargs.append("{}='{}'".format(key, val))
+        else:
+            prepared_kwargs.append("{}={}".format(key, val))
+
+    joined_kwargs = ", ".join(prepared_kwargs)
+
+    return joined_kwargs
 
 
 def _traced_connect_attr(attr_a, attr_b):
@@ -1223,7 +1485,7 @@ def _traced_connect_attr(attr_a, attr_b):
         )
 
 
-def _set_or_connect_a_to_b(obj_a, obj_b):
+def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     """
     Generic function to set obj_a to value of obj_b OR connect obj_b to obj_a.
 
@@ -1308,7 +1570,7 @@ def _set_or_connect_a_to_b(obj_a, obj_b):
         # If obj_b_item is a simple number...
         if isinstance(obj_b_item, numbers.Real):
             # # ...set 1-D obj_a_item to 1-D obj_b_item-value.
-            _traced_set_attr(obj_a_item, obj_b_item)
+            _traced_set_attr(obj_a_item, obj_b_item, **kwargs)
 
         # If obj_b_item is a valid attribute in the Maya scene...
         elif _is_valid_maya_attr(obj_b_item):
