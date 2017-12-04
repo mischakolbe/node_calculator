@@ -24,6 +24,9 @@ Example:
         with noca.Tracer(pprint_trace=True) as tracer:
             e = b.customAttr.as_float(value=c.tx)
             a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
+
+ToDo:
+# Add short, byte, vector, matrix, ... attributes
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,34 +101,6 @@ ATTR_LOOKUP_TABLE = {
         "attributeType": "enum",
     },
 }
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ADD ATTR
-
-# ToDo:
-# Add short, byte, vector, matrix, ...
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# "attributeType": "bool",
-# "keyable": True,  # Is attribute keyable?
-# "displayable": True,
-# "hasSoftMinValue": False,
-# "softMinValue": None,
-# "hasMinValue": False,
-# "min": None,
-# "hasSoftMaxValue": False,
-# "softMaxValue": None,
-# "hasMaxValue": False,
-# "max": None,
-# "defaultValue": None,
-# "multi": False,  # Multi-Attribute?
-# "hidden": False,  # Hidden from UI?
-# "readable": True,  # output connections possible?
-# "writable": True,  # input connections possible?
-# "enumName": None,  # Colon-separated list of enum-options. Specify index-values with =
-# # For setAttr
-# "channelBox": True,  # Display attr in channelBox
-# "lock": False,  # Is attribute locked?
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
