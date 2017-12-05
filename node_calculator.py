@@ -69,7 +69,8 @@ logger.addHandler(io_handler)
 noca_logging_level = logging.WARN  # Options: DEBUG, INFO, WARN, ERROR, CRITICAL
 if logger.getEffectiveLevel() > noca_logging_level:
     logger.setLevel(noca_logging_level)
-
+# Set the handler logging level
+io_handler.setLevel(noca_logging_level)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
