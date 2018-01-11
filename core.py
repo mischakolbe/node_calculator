@@ -29,7 +29,6 @@ ToDo:
     - Try to reduce connections of compound-attributes (plusMinusAverage, etc.)
     - Not depend on name of object..?
     - Add short, byte, vector, matrix, ... attributes
-    - Change attr to attrs,
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
