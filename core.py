@@ -26,7 +26,10 @@ Example:
             a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
 
 ToDo:
-# Add short, byte, vector, matrix, ... attributes
+    - Try to reduce connections of compound-attributes (plusMinusAverage, etc.)
+    - Not depend on name of object..?
+    - Add short, byte, vector, matrix, ... attributes
+    - Change attr to attrs,
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,11 +37,13 @@ ToDo:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
 import numbers
-import logging
 from itertools import izip
 
-# Maya imports
+# Third party imports
 from maya import cmds
+
+# Local imports
+from .logger import logger
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,31 +53,10 @@ __author__ = "Mischa Kolbe"
 __credits__ = [
     "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner"
 ]
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __maintainer__ = "Mischa Kolbe"
 __email__ = "mischakolbe@gmail.com"
 __updated__ = "2017 12 03"
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# LOGGING
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Get the logger of __name__ (most likely; __main__)
-logger = logging.getLogger(__name__)
-# Create an I/O stream handler
-io_handler = logging.StreamHandler()
-# Create a logging formatter
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    '%m/%d/%Y %H:%M:%S',
-)
-# Assign the formatter to the io_handler
-io_handler.setFormatter(formatter)
-# Add the io_handler to the logger
-logger.addHandler(io_handler)
-# Only change the logging-level if it's above what we want it to be
-noca_logging_level = logging.WARN  # Options: DEBUG, INFO, WARN, ERROR, CRITICAL
-if logger.getEffectiveLevel() > noca_logging_level:
-    logger.setLevel(noca_logging_level)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -436,8 +420,9 @@ class Node(object):
     Base class for node_calculator objects: Components involved in a calculation.
 
     Note:
-        Each Node-object has a mandatory node-attribute and an optional attr-attribute.
-        The attr "attr" is a keyword!!! Node().attr returns the currently stored node/attr-combo!
+        Each Node-object has a mandatory node-attribute and an optional attrs-attribute.
+        The attribute "attrs" is a keyword!!!
+        Node().attrs returns the currently stored node/attrs-combo!
     """
     # Stack that keeps track of the created nodes. Used for Container-class
     created_nodes_stack = []
@@ -447,7 +432,7 @@ class Node(object):
     traced_nodes = None
     traced_variables = None
 
-    def __init__(self, node, attr=None):
+    def __init__(self, node, attrs=None):
         """
         Node-class constructor
 
@@ -457,7 +442,7 @@ class Node(object):
 
         Args:
             node (str): Represents a Maya node
-            attr (str): Represents an attribute on the node
+            attrs (str): Represents attributes on the node
 
         Example:
             ::
@@ -466,18 +451,22 @@ class Node(object):
                 b = Node("pCube2.ty")
                 c = b.sx   # This is possible, because the "." (dot) invokes a getattr of
                              object b. This returns a new Node-object consisting of
-                             b.node (="pCube2") and the given attribute (="sx")!
+                             b.node (="pCube2") and the given attributes (=["sx"])!
         """
         if isinstance(node, numbers.Real) or isinstance(node, (list, tuple)):
             self.__dict__["node"] = None
-            self.__dict__["attr"] = node
-        # Initialization with "object.attr" string
-        elif attr is None and "." in node:
-            self.__dict__["node"], self.__dict__["attr"] = node.split(".")
+            self.__dict__["attrs"] = node
+        # Initialization with "object.attrs" string
+        elif attrs is None and "." in node:
+            node_part, attrs_part = node.split(".")
+            self.__dict__["node"], self.__dict__["attrs"] = node_part, [attrs_part]
         # Initialization where node and attribute(optional) are specifically given
         else:
             self.__dict__["node"] = node
-            self.__dict__["attr"] = attr
+            if isinstance(attrs, basestring):
+                self.__dict__["attrs"] = [attrs]
+            else:
+                self.__dict__["attrs"] = attrs
 
     def __getattr__(self, name):
         """
@@ -497,9 +486,9 @@ class Node(object):
                 a.tx  # invokes __getattr__ and returns a new Node-object.
                         It's the same as typing Node("a.tx")
         """
-        if name == "attr":
-            if self.attr is None:
-                logger.error("No attribute on requested Node-object! {}".format(self.node))
+        if name == "attrs":
+            if self.attrs is None:
+                logger.error("No attributes on requested Node-object! {}".format(self.node))
             return self
         else:
             return Node(self.node, name)
@@ -685,11 +674,11 @@ class Node(object):
         Pretty print of the class
 
         Returns:
-            String of concatenated node- & attr-attributes
+            String of concatenated node- & attrs-attributes
         """
         if self.node is None:
-            return str(self.attr)
-        elif self.attr is None:
+            return str(self.attrs)
+        elif self.attrs is None:
             return str(self.node)
         else:
             return str(self.plug())
@@ -701,20 +690,20 @@ class Node(object):
         Returns:
             String of separate elements that make up Node-instance
         """
-        return "Node('{0}', '{1}')".format(self.node, self.attr)
+        return "Node('{0}', '{1}')".format(self.node, self.attrs)
 
     def __len__(self):
         """
-        Return the length of the Node-attr variable.
+        Return the length of the Node-attrs variable.
 
         Returns:
-            Int: 0 if attr is None, 1 if it's not an array, otherwise len(attr)
+            Int: 0 if attrs is None, 1 if it's not an array, otherwise len(attrs)
         """
         logger.warn("Using the Node-len method!")
-        if self.attr is None:
+        if self.attrs is None:
             return 0
-        if isinstance(self.attr, (list, tuple)):
-            return len(self.attr)
+        if isinstance(self.attrs, (list, tuple)):
+            return len(self.attrs)
         else:
             return 1
 
@@ -728,29 +717,29 @@ class Node(object):
         i = 0
         while True:
             try:
-                if isinstance(self.attr[i], numbers.Real):
-                    yield self.attr[i]
+                if isinstance(self.attrs[i], numbers.Real):
+                    yield self.attrs[i]
                 elif self.node is None:
-                    yield Node(self.attr[i])
+                    yield Node(self.attrs[i])
                 else:
-                    yield Node(self.node, self.attr[i])
+                    yield Node(self.node, self.attrs[i])
             except IndexError:
                 raise StopIteration
             i += 1
 
     def __setitem__(self, index, value):
         """
-        Support indexed assignments for Node-instances with list-attr
+        Support indexed assignments for Node-instances with list-attrs
 
         Args:
             index (int): Index of item to be set
             value (Node, str, int, float): desired value for the given index
         """
-        self.attr[index] = value
+        self.attrs[index] = value
 
     def __getitem__(self, index):
         """
-        Support indexed lookup for Node-instances with list-attr
+        Support indexed lookup for Node-instances with list-attrs
 
         Args:
             index (int): Index of desired item
@@ -758,23 +747,23 @@ class Node(object):
         Returns:
             Object that is at the desired index
         """
-        if isinstance(self.attr[index], numbers.Real):
-            return self.attr[index]
+        if isinstance(self.attrs[index], numbers.Real):
+            return self.attrs[index]
         elif self.node is None:
-            return Node(self.attr[index])
+            return Node(self.attrs[index])
         else:
-            return Node(self.node, self.attr[index])
+            return Node(self.node, self.attrs[index])
 
     def get(self):
         """
-        Helper function to allow easy access to the value of a Node-attribute.
+        Helper function to allow easy access to the value of a Node-attributes.
         Equivalent to a getAttr.
 
         Returns:
-            Int, Float, List - depending on the "queried" attribute.
+            Int, Float, List - depending on the "queried" attributes.
         """
         if self.node is None:
-            return self.attr
+            return self.attrs
         plug = self.plug()
         if plug is not None:
             if isinstance(plug, (list, tuple)):
@@ -790,36 +779,60 @@ class Node(object):
 
     def set(self, value):
         """
-        Helper function to allow easy setting of a Node-attribute.
+        Helper function to allow easy setting of a Node-attributes.
         Equivalent to a setAttr.
 
         Args:
-            value (Node, str, int, float, list, tuple): Connect attribute to this
-                object or set attribute to this value/array
+            value (Node, str, int, float, list, tuple): Connect attributes to this
+                object or set attributes to this value/array
         """
         _set_or_connect_a_to_b(self, value)
 
     def plug(self):
         """
-        Helper function to allow easy access to the Node-attribute.
+        Helper function to allow easy access to the Node-attributes.
 
         Returns:
-            String of common notation "node.attr" or None if attr is undefined!
+            String of common notation "node.attrs" or None if attrs is undefined!
         """
-        if self.attr is None:
+        if self.attrs is None:
             return None
         elif self.node is None:
-            return self.attr
-        elif isinstance(self.attr, (list, tuple)):
-            return ["{n}.{a}".format(n=self.node, a=a) for a in self.attr]
+            return self.attrs
+        elif isinstance(self.attrs, (list, tuple)):
+            return ["{n}.{a}".format(n=self.node, a=a) for a in self.attrs]
         else:
-            return "{n}.{a}".format(n=self.node, a=self.attr)
+            return "{n}.{a}".format(n=self.node, a=self.attrs)
 
-    def as_bool(self, **kwargs):
+    def redefine_attrs(self, attrs):
+        """
+        Set the attrs-attribute of the Node-instance to the given attrs.
+
+        Args:
+            attr (str): Name for the new attributes of the Node-object
+
+        Returns:
+            The Node-instance
+
+        Example:
+            ::
+
+            a = Node("pCube1.tx")  # Create the node instance with or without attribute
+            a.redefine_attr("ty")  # Change the attribute of the node instance
+        """
+        if isinstance(attrs, basestring):
+            attrs = [attrs]
+
+        self.__dict__["attrs"] = attrs
+
+        return self
+
+    def add_bool(self, name, **kwargs):
         """
         Create a boolean-attribute for the given attribute
 
         Args:
+            name (str): Name for the new attribute to be created
             kwargs (dict): User specified attributes to be set for the new attribute
 
         Returns:
@@ -828,14 +841,14 @@ class Node(object):
         Example:
             >>> Node("pCube1").userAttr.as_bool(value=True)
         """
-        self._add_traced_attr("bool", **kwargs)
-        return self
+        return self._add_traced_attr("bool", name, **kwargs)
 
-    def as_int(self, **kwargs):
+    def add_int(self, name, **kwargs):
         """
         Create an integer-attribute for the given attribute
 
         Args:
+            name (str): Name for the new attribute to be created
             kwargs (dict): User specified attributes to be set for the new attribute
 
         Returns:
@@ -844,14 +857,14 @@ class Node(object):
         Example:
             >>> Node("pCube1").userAttr.as_int(value=123)
         """
-        self._add_traced_attr("int", **kwargs)
-        return self
+        return self._add_traced_attr("int", name, **kwargs)
 
-    def as_float(self, **kwargs):
+    def add_float(self, name, **kwargs):
         """
         Create a float-attribute for the given attribute
 
         Args:
+            name (str): Name for the new attribute to be created
             kwargs (dict): User specified attributes to be set for the new attribute
 
         Returns:
@@ -860,14 +873,14 @@ class Node(object):
         Example:
             >>> Node("pCube1").userAttr.as_float(value=3.21)
         """
-        self._add_traced_attr("float", **kwargs)
-        return self
+        return self._add_traced_attr("float", name, **kwargs)
 
-    def as_enum(self, enumName=["Off", "On"], cases=None, **kwargs):
+    def add_enum(self, name, enumName=["Off", "On"], cases=None, **kwargs):
         """
         Create a boolean-attribute for the given attribute
 
         Args:
+            name (str): Name for the new attribute to be created
             enumName (list, str): User-choices for the resulting enum-attribute
             cases (list, str): Overrides enumName, which I find a horrific name
             kwargs (dict): User specified attributes to be set for the new attribute
@@ -883,8 +896,7 @@ class Node(object):
         if isinstance(enumName, (list, tuple)):
             enumName = ":".join(enumName)
 
-        self._add_traced_attr("enum", enumName=enumName, **kwargs)
-        return self
+        return self._add_traced_attr("enum", name, enumName=enumName, **kwargs)
 
     @classmethod
     def add_to_node_stack(cls, node):
@@ -919,7 +931,7 @@ class Node(object):
         Create a Maya condition node set to the correct operation-type.
 
         Args:
-            other (Node, int, float): Attr or value to compare self-attr with
+            other (Node, int, float): Attr or value to compare self-attrs with
             operator (string): Operation type available in Maya condition-nodes
 
         Returns:
@@ -943,7 +955,7 @@ class Node(object):
         else:
             return attr
 
-    def _add_traced_attr(self, attr_type, **kwargs):
+    def _add_traced_attr(self, attr_type, attr_name, **kwargs):
         """
         Create an attribute of type attr_type for the given node/attr-combination of self.
 
@@ -951,33 +963,30 @@ class Node(object):
             attr_type (str): Attribute type. Must be specified in the ATTR_LOOKUP_TABLE!
             kwargs (dict): Any user specified flags & their values.
                            Gets combined with values in ATTR_LOOKUP_TABLE!
+            XXX
 
         Returns:
-            Boolean: True if the attribute was created/existed. False if creation failed.
+            XXX
         """
-        if self.attr is None:
-            logger.error("No attribute specified for {}".format(self.node))
-            return False
+        # Replace spaces in name not to cause Maya-warnings
+        attr_name = attr_name.replace(' ', '_')
 
         # Check whether attribute already exists. If so; return early!
-        attr_name = self.plug()
-        if cmds.objExists(attr_name):
-            logger.warn("Attribute {} already existed!".format(attr_name))
-            return True
-
-        # Replace spaces in name not to cause Maya-warnings
-        attr = self.attr.replace(' ', '_')
+        attr = "{}.{}".format(self.node, attr_name)
+        if cmds.objExists(attr):
+            logger.warn("Attribute {} already existed!".format(attr))
+            return Node(attr)
 
         # Make a copy of the default values for the given attrType
         attr_variables = ATTR_LOOKUP_TABLE["base_attr"].copy()
         attr_variables.update(ATTR_LOOKUP_TABLE[attr_type])
-        logger.debug("Copied default attr_variables:", attr_variables)
+        logger.debug("Copied default attr_variables: {}".format(attr_variables))
 
         # Add the attr variable into the dictionary
-        attr_variables["longName"] = attr
+        attr_variables["longName"] = attr_name
         # Override default values with kwargs
         attr_variables.update(kwargs)
-        logger.debug("Added custom attr_variables:", attr_variables)
+        logger.debug("Added custom attr_variables: {}".format(attr_variables))
 
         # Extract attributes that need to be set via setAttr-command
         set_attr_values = {
@@ -985,27 +994,27 @@ class Node(object):
             "lock": attr_variables.pop("lock", None),
         }
         attr_value = attr_variables.pop("value", None)
-        logger.debug("Extracted set_attr-variables from attr_variables:", attr_variables)
-        logger.debug("set_attr-variables:", set_attr_values)
+        logger.debug("Extracted set_attr-variables from attr_variables: {}".format(attr_variables))
+        logger.debug("set_attr-variables: {}".format(set_attr_values))
 
         # Add the attribute
         _traced_add_attr(self.node, **attr_variables)
 
         # Filter for any values that need to be set via the setAttr command. Oh Maya...
         set_attr_values = {
-            key: val for key, val in set_attr_values.items()
+            key: val for (key, val) in set_attr_values.iteritems()
             if val is not None
         }
-        logger.debug("Pruned set_attr-variables:", set_attr_values)
+        logger.debug("Pruned set_attr-variables: {}".format(set_attr_values))
 
         # If there is no value to be set; set any attribute flags directly
         if attr_value is None:
-            _traced_set_attr(attr_name, **set_attr_values)
+            _traced_set_attr(attr, **set_attr_values)
         else:
             # If a value is given; use the set_or_connect function
-            _set_or_connect_a_to_b(attr_name, attr_value, **set_attr_values)
+            _set_or_connect_a_to_b(attr, attr_value, **set_attr_values)
 
-        return True
+        return Node(attr)
 
 
 def _is_valid_maya_attr(attr):
@@ -1265,12 +1274,12 @@ def _create_node_name(operation, *args):
 
         if isinstance(arg, Node):
             # Try to find short, descriptive name, otherwise use "Node"
-            if isinstance(arg.attr, basestring):
-                node_name.append(arg.attr)
-            elif isinstance(arg.attr, numbers.Real):
-                node_name.append(str(arg.attr))
-            elif isinstance(arg.attr, list) and len(arg.attr) == 1:
-                node_name.append(str(arg.attr[0]))
+            if isinstance(arg.attrs, basestring):
+                node_name.append(arg.attrs)
+            elif isinstance(arg.attrs, numbers.Real):
+                node_name.append(str(arg.attrs))
+            elif isinstance(arg.attrs, list) and len(arg.attrs) == 1:
+                node_name.append(str(arg.attrs[0]))
             else:
                 node_name.append("Node")
 
@@ -1289,7 +1298,7 @@ def _create_node_name(operation, *args):
                 node_name.append(str(arg))
 
         elif isinstance(arg, str):
-            # Return the attr-part of a passed on string (presumably "node.attr")
+            # Return the attrs-part of a passed on string (presumably "node.attrs")
             node_name.append(arg.split(".")[-1])
 
         else:
@@ -1682,15 +1691,15 @@ def _get_unravelled_value(input_val):
         return _get_unravelled_plug(input_val)
 
     elif isinstance(input_val, Node):
-        # If the node-attribute is unspecified: Return the attr-attribute directly (nums & list)
+        # If the node-attribute is unspecified: Return the attrs-attribute directly (nums & list)
         if input_val.node is None:
-            return _get_unravelled_value(input_val.attr)
+            return _get_unravelled_value(input_val.attrs)
 
-        # If attr-attribute is an array: Return a list of unravelled values of node & its attrs
-        if isinstance(input_val.attr, (list, tuple)):
+        # If attrs-attribute is an array: Return a list of unravelled values of node & its attrs
+        if isinstance(input_val.attrs, (list, tuple)):
             unravelled_attrs = [
                 _get_unravelled_plug("{}.{}".format(input_val.node, attr))
-                for attr in input_val.attr
+                for attr in input_val.attrs
             ]
 
             if len(unravelled_attrs) > 1:
