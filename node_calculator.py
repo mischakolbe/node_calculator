@@ -129,6 +129,22 @@ class OperatorMetaClass(object):
                 ],
                 "output": ["distance"],
             },
+            "distanceBetweenPoints": {
+                "node": "distanceBetween",
+                "inputs": [
+                    ["point1X", "point1Y", "point1Z"],
+                    ["point2X", "point2Y", "point2Z"],
+                ],
+                "output": ["distance"],
+            },
+            "distanceBetweenMatrices": {
+                "node": "distanceBetween",
+                "inputs": [
+                    ["inMatrix1"],
+                    ["inMatrix2"],
+                ],
+                "output": ["distance"],
+            },
             "clamp": {
                 "node": "clamp",
                 "inputs": [
@@ -162,6 +178,57 @@ class OperatorMetaClass(object):
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": 3,
             },
+            "multMatrix": {
+                "node": "multMatrix",
+                "inputs": [
+                    [
+                        "matrixIn[{multi_index}]"
+                    ],
+                ],
+                "multi_index": True,
+                "output": ["matrixSum"],
+            },
+            "decomposeMatrix": {
+                "node": "decomposeMatrix",
+                "inputs": [
+                    ["inputMatrix"],
+                ],
+                "output": [
+                    "outputTranslateX", "outputTranslateY", "outputTranslateZ",
+                    "outputRotateX", "outputRotateY", "outputRotateZ",
+                    "outputScaleX", "outputScaleY", "outputScaleZ",
+                    "outputShearX", "outputShearY", "outputShearZ",
+                ],
+            },
+            "composeMatrix": {
+                "node": "composeMatrix",
+                "inputs": [
+                    ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
+                    ["inputRotateX", "inputRotateY", "inputRotateZ"],
+                    ["inputScaleX", "inputScaleY", "inputScaleZ"],
+                    ["inputShearX", "inputShearY", "inputShearZ"],
+                    ["inputRotateOrder"]
+                ],
+                "output": ["outputMatrix"],
+            },
+            "choice": {
+                "node": "choice",
+                "inputs": [
+                    ["input[{multi_index}]",
+                    "selector"],
+                ],
+                "multi_index": True,
+                "output": ["output"],
+            },
+            "normalizeVector": {
+                "node": "vectorProduct",
+                "inputs": [
+                    ["input1X", "input1Y", "input1Z"],
+                ],
+                "output": ["outputX", "outputY", "outputZ"],
+                "operation": 0,
+                "normalizeOutput": 1,
+            }
         }
 
         # Fill NODE_LOOKUP_TABLE with condition operations
@@ -308,6 +375,40 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('length', attr_a, attr_b)
 
     @staticmethod
+    def distanceBetweenPoints(point_a, point_b):
+        """
+        Create distanceBetween-node hooked up to inMatrix attrs
+
+        Args:
+            point_a (Node, str, int, float): Plug or value for point A
+            point_b (Node, str, int, float): Plug or value for point B
+
+        Returns:
+            Node-object with distanceBetween-node and distance-attribute
+
+        Example:
+            >>> Op.len(Node("pCube.t"), Node("pCube2.t"))
+        """
+        return _create_and_connect_node('distanceInMatrix', point_a, point_b)
+
+    @staticmethod
+    def distanceBetweenMatrices(matrix_a, matrix_b):
+        """
+        Create distanceBetween-node hooked up to inMatrix attrs
+
+        Args:
+            matrix_a (Node, str): Matrix Plug 
+            matrix_b (Node, str): Matrix Plug
+
+        Returns:
+            Node-object with distanceBetween-node and distance-attribute
+
+        Example:
+            >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
+        """
+        return _create_and_connect_node('distanceInMatrix', matrix_a, matrix_b)
+
+    @staticmethod
     def clamp(attr_a, min_value=0, max_value=1):
         """
         Create clamp-node
@@ -382,6 +483,22 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('cross', attr_a, attr_b)
 
     @staticmethod
+    def normalizeVector(vector):
+        """
+        Create vectorProduct-node to normalize the given vector
+
+        Args:
+            attr_a (Node, str, int, float): Plug or value for vector A
+
+        Returns:
+            Node-object with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.normalizeVector(Node("pCube.t"))
+        """
+        return _create_and_connect_node('normalizeVector', vector)
+
+    @staticmethod
     def average(*attrs):
         """
         Create plusMinusAverage-node for averaging input attrs
@@ -396,6 +513,88 @@ class OperatorMetaClass(object):
             >>> Op.average(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('average', *attrs)
+
+    @staticmethod
+    def multMatrix(*attrs):
+        """
+        Create multMatrix-node for multiplying matrices
+
+        Args:
+            attrs Any number of matrix inputs to be multiplied
+
+        Returns:
+            Node-object with multMatrix-node and output-attribute(s)
+
+        Example:
+            # multMatrix
+            mmt = node_calculator.Op.multMatrix(
+                node_calculator.Node('in1.worldMatrix'), node_calculator.Node('in2').worldMatrix)
+            dmt = node_calculator.Op.decomposeMatrix(mmt)
+            out.t = dmt.outputTranslate
+            out.r = dmt.outputRotate
+            out.s = dmt.outputScale
+        """
+        return _create_and_connect_node('multMatrix', *attrs)
+
+    @staticmethod
+    def decomposeMatrix(inputMatrix):
+        """
+        Create decomposeMatrix-node for disassembing matrices into translation, rotation etc.
+
+        Args:
+            inputMatrix: one matrix attribute to be decomposed
+
+        Returns:
+            Node-object with decomposeMatrix-node and output-attribute(s)
+
+        Example:
+            # decomposeMatrix connects all
+            in1 = node_calculator.Node('in1')
+            out = node_calculator.Node('out')
+            dmt = node_calculator.Op.decomposeMatrix(in1.worldMatrix)
+            out.t = dmt.outputTranslate
+            out.r = dmt.outputRotate
+            out.s = dmt.outputScale
+        """
+        return _create_and_connect_node('decomposeMatrix', inputMatrix)
+
+    @staticmethod
+    def composeMatrix(t=0, r=0, s=1, sh=0, ro=0):
+        """
+        Create composeMatrix-node for assembling matrices from translation, rotation etc.
+
+        Args:
+            input translate, rotate, scale and shear compound attrs
+
+        Returns:
+            Node-object with composeMatrix-node and output-attribute(s)
+
+        Example:
+            cmt = noca.Op.composeMatrix(r=dmtSlave.outputRotate, s=dmtSlave.outputScale, sh=dmtSlave.outputShear)
+
+        """
+        return _create_and_connect_node('composeMatrix', t, r, s, sh, ro)
+
+    @staticmethod
+    def choice(*inputs, **selector):
+        """
+        Create choice-node for switching matrices or other attributes
+
+        Args:
+            One or many inputs (any type possible). Optional selector (s=node.attr).
+            Note: Multi index input seems to also require one 'selector' per index. So we package 
+            a copy of the same selector for each input
+
+        Returns:
+            Node-object with choice-node and output-attribute(s)
+
+        Example:
+            cmt = noca.Op.choice(transform1.worldMatrix, transform2.worldMatrix, s=control.switchMatrices)
+
+        """
+        s = selector.get('s', 0) # named attrs with default value don't combine well with *inputs
+        inputsAndSelectors = [[inp, s] for inp in inputs] # add one selector attr per input
+        return _create_and_connect_node('choice', *inputsAndSelectors)
 
 
 # Create Operator-class from OperatorMetaClass (check its doc string for reason why)
