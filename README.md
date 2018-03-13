@@ -30,8 +30,8 @@ Turn those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr into r
 ### Install:
 Simply save the node_calculator.py to your \Documents\maya\scripts folder
 
-###Usage
-In a Python-tab in Maya's Script Editor execute
+### Usage
+Example Python code (expects 2 nodes in your scene: "testA_geo" and "testB_geo"):
 
 ```
 import node_calculator as noca
