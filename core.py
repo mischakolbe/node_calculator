@@ -46,11 +46,18 @@ from .logger import logger
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# LOAD NECESSARY PLUGINS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cmds.loadPlugin("matrixNodes", quiet=True)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # AUTHORSHIP
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 __author__ = "Mischa Kolbe"
 __credits__ = [
-    "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner"
+    "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner",
+    "Niels Kleinheinz"
 ]
 __version__ = "1.1.1"
 __maintainer__ = "Mischa Kolbe"
@@ -137,6 +144,14 @@ class OperatorMetaClass(object):
                 ],
                 "output": ["distance"],
             },
+            "distanceBetweenMatrices": {
+                "node": "distanceBetween",
+                "inputs": [
+                    ["inMatrix1"],
+                    ["inMatrix2"],
+                ],
+                "output": ["distance"],
+            },
             "clamp": {
                 "node": "clamp",
                 "inputs": [
@@ -170,6 +185,59 @@ class OperatorMetaClass(object):
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": 3,
             },
+            "multMatrix": {
+                "node": "multMatrix",
+                "inputs": [
+                    [
+                        "matrixIn[{multi_index}]"
+                    ],
+                ],
+                "multi_index": True,
+                "output": ["matrixSum"],
+            },
+            "decomposeMatrix": {
+                "node": "decomposeMatrix",
+                "inputs": [
+                    ["inputMatrix"],
+                ],
+                "output": [
+                    "outputTranslateX", "outputTranslateY", "outputTranslateZ",
+                    "outputRotateX", "outputRotateY", "outputRotateZ",
+                    "outputScaleX", "outputScaleY", "outputScaleZ",
+                    "outputShearX", "outputShearY", "outputShearZ",
+                ],
+            },
+            "composeMatrix": {
+                "node": "composeMatrix",
+                "inputs": [
+                    ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
+                    ["inputRotateX", "inputRotateY", "inputRotateZ"],
+                    ["inputScaleX", "inputScaleY", "inputScaleZ"],
+                    ["inputShearX", "inputShearY", "inputShearZ"],
+                    ["inputRotateOrder"],
+                    ["useEulerRotation"],
+                ],
+                "output": ["outputMatrix"],
+            },
+            "choice": {
+                "node": "choice",
+                "inputs": [
+                    [
+                        "input[{multi_index}]"
+                    ],
+                ],
+                "multi_index": True,
+                "output": ["output"],
+            },
+            "normalizeVector": {
+                "node": "vectorProduct",
+                "inputs": [
+                    ["input1X", "input1Y", "input1Z"],
+                    ["normalizeOutput"],
+                ],
+                "output": ["outputX", "outputY", "outputZ"],
+                "operation": 0,
+            }
         }
 
         # Fill NODE_LOOKUP_TABLE with condition operations
@@ -224,6 +292,7 @@ class OperatorMetaClass(object):
                 "inputs": [
                     ["input1X", "input1Y", "input1Z"],
                     ["input2X", "input2Y", "input2Z"],
+                    ["normalizeOutput"],
                 ],
                 "output": ["outputX", "outputY", "outputZ"],
                 "operation": i + 1,
@@ -316,14 +385,31 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('length', attr_a, attr_b)
 
     @staticmethod
+    def distanceBetweenMatrices(matrix_a, matrix_b):
+        """
+        Create distanceBetween-node hooked up to inMatrix attrs
+
+        Args:
+            matrix_a (Node, str): Matrix Plug
+            matrix_b (Node, str): Matrix Plug
+
+        Returns:
+            Node-object with distanceBetween-node and distance-attribute
+
+        Example:
+            >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
+        """
+        return _create_and_connect_node('distanceInMatrix', matrix_a, matrix_b)
+
+    @staticmethod
     def clamp(attr_a, min_value=0, max_value=1):
         """
         Create clamp-node
 
         Args:
             attr_a (Node, str, int, float): Input value
-            min_value (int, float, list): min-value for clamp-operation
-            max_value (int, float, list): max-value for clamp-operation
+            min_value (Node, int, float, list): min-value for clamp-operation
+            max_value (Node, int, float, list): max-value for clamp-operation
 
         Returns:
             Node-object with clamp-node and output-attribute(s)
@@ -340,10 +426,10 @@ class OperatorMetaClass(object):
 
         Args:
             attr_a (Node, str, int, float): Input value
-            min_value (int, float, list): min-value for remap-operation
-            max_value (int, float, list): max-value for remap-operation
-            old_min_value (int, float, list): old min-value for remap-operation
-            old_max_value (int, float, list): old max-value for remap-operation
+            min_value (Node, int, float, list): min-value for remap-operation
+            max_value (Node, int, float, list): max-value for remap-operation
+            old_min_value (Node, int, float, list): old min-value for remap-operation
+            old_max_value (Node, int, float, list): old max-value for remap-operation
 
         Returns:
             Node-object with setRange-node and output-attribute(s)
@@ -356,38 +442,58 @@ class OperatorMetaClass(object):
         )
 
     @staticmethod
-    def dot(attr_a, attr_b=0):
+    def dot(attr_a, attr_b=0, normalize=False):
         """
         Create vectorProduct-node for vector dot-multiplication
 
         Args:
-            attr_a (Node, str, int, float): Plug or value for vector A
-            attr_b (Node, str, int, float): Plug or value for vector B
+            attr_a (Node, str, int, float, list): Plug or value for vector A
+            attr_b (Node, str, int, float, list): Plug or value for vector B
+            normalize (Node, boolean): Whether resulting vector should be normalized
 
         Returns:
             Node-object with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.dot(Node("pCube.t"), [1, 2, 3])
+            >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
         """
-        return _create_and_connect_node('dot', attr_a, attr_b)
+        return _create_and_connect_node('dot', attr_a, attr_b, normalize)
 
     @staticmethod
-    def cross(attr_a, attr_b=0):
+    def cross(attr_a, attr_b=0, normalize=False):
         """
         Create vectorProduct-node for vector cross-multiplication
 
         Args:
-            attr_a (Node, str, int, float): Plug or value for vector A
-            attr_b (Node, str, int, float): Plug or value for vector B
+            attr_a (Node, str, int, float, list): Plug or value for vector A
+            attr_b (Node, str, int, float, list): Plug or value for vector B
+            normalize (Node, boolean): Whether resulting vector should be normalized
 
         Returns:
             Node-object with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.cross(Node("pCube.t"), [1, 2, 3])
+            >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
         """
-        return _create_and_connect_node('cross', attr_a, attr_b)
+        return _create_and_connect_node('cross', attr_a, attr_b, normalize)
+
+    @staticmethod
+    def normalizeVector(in_vector, normalize=True):
+        """
+        Create vectorProduct-node to normalize the given vector
+
+        Args:
+            in_vector (Node, str, int, float, list): Plug or value for vector A
+            normalize (Node, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            Node-object with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.normalizeVector(Node("pCube.t"))
+        """
+        # Making normalize a flag allows the user to connect attributes to it
+        return _create_and_connect_node('normalizeVector', in_vector, normalize)
 
     @staticmethod
     def average(*attrs):
@@ -395,7 +501,7 @@ class OperatorMetaClass(object):
         Create plusMinusAverage-node for averaging input attrs
 
         Args:
-            attrs (string, list): Any number of inputs to be averaged
+            attrs (Node, string, list): Any number of inputs to be averaged
 
         Returns:
             Node-object with plusMinusAverage-node and output-attribute(s)
@@ -404,6 +510,129 @@ class OperatorMetaClass(object):
             >>> Op.average(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('average', *attrs)
+
+    @staticmethod
+    def multMatrix(*attrs):
+        """
+        Create multMatrix-node for multiplying matrices
+
+        Args:
+            attrs (Node, string, list): Any number of matrix inputs to be multiplied
+
+        Returns:
+            Node-object with multMatrix-node and output-attribute(s)
+
+        Example:
+            out = Node('pSphere')
+            matrix_mult = Op.multMatrix(
+                Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
+            )
+            decomp = Op.decomposeMatrix(matrix_mult)
+            out.t = decomp.outputTranslate
+            out.r = decomp.outputRotate
+            out.s = decomp.outputScale
+        """
+        return _create_and_connect_node('multMatrix', *attrs)
+
+    @staticmethod
+    def decomposeMatrix(in_matrix):
+        """
+        Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
+
+        Args:
+            in_matrix (Node, string): one matrix attribute to be decomposed
+
+        Returns:
+            Node-object with decomposeMatrix-node and output-attribute(s)
+
+        Example:
+            driver = Node('pCube1')
+            driven = Node('pSphere1')
+            decomp = Op.decomposeMatrix(driver.worldMatrix)
+            driven.t = decomp.outputTranslate
+            driven.r = decomp.outputRotate
+            driven.s = decomp.outputScale
+        """
+        return _create_and_connect_node('decomposeMatrix', in_matrix)
+
+    @staticmethod
+    def composeMatrix(
+            t=0, r=0, s=1, sh=0, ro=0,
+            translate=None, rotate=None, scale=None, shear=None, rotateOrder=None,
+            useEulerRotation=True,
+    ):
+        """
+        Create composeMatrix-node to assemble matrix from components (translation, rotation etc.)
+
+        Args:
+            t (Node, str, int, float): translate for matrix composition
+            r (Node, str, int, float): rotate for matrix composition
+            s (Node, str, int, float): scale for matrix composition
+            sh (Node, str, int, float): shear for matrix composition
+            ro (Node, str, int, float): rotateOrder for matrix composition
+            translate, rotate, scale, shear, rotateOrder: Reflect the long names
+                for the flags above. LongName flags take precedence!
+
+        Returns:
+            Node-object with composeMatrix-node and output-attribute(s)
+
+        Example:
+            in_a = Node('pCube1')
+            in_b = Node('pCube2')
+            decomp_a = Op.decomposeMatrix(in_a.worldMatrix)
+            decomp_b = Op.decomposeMatrix(in_b.worldMatrix)
+            Op.composeMatrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
+        """
+        if translate is not None:
+            t = translate
+        if rotate is not None:
+            r = rotate
+        if scale is not None:
+            s = scale
+        if shear is not None:
+            sh = shear
+        if rotateOrder is not None:
+            ro = rotateOrder
+
+        return _create_and_connect_node('composeMatrix', t, r, s, sh, ro, useEulerRotation)
+
+    @staticmethod
+    def choice(*inputs): # selector=0,
+        """
+        Create choice-node for switching matrices or other attributes
+
+        Args:
+            One or many inputs (any type possible). Optional selector (s=node.attr).
+            Note: Multi index input seems to also require one 'selector' per index. So we package
+            a copy of the same selector for each input
+
+        Returns:
+            Node-object with choice-node and output-attribute(s)
+
+        Example:
+            a = noca.Node("A")
+            b = noca.Node("B")
+            c = noca.Node("C")
+
+            selector = noca.Node("selector")
+
+            driven = noca.Node("driven")
+
+            driven.t = noca.Op.choice(a.t, b.t, c.t, s=selector.ty)
+
+        """
+
+
+        # s = selector.get('s', 0) # named attrs with default value don't combine well with *inputs
+        # inputsAndSelectors = [[inp, s] for inp in inputs] # add one selector attr per input
+        # print "inputs:", inputs
+        #print "selector:", selector
+        # print "inputsAndSelectors:", inputsAndSelectors
+
+        choice_node_obj = _create_and_connect_node('choice', *inputs)
+
+        # _set_or_connect_a_to_b(choice_node_obj.selector, selector)
+        return choice_node_obj
 
 
 # Create Operator-class from OperatorMetaClass (check its doc string for reason why)
@@ -1233,7 +1462,14 @@ def _create_and_connect_node(operation, *args):
         # so only a 1D obj_to_connect must be given!
         if len(new_node_input) == 1:
             if len(_get_unravelled_value_as_list(obj_to_connect)) > 1:
-                logger.error("Tried to connect multi-dimensional attribute to 1D input!")
+                logger.error(
+                    "Tried to connect multi-dimensional attribute to 1D input: "
+                    "node: {} attrs: {} input: {}".format(
+                        new_node,
+                        new_node_input,
+                        obj_to_connect
+                    )
+                )
             else:
                 logger.debug("Directly connecting 1D input to 1D obj!")
                 _set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
