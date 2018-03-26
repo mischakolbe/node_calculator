@@ -29,6 +29,17 @@ ToDo:
     - Try to reduce connections of compound-attributes (plusMinusAverage, etc.)
     - Not depend on name of object..?
     - Add short, byte, vector, matrix, ... attributes
+    - Attributes currently always unravel. That is not always desirable!
+        For example choice-nodes should pass through EXACTLY what is given/asked!
+        But these different cases are hard to detect right now (what is connected to what)
+        Currently connecting a.t to choice-node connects a.tz and b.t = choice.output
+        connects choice.output to all 3 directions (b.tx, b.ty, b.tz).
+        Should connect this way: a.t -> choice.input[0] and choice.output -> b.t
+
+        Given conn A to B: unravelling A doesn't make sense if B doesn't get unravelled.
+        A type-query with excluded node-types for unravelling might help? Not perfect either...
+    - It's currently impossible to access indexed attributes:
+        choice.input[0] = a.tx  # This won't do anything, because the index bombs
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -223,7 +234,7 @@ class OperatorMetaClass(object):
                 "node": "choice",
                 "inputs": [
                     [
-                        "input[{multi_index}]"
+                        "input[{multi_index}]",
                     ],
                 ],
                 "multi_index": True,
@@ -597,9 +608,9 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('composeMatrix', t, r, s, sh, ro, useEulerRotation)
 
     @staticmethod
-    def choice(*inputs): # selector=0,
+    def choice(*inputs, **kwargs):
         """
-        Create choice-node for switching matrices or other attributes
+        Create choice-node to switch between various input attributes
 
         Args:
             One or many inputs (any type possible). Optional selector (s=node.attr).
@@ -610,28 +621,17 @@ class OperatorMetaClass(object):
             Node-object with choice-node and output-attribute(s)
 
         Example:
-            a = noca.Node("A")
-            b = noca.Node("B")
-            c = noca.Node("C")
-
-            selector = noca.Node("selector")
-
-            driven = noca.Node("driven")
-
-            driven.t = noca.Op.choice(a.t, b.t, c.t, s=selector.ty)
-
+            option_a = Node("pCube1")
+            option_b = Node("pCube2")
+            driver_attr = Node("pSphere.tx")
+            choice_node_obj = Op.choice(option_a.tx, option_b.tx, selector=driver_attr)
+            Node("pTorus1").tx = choice_node_obj
         """
-
-
-        # s = selector.get('s', 0) # named attrs with default value don't combine well with *inputs
-        # inputsAndSelectors = [[inp, s] for inp in inputs] # add one selector attr per input
-        # print "inputs:", inputs
-        #print "selector:", selector
-        # print "inputsAndSelectors:", inputsAndSelectors
-
         choice_node_obj = _create_and_connect_node('choice', *inputs)
+        # Since this is a multi-attr node it's hard to filter out the selector keyword
+        # in a perfect manner. This should do fine though.
+        _set_or_connect_a_to_b(choice_node_obj.selector, kwargs.get("selector", 0))
 
-        # _set_or_connect_a_to_b(choice_node_obj.selector, selector)
         return choice_node_obj
 
 
@@ -1264,7 +1264,7 @@ class Tracer(object):
 
             with Tracer(pprint_trace=True) as s:
                 a.tx = b.ty - 2 * c.tz
-            print s
+            print(s)
     """
 
     def __init__(self, trace=True, print_trace=False, pprint_trace=False):
@@ -1457,10 +1457,16 @@ def _create_and_connect_node(operation, *args):
     max_dim = max([len(x) for x in unravelled_args_list])
 
     for i, (new_node_input, obj_to_connect) in enumerate(zip(new_node_inputs, args)):
+
+        new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
+        # multi_index inputs must always be caught and filled!
+        if NODE_LOOKUP_TABLE[operation].get("multi_index", False):
+            new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
+
         # Support for single-dimension-inputs in the NODE_LOOKUP_TABLE. For example:
         # The blend-attr of a blendColors-node is always 1D,
         # so only a 1D obj_to_connect must be given!
-        if len(new_node_input) == 1:
+        elif len(new_node_input) == 1:
             if len(_get_unravelled_value_as_list(obj_to_connect)) > 1:
                 logger.error(
                     "Tried to connect multi-dimensional attribute to 1D input: "
@@ -1474,15 +1480,6 @@ def _create_and_connect_node(operation, *args):
                 logger.debug("Directly connecting 1D input to 1D obj!")
                 _set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
                 continue
-        # [[
-        #     'input3D[{multi_index}].input3Dx',
-        #     'input3D[{multi_index}].input3Dy',
-        #     'input3D[{multi_index}].input3Dz'
-        # ]]
-        new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
-
-        if NODE_LOOKUP_TABLE[operation].get("multi_index", False):
-            new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
         _set_or_connect_a_to_b(new_node_input_list, obj_to_connect)
 
@@ -1732,6 +1729,9 @@ def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
 
     obj_a_unravelled_list = _get_unravelled_value_as_list(obj_a)
     obj_b_unravelled_list = _get_unravelled_value_as_list(obj_b)
+    logger.debug('obj_a_unravelled_list {} from obj_a {}'.format(obj_a_unravelled_list, obj_a))
+    logger.debug('obj_b_unravelled_list {} from obj_b {}'.format(obj_b_unravelled_list, obj_b))
+
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
 
@@ -1817,6 +1817,8 @@ def _check_for_parent_attribute(attribute_list):
                     otherwise returns None
     """
     # Make sure all attributes are unique, so [outputX, outputX, outputZ] doesn't match to output)
+    logger.debug("_check_for_parent_attribute for {}".format(attribute_list))
+
     if len(set(attribute_list)) != len(attribute_list):
         return None
 
@@ -1917,6 +1919,8 @@ def _get_unravelled_value(input_val):
     Returns:
         int, str, list: Clean plugs or values
     """
+    logger.debug("_get_unravelled_value of {}, type {}".format(input_val, type(input_val)))
+
     # Return value if it's a single number
     if isinstance(input_val, numbers.Real):
         return input_val
@@ -1936,7 +1940,6 @@ def _get_unravelled_value(input_val):
                 _get_unravelled_plug("{}.{}".format(input_val.node, attr))
                 for attr in input_val.attrs
             ]
-
             if len(unravelled_attrs) > 1:
                 return unravelled_attrs
 
