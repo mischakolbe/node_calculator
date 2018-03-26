@@ -53,13 +53,22 @@ from itertools import izip
 from maya import cmds
 
 # Local imports
-from .logger import logger
+import logger
+reload(logger)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # LOAD NECESSARY PLUGINS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cmds.loadPlugin("matrixNodes", quiet=True)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SETUP LOGGER
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+logger.clear_handlers()
+logger.setup_stream_handler(level=logger.logging.WARN)
+log = logger.log
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,10 +79,10 @@ __credits__ = [
     "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner",
     "Niels Kleinheinz"
 ]
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 __maintainer__ = "Mischa Kolbe"
 __email__ = "mischakolbe@gmail.com"
-__updated__ = "2017 12 03"
+__updated__ = "2018 03 26"
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -337,9 +346,9 @@ class OperatorMetaClass(object):
         # Make sure condition_node is of expected Node-type!
         # condition_node was created during comparison of Node-object(s)
         if not isinstance(condition_node, Node):
-            logger.error("{0} isn't Node-instance.".format(condition_node))
+            log.error("{0} isn't Node-instance.".format(condition_node))
         if cmds.objectType(condition_node.node) != "condition":
-            logger.error("{0} isn't of type condition.".format(condition_node))
+            log.error("{0} isn't of type condition.".format(condition_node))
 
         condition_inputs = [
             ["colorIfTrueR", "colorIfTrueG", "colorIfTrueB"],
@@ -716,7 +725,7 @@ class Node(object):
         """
         if name == "attrs":
             if self.attrs is None:
-                logger.error("No attributes on requested Node-object! {}".format(self.node))
+                log.error("No attributes on requested Node-object! {}".format(self.node))
             return self
         else:
             return Node(self.node, name)
@@ -927,7 +936,7 @@ class Node(object):
         Returns:
             Int: 0 if attrs is None, 1 if it's not an array, otherwise len(attrs)
         """
-        logger.warn("Using the Node-len method!")
+        log.warn("Using the Node-len method!")
         if self.attrs is None:
             return 0
         if isinstance(self.attrs, (list, tuple)):
@@ -1202,19 +1211,19 @@ class Node(object):
         # Check whether attribute already exists. If so; return early!
         attr = "{}.{}".format(self.node, attr_name)
         if cmds.objExists(attr):
-            logger.warn("Attribute {} already existed!".format(attr))
+            log.warn("Attribute {} already existed!".format(attr))
             return Node(attr)
 
         # Make a copy of the default values for the given attrType
         attr_variables = ATTR_LOOKUP_TABLE["base_attr"].copy()
         attr_variables.update(ATTR_LOOKUP_TABLE[attr_type])
-        logger.debug("Copied default attr_variables: {}".format(attr_variables))
+        log.debug("Copied default attr_variables: {}".format(attr_variables))
 
         # Add the attr variable into the dictionary
         attr_variables["longName"] = attr_name
         # Override default values with kwargs
         attr_variables.update(kwargs)
-        logger.debug("Added custom attr_variables: {}".format(attr_variables))
+        log.debug("Added custom attr_variables: {}".format(attr_variables))
 
         # Extract attributes that need to be set via setAttr-command
         set_attr_values = {
@@ -1222,8 +1231,8 @@ class Node(object):
             "lock": attr_variables.pop("lock", None),
         }
         attr_value = attr_variables.pop("value", None)
-        logger.debug("Extracted set_attr-variables from attr_variables: {}".format(attr_variables))
-        logger.debug("set_attr-variables: {}".format(set_attr_values))
+        log.debug("Extracted set_attr-variables from attr_variables: {}".format(attr_variables))
+        log.debug("set_attr-variables: {}".format(set_attr_values))
 
         # Add the attribute
         _traced_add_attr(self.node, **attr_variables)
@@ -1233,7 +1242,7 @@ class Node(object):
             key: val for (key, val) in set_attr_values.iteritems()
             if val is not None
         }
-        logger.debug("Pruned set_attr-variables: {}".format(set_attr_values))
+        log.debug("Pruned set_attr-variables: {}".format(set_attr_values))
 
         # If there is no value to be set; set any attribute flags directly
         if attr_value is None:
@@ -1429,14 +1438,14 @@ def _create_and_connect_node(operation, *args):
         New Maya-node of type NODE_LOOKUP_TABLE[operation]["node"]
     """
     # If a multi_index-attribute is given; create list with it of same length than args
-    logger.debug("Creating a new {}-operationNode with args: {}".format(operation, args))
+    log.debug("Creating a new {}-operationNode with args: {}".format(operation, args))
     new_node_inputs = NODE_LOOKUP_TABLE[operation]["inputs"]
     if NODE_LOOKUP_TABLE[operation].get("multi_index", False):
         new_node_inputs = len(args) * NODE_LOOKUP_TABLE[operation]["inputs"][:]
 
     # Check dimension-match: args vs. NODE_LOOKUP_TABLE-inputs:
     if len(args) != len(new_node_inputs):
-        logger.error(
+        log.error(
             "Dimensions to create node don't match! "
             "Given args: {} Required node-inputs: {}".format(args, new_node_inputs)
         )
@@ -1468,7 +1477,7 @@ def _create_and_connect_node(operation, *args):
         # so only a 1D obj_to_connect must be given!
         elif len(new_node_input) == 1:
             if len(_get_unravelled_value_as_list(obj_to_connect)) > 1:
-                logger.error(
+                log.error(
                     "Tried to connect multi-dimensional attribute to 1D input: "
                     "node: {} attrs: {} input: {}".format(
                         new_node,
@@ -1477,7 +1486,7 @@ def _create_and_connect_node(operation, *args):
                     )
                 )
             else:
-                logger.debug("Directly connecting 1D input to 1D obj!")
+                log.debug("Directly connecting 1D input to 1D obj!")
                 _set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
                 continue
 
@@ -1719,27 +1728,27 @@ def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     """
     # #######################
     # Make sure inputs are ok to process
-    logger.debug('_set_or_connect_a_to_b({}, {}) - RAW INPUT'.format(obj_a, obj_b))
+    log.debug('_set_or_connect_a_to_b({}, {}) - RAW INPUT'.format(obj_a, obj_b))
 
     # Make sure obj_a and obj_b aren't unspecified
     if obj_a is None:
-        logger.error("obj_a is unspecified!")
+        log.error("obj_a is unspecified!")
     if obj_b is None:
-        logger.error("obj_b is unspecified!")
+        log.error("obj_b is unspecified!")
 
     obj_a_unravelled_list = _get_unravelled_value_as_list(obj_a)
     obj_b_unravelled_list = _get_unravelled_value_as_list(obj_b)
-    logger.debug('obj_a_unravelled_list {} from obj_a {}'.format(obj_a_unravelled_list, obj_a))
-    logger.debug('obj_b_unravelled_list {} from obj_b {}'.format(obj_b_unravelled_list, obj_b))
+    log.debug('obj_a_unravelled_list {} from obj_a {}'.format(obj_a_unravelled_list, obj_a))
+    log.debug('obj_b_unravelled_list {} from obj_b {}'.format(obj_b_unravelled_list, obj_b))
 
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
 
     # Neither given object can have dimensionality (=list-length) above 3!
     if obj_a_dim > 3:
-        logger.error("Dimensionality of obj_a is higher than 3! {}".format(obj_a_unravelled_list))
+        log.error("Dimensionality of obj_a is higher than 3! {}".format(obj_a_unravelled_list))
     if obj_b_dim > 3:
-        logger.error("Dimensionality of obj_b is higher than 3! {}".format(obj_b_unravelled_list))
+        log.error("Dimensionality of obj_b is higher than 3! {}".format(obj_b_unravelled_list))
     # #######################
     # Match input-dimensions: After this block both obj_X_unravelled_list's have the same length
 
@@ -1751,14 +1760,14 @@ def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     elif obj_a_dim == 1 or obj_b_dim == 1:
         if obj_a_dim < obj_b_dim:
             # ...by creating a list with the same length
-            logger.debug("Matching obj_a_dim to obj_b_dim!")
+            log.debug("Matching obj_a_dim to obj_b_dim!")
             obj_a_unravelled_list = obj_a_unravelled_list * obj_b_dim
         else:
-            logger.debug("Matching obj_b_dim to obj_a_dim!")
+            log.debug("Matching obj_b_dim to obj_a_dim!")
             obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
     else:
         # Any other dimension-pairings are not allowed
-        logger.error(
+        log.error(
             "Due to dimensions there is no reasonable way to connect "
             "{}D: {} > to > {}D: {}".format(
                 obj_a_dim, obj_a_unravelled_list,
@@ -1779,12 +1788,12 @@ def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         obj_a_unravelled_list = reduced_obj_a_list
         obj_b_unravelled_list = reduced_obj_b_list
 
-    logger.debug("obj_a_unravelled_list: {}".format(obj_a_unravelled_list))
-    logger.debug("obj_b_unravelled_list: {}".format(obj_b_unravelled_list))
+    log.debug("obj_a_unravelled_list: {}".format(obj_a_unravelled_list))
+    log.debug("obj_b_unravelled_list: {}".format(obj_b_unravelled_list))
     for obj_a_item, obj_b_item in zip(obj_a_unravelled_list, obj_b_unravelled_list):
         # Make sure obj_a_item exists in the Maya scene and get its dimensionality
         if not cmds.objExists(obj_a_item):
-            logger.error("obj_a_item does not exist: {}. Must be Maya-attr!".format(obj_a_item))
+            log.error("obj_a_item does not exist: {}. Must be Maya-attr!".format(obj_a_item))
 
         # If obj_b_item is a simple number...
         if isinstance(obj_b_item, numbers.Real):
@@ -1802,7 +1811,7 @@ def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
                 obj_b_item,
                 type(obj_b_item),
             )
-            logger.error(msg)
+            log.error(msg)
 
 
 def _check_for_parent_attribute(attribute_list):
@@ -1817,7 +1826,7 @@ def _check_for_parent_attribute(attribute_list):
                     otherwise returns None
     """
     # Make sure all attributes are unique, so [outputX, outputX, outputZ] doesn't match to output)
-    logger.debug("_check_for_parent_attribute for {}".format(attribute_list))
+    log.debug("_check_for_parent_attribute for {}".format(attribute_list))
 
     if len(set(attribute_list)) != len(attribute_list):
         return None
@@ -1895,13 +1904,13 @@ def _get_unravelled_value_as_list(input_val):
     Returns:
         list with values and (direct, ie all 1D-) plugs
     """
-    logger.debug("About to unravel >{0}< with {1}".format(input_val, type(input_val)))
+    log.debug("About to unravel >{0}< with {1}".format(input_val, type(input_val)))
 
     unravelled_input = _get_unravelled_value(input_val)
     if not isinstance(unravelled_input, list):
         unravelled_input = [unravelled_input]
 
-    logger.info("Input >{0}< --> unravelled to >{1}<".format(input_val, unravelled_input))
+    log.info("Input >{0}< --> unravelled to >{1}<".format(input_val, unravelled_input))
 
     return unravelled_input
 
@@ -1919,7 +1928,7 @@ def _get_unravelled_value(input_val):
     Returns:
         int, str, list: Clean plugs or values
     """
-    logger.debug("_get_unravelled_value of {}, type {}".format(input_val, type(input_val)))
+    log.debug("_get_unravelled_value of {}, type {}".format(input_val, type(input_val)))
 
     # Return value if it's a single number
     if isinstance(input_val, numbers.Real):
@@ -1954,7 +1963,7 @@ def _get_unravelled_value(input_val):
 
     # Unrecognised input_val
     else:
-        logger.error(
+        log.error(
             "Type {} of input_val {} unrecognised!".format(type(input_val), input_val)
         )
 
@@ -1969,10 +1978,10 @@ def _get_unravelled_plug(input_plug):
     Returns:
         str, list: Either the input_plug or if it was a compound-plug: Its components
     """
-    logger.info("About to unravel plug >{}<".format(input_plug))
+    log.info("About to unravel plug >{}<".format(input_plug))
 
     if not cmds.objExists(input_plug):
-        logger.error("input_plug does not exist: {}".format(input_plug))
+        log.error("input_plug does not exist: {}".format(input_plug))
 
     attr = ".".join(input_plug.split(".")[1:])
     node = input_plug.split(".")[0]
@@ -1985,7 +1994,7 @@ def _get_unravelled_plug(input_plug):
         # It only recognizes input3D and returns [input3Dx, input3Dy, input3Dz].
         # Didn't manage to query indexed attrs properly ~.~
         # Since objExists was already run it is probably safe(ish) to ignore...
-        logger.debug("Returning untouched input_plug, it's probably a multi-index attribute!")
+        log.debug("Returning untouched input_plug, it's probably a multi-index attribute!")
 
-    logger.debug("Unravelled input_plug to >{}<".format(input_plug))
+    log.debug("Unravelled input_plug to >{}<".format(input_plug))
     return input_plug

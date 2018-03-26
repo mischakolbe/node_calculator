@@ -1,27 +1,65 @@
 """
-Logging module for node calculator
+Module for logging
+
 """
 
 import logging
+import logging.handlers
+
+log = logging.getLogger(__name__)
+
+# Make sure logs don't propagate through to __main__ logger, too
+# This might be a Maya-issue. I don't think this should be necessary!
+log.propagate = False
+
+# format_str = "%(asctime)s; %(levelname)s; %(message)s"
+format_str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+formatter = logging.Formatter(format_str, "%m/%d/%Y %H:%M:%S")
 
 
-# Get the logger of __name__ (most likely; __main__)
-logger = logging.getLogger(__name__)
-# Create an I/O stream handler
-io_handler = logging.StreamHandler()
-# Create a logging formatter
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    '%m/%d/%Y %H:%M:%S',
-)
-# Assign the formatter to the io_handler
-io_handler.setFormatter(formatter)
-# Add the io_handler to the logger
-logger.addHandler(io_handler)
-# Only change the logging-level if it's above what we want it to be
-noca_logging_level = logging.WARN  # Options: DEBUG, INFO, WARN, ERROR, CRITICAL
-if logger.getEffectiveLevel() > noca_logging_level:
-    logger.setLevel(noca_logging_level)
+class NullHandler(logging.Handler):
 
-# Set the handler logging level
-io_handler.setLevel(noca_logging_level)
+    def emit(self, record):
+        pass
+
+
+def clear_handlers():
+    log.handlers = []
+    nh = NullHandler()
+    log.addHandler(nh)
+
+
+def setup_stream_handler(level=logging.INFO):
+    """
+    Creates a stream handler for logging.
+
+    Default level is info.
+    Options: DEBUG, INFO, WARN, ERROR, CRITICAL
+    """
+    strmh = logging.StreamHandler()
+    strmh.setFormatter(formatter)
+    strmh.setLevel(level)
+    log.addHandler(strmh)
+
+    if log.getEffectiveLevel() > level:
+        log.setLevel(level)
+
+
+def setup_file_handler(file_path, max_bytes=100 << 20, level=logging.INFO):
+    """
+    Creates a rotating file handler for logging.
+
+    Default level is info.
+
+    max_bytes:
+    x << y Returns x with the bits shifted to the left by y places. 100 << 20 === 100 * 2 ** 20
+    """
+    fh = logging.handlers.RotatingFileHandler(file_path, max_bytes=max_bytes, backupCount=10)
+    fh.setFormatter(formatter)
+    fh.setLevel(level)
+    log.addHandler(fh)
+
+    if log.getEffectiveLevel() > level:
+        log.setLevel(level)
+
+    log.info("Log file: {0}".format(file_path))
