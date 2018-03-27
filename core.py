@@ -30,16 +30,23 @@ ToDo:
     - Not depend on name of object..?
     - Add short, byte, vector, matrix, ... attributes
     - Attributes currently always unravel. That is not always desirable!
-        For example choice-nodes should pass through EXACTLY what is given/asked!
-        But these different cases are hard to detect right now (what is connected to what)
-        Currently connecting a.t to choice-node connects a.tz and b.t = choice.output
-        connects choice.output to all 3 directions (b.tx, b.ty, b.tz).
-        Should connect this way: a.t -> choice.input[0] and choice.output -> b.t
+      For example choice-nodes should pass through EXACTLY what is given/asked!
+      But these different cases are hard to detect right now (what is connected to what)
+      Currently connecting a.t to choice-node connects a.tz and b.t = choice.output
+      connects choice.output to all 3 directions (b.tx, b.ty, b.tz).
+      Should connect this way: a.t -> choice.input[0] and choice.output -> b.t
 
-        Given conn A to B: unravelling A doesn't make sense if B doesn't get unravelled.
-        A type-query with excluded node-types for unravelling might help? Not perfect either...
+      Given conn A to B: unravelling A doesn't make sense if B doesn't get unravelled.
+      A type-query with excluded node-types for unravelling might help? Not perfect either...
     - It's currently impossible to access indexed attributes:
-        choice.input[0] = a.tx  # This won't do anything, because the index bombs
+      choice.input[0] = a.tx  # This won't do anything, because the index bombs
+      Add setting of values by using index: a.attrs[0] = 3.5
+      Might need an Attr-Class that allows to identify attrs as such! Otherwise it's a
+      normal list indexing!
+    - Add getAttr to Tracer. Maybe would need ID for each Node-object to keep track of values?
+      Otherwise a getAttr-result becomes a normal int/float! Not distinguishable anymore and
+      therefore variables within Tracer become impossible. With IDs there could be a check
+      for which Node-object is evaluated and that object could be identified
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
