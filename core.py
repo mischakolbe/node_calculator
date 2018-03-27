@@ -216,7 +216,7 @@ class OperatorMetaClass(object):
                 "node": "multMatrix",
                 "inputs": [
                     [
-                        "matrixIn[{multi_index}]"
+                        "matrixIn[{multi_index}]",
                     ],
                 ],
                 "multi_index": True,
@@ -657,6 +657,108 @@ class Op(object):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ATTRS
+# Attrs would need to be aware of holding Node, otherwise the setitem can not act as a setAttr for the node with attr!
+
+# Maybe this?
+
+# class Outer(object):
+
+#     def createInner(self):
+#         return Outer.Inner(self)
+
+#     class Inner(object):
+#         def __init__(self, outer_instance):
+#             self.outer_instance = outer_instance
+#             self.outer_instance.somemethod()
+
+#         def inner_method(self):
+#             self.outer_instance.anothermethod()
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Attrs(object):
+    def __init__(self, attrs=None):
+        """
+        """
+        logger.debug("Attrs init method with attrs {}".format(attrs))
+
+        if attrs is None:
+            self.__dict__["attrs"] = []
+        elif isinstance(attrs, basestring):
+            self.__dict__["attrs"] = [attrs]
+        elif isinstance(attrs, (tuple, list)):
+            self.__dict__["attrs"] = attrs
+        else:
+            logger.warn("Unrecognised Attrs type for attrs {}".format(attrs))
+
+    def __str__(self):
+        """
+        Pretty print of Attrs class
+
+        Returns:
+            String of concatenated attrs-attributes
+        """
+        logger.debug("Attrs str method with self")
+
+        return str(self.__dict__["attrs"])
+
+    def __repr__(self):
+        """
+        Repr-method for debugging purposes
+
+        Returns:
+            String of separate elements that make up Node-instance
+        """
+        logger.debug("Attrs repr method with self")
+
+        return self.__dict__["attrs"]
+
+    def plug(self):
+        """
+        Helper function to allow easy access to the Node-attributes.
+
+        Returns:
+            String of common notation "node.attrs" or None if attrs is undefined!
+        """
+        if self.node is None:
+            return self.attrs
+        elif isinstance(self.attrs, (list, tuple)):
+            return ["{n}.{a}".format(n=self.node, a=a) for a in self.attrs]
+        else:
+            return "{n}.{a}".format(n=self.node, a=self.attrs)
+
+    def __setitem__(self, index, value):
+        """
+        Support indexed assignments for Node-instances with list-attrs
+
+        Args:
+            index (int): Index of item to be set
+            value (Node, str, int, float): desired value for the given index
+        """
+        logger.debug("Attrs setitem method with index {} & value {}".format(index, value))
+
+        # self.attrs[index] = value
+
+    def __getitem__(self, index):
+        """
+        Support indexed lookup for Node-instances with list-attrs
+
+        Args:
+            index (int): Index of desired item
+
+        Returns:
+            Object that is at the desired index
+        """
+        logger.debug("Attrs getitem method with index {}".format(index))
+
+        # if isinstance(self.attrs[index], numbers.Real):
+        #     return self.attrs[index]
+        # elif self.node is None:
+        #     return Node(self.attrs[index])
+        # else:
+        #     return Node(self.node, self.attrs[index])
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NODE
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Node(object):
@@ -697,20 +799,25 @@ class Node(object):
                              object b. This returns a new Node-object consisting of
                              b.node (="pCube2") and the given attributes (=["sx"])!
         """
+        log.debug("Node init method with node {} & attrs {}".format(node, attrs))
+
         if isinstance(node, numbers.Real) or isinstance(node, (list, tuple)):
             self.__dict__["node"] = None
             self.__dict__["attrs"] = node
         # Initialization with "object.attrs" string
         elif attrs is None and "." in node:
             node_part, attrs_part = node.split(".")
-            self.__dict__["node"], self.__dict__["attrs"] = node_part, [attrs_part]
+            self.__dict__["node"], self.__dict__["attrs"] = node_part, Attrs(attrs_part)
         # Initialization where node and attribute(optional) are specifically given
         else:
             self.__dict__["node"] = node
-            if isinstance(attrs, basestring):
-                self.__dict__["attrs"] = [attrs]
-            else:
-                self.__dict__["attrs"] = attrs
+            self.__dict__["attrs"] = Attrs(attrs)
+            # if attrs is None:
+            #     self.__dict__["attrs"] = []
+            # elif isinstance(attrs, basestring):
+            #     self.__dict__["attrs"] = [attrs]
+            # else:
+            #     self.__dict__["attrs"] = attrs
 
     def __getattr__(self, name):
         """
@@ -730,8 +837,10 @@ class Node(object):
                 a.tx  # invokes __getattr__ and returns a new Node-object.
                         It's the same as typing Node("a.tx")
         """
+        log.debug("Node getattr method with name".format(name))
+
         if name == "attrs":
-            if self.attrs is None:
+            if not len(self.attrs):
                 log.error("No attributes on requested Node-object! {}".format(self.node))
             return self
         else:
@@ -762,6 +871,8 @@ class Node(object):
                 a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
                 a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
         """
+        log.debug("Node setattr method with name {} & value {}".format(name, value))
+
         _set_or_connect_a_to_b(self.__getattr__(name), value)
 
     def __add__(self, other):
@@ -920,10 +1031,10 @@ class Node(object):
         Returns:
             String of concatenated node- & attrs-attributes
         """
+        log.debug("Node str method with self")
+
         if self.node is None:
             return str(self.attrs)
-        elif self.attrs is None:
-            return str(self.node)
         else:
             return str(self.plug())
 
@@ -934,6 +1045,8 @@ class Node(object):
         Returns:
             String of separate elements that make up Node-instance
         """
+        log.debug("Node repr method with self")
+
         return "Node('{0}', '{1}')".format(self.node, self.attrs)
 
     def __len__(self):
@@ -943,9 +1056,8 @@ class Node(object):
         Returns:
             Int: 0 if attrs is None, 1 if it's not an array, otherwise len(attrs)
         """
-        log.warn("Using the Node-len method!")
-        if self.attrs is None:
-            return 0
+        log.warn("Node len method used!")
+
         if isinstance(self.attrs, (list, tuple)):
             return len(self.attrs)
         else:
@@ -958,6 +1070,8 @@ class Node(object):
         Yields:
             Next item in list of attributes.
         """
+        log.debug("Node iter method with self")
+
         i = 0
         while True:
             try:
@@ -979,6 +1093,8 @@ class Node(object):
             index (int): Index of item to be set
             value (Node, str, int, float): desired value for the given index
         """
+        log.debug("Node setitem method with index {} & value {}".format(index, value))
+
         self.attrs[index] = value
 
     def __getitem__(self, index):
@@ -991,6 +1107,8 @@ class Node(object):
         Returns:
             Object that is at the desired index
         """
+        log.debug("Node getitem method with index {}".format(index))
+
         if isinstance(self.attrs[index], numbers.Real):
             return self.attrs[index]
         elif self.node is None:
@@ -1006,10 +1124,12 @@ class Node(object):
         Returns:
             Int, Float, List - depending on the "queried" attributes.
         """
+        log.debug("Node get method with self")
+
         if self.node is None:
             return self.attrs
         plug = self.plug()
-        if plug is not None:
+        if len(plug):
             if isinstance(plug, (list, tuple)):
                 return_value = []
                 for elem in plug:
@@ -1019,6 +1139,8 @@ class Node(object):
             else:
                 return self._get_maya_attr(plug)
         else:
+            log.warn("Trying to get non-existent attribute! Returned None")
+
             return None
 
     def set(self, value):
@@ -1030,6 +1152,8 @@ class Node(object):
             value (Node, str, int, float, list, tuple): Connect attributes to this
                 object or set attributes to this value/array
         """
+        log.debug("Node set method with value {}".format(value))
+
         _set_or_connect_a_to_b(self, value)
 
     def plug(self):
@@ -1039,9 +1163,7 @@ class Node(object):
         Returns:
             String of common notation "node.attrs" or None if attrs is undefined!
         """
-        if self.attrs is None:
-            return None
-        elif self.node is None:
+        if self.node is None:
             return self.attrs
         elif isinstance(self.attrs, (list, tuple)):
             return ["{n}.{a}".format(n=self.node, a=a) for a in self.attrs]
@@ -1064,6 +1186,8 @@ class Node(object):
             a = Node("pCube1.tx")  # Create the node instance with or without attribute
             a.redefine_attr("ty")  # Change the attribute of the node instance
         """
+        log.debug("Node redefine_attr method with attrs {}".format(attrs))
+
         if isinstance(attrs, basestring):
             attrs = [attrs]
 
@@ -1189,15 +1313,17 @@ class Node(object):
         """
         Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
         """
-        if _is_valid_maya_attr(attr):
-            return_value = cmds.getAttr(attr)
-            # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
-            if isinstance(return_value, list):
-                if len(return_value) == 1 and isinstance(return_value[0], tuple):
-                    return_value = list(return_value[0])
-            return return_value
-        else:
-            return attr
+        return _traced_get_attr(attr)
+
+        # if _is_valid_maya_attr(attr):
+        #     return_value = cmds.getAttr(attr)
+        #     # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
+        #     if isinstance(return_value, list):
+        #         if len(return_value) == 1 and isinstance(return_value[0], tuple):
+        #             return_value = list(return_value[0])
+        #     return return_value
+        # else:
+        #     return attr
 
     def _add_traced_attr(self, attr_type, attr_name, **kwargs):
         """
@@ -1663,6 +1789,57 @@ def _traced_set_attr(attr, value=None, **kwargs):
                 pass
 
 
+def _traced_get_attr(attr):
+    """
+    Maya-getAttr that adds the executed command to the command_stack if Tracer is active,
+    Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
+    """
+
+    # Variable to keep track of whether return value had to be unpacked or not
+    list_of_tuples_returned = False
+
+    if _is_valid_maya_attr(attr):
+        return_value = cmds.getAttr(attr)
+        # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
+        if isinstance(return_value, list):
+            if len(return_value) == 1 and isinstance(return_value[0], tuple):
+                list_of_tuples_returned = True
+                return_value = list(return_value[0])
+    else:
+        return_value = attr
+
+    '''
+    NEED TO FIND A WAY TO KEEP TRACK OF THESE VALUES!
+    AS SOON AS VALUE IS RETURNED: THERE IS NO WAY TO TELL WHETHER THAT'S A NUMBER
+    OR A QUERIED NUMBER!
+
+
+    # If commands are traced...
+    if Node.trace_commands:
+
+        # ...look for the node of the given attribute...
+        node = attr.split(".")[0]
+        if node in Node.traced_nodes:
+            # ...if it is already part of the traced nodes: Use its variable instead
+            attr = "{} + '.{}'".format(
+                Node.traced_variables[Node.traced_nodes.index(node)],
+                ".".join(attr.split(".")[1:])
+            )
+        else:
+            # ...otherwise add quotes around original attr
+            attr = "'{}'".format(attr)
+
+        queried_var = "AAAAA" # This would have to be like Node.traced_variables!
+        # Add the getAttr-command to the command stack
+        if list_of_tuples_returned:
+            Node.add_to_command_stack("{} = cmds.getAttr({})".format(queried_var, attr))
+        else:
+            Node.add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(queried_var, attr))
+    '''
+
+    return return_value
+
+
 def _join_kwargs_for_cmds(**kwargs):
     """
     Concatenates kwargs for Tracer.
@@ -1956,6 +2133,7 @@ def _get_unravelled_value(input_val):
                 _get_unravelled_plug("{}.{}".format(input_val.node, attr))
                 for attr in input_val.attrs
             ]
+
             if len(unravelled_attrs) > 1:
                 return unravelled_attrs
 
