@@ -43,12 +43,12 @@ class Var(object):
     The INSTANTIATION happens of that sub-class, not this Var-class!
     """
 
-    def __new__(self, value, metadata):
+    def __new__(self, value, metadata=""):
         value_type = type(value)
 
         if value_type is float:
             return FloatVar(value, metadata)
-        elif value_type is int:
+        elif value_type is int or value_type is bool:
             return IntVar(value, metadata)
         elif value_type is str:
             return StrVar(value, metadata)
@@ -63,15 +63,22 @@ class Var(object):
 
 
 def testDef():
-
-    for i, value in enumerate([2.0, 2, "ass"], 1):
+    for i, value in enumerate([2.0, 2, True, "a string"], 1):
         a_test = Var(value, "bla"*i)
-        print("a_test.metadata:", a_test.metadata)
-        print("type(a_test):", type(a_test))
-        print("isinstance(a_test, float):", isinstance(a_test, float))
-        print("isinstance(a_test, int):", isinstance(a_test, int))
-        print("isinstance(a_test, str):", isinstance(a_test, str))
+        print("value & type:", value, type(value))
+        print("metadata:", a_test.metadata)
+        print("type:", type(a_test))
+        print("isinstance(float):", isinstance(a_test, float))
+        print("isinstance(int):", isinstance(a_test, int))
+        print("isinstance(str):", isinstance(a_test, str))
+        print("baseType: ", type(a_test).__bases__[0])
         print
 
 
 testDef()
+
+
+a = Var(2)
+b = Var("lululu")
+
+print (a*b)
