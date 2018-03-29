@@ -6,11 +6,17 @@ Supported operations (defaultValues after '='):
 - condition:    Op.condition(condition, if_part=False, else_part=True)
 - length:       Op.length(attr_a, attr_b=0)
 - average:      Op.average(*attrs)  # Any number of inputs possible
-- dot-product:  Op.dot(attr_a, attr_b=0)
-- cross-product:Op.cross(attr_a, attr_b=0)
+- dot-product:  Op.dot(attr_a, attr_b=0, normalize=False)
+- cross-product:Op.cross(attr_a, attr_b=0, normalize=False)
+- vector-norm:  Op.normalize_vector(in_vector, normalize=True)
+- mult matrix:  Op.mult_matrix(*attrs)  # Any number of inputs possible
+- decomp matrix:Op.decompose_matrix(in_matrix)
+- comp matrix:  Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
 - blend:        Op.blend(attr_a, attr_b, blend_value=0.5)
 - remap:        Op.remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1)
 - clamp:        Op.clamp(attr_a, min_value=0, max_value=1)
+- choice:       Op.choice(*attrs, selector=1)  # Any number of inputs possible
+
 
 Example:
     ::
@@ -173,7 +179,7 @@ class OperatorMetaClass(object):
                 ],
                 "output": ["distance"],
             },
-            "distanceBetweenMatrices": {
+            "matrix_distance": {
                 "node": "distanceBetween",
                 "inputs": [
                     ["inMatrix1"],
@@ -214,7 +220,7 @@ class OperatorMetaClass(object):
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": 3,
             },
-            "multMatrix": {
+            "mult_matrix": {
                 "node": "multMatrix",
                 "inputs": [
                     [
@@ -224,7 +230,7 @@ class OperatorMetaClass(object):
                 "multi_index": True,
                 "output": ["matrixSum"],
             },
-            "decomposeMatrix": {
+            "decompose_matrix": {
                 "node": "decomposeMatrix",
                 "inputs": [
                     ["inputMatrix"],
@@ -236,7 +242,7 @@ class OperatorMetaClass(object):
                     "outputShearX", "outputShearY", "outputShearZ",
                 ],
             },
-            "composeMatrix": {
+            "compose_matrix": {
                 "node": "composeMatrix",
                 "inputs": [
                     ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
@@ -258,7 +264,7 @@ class OperatorMetaClass(object):
                 "multi_index": True,
                 "output": ["output"],
             },
-            "normalizeVector": {
+            "normalize_vector": {
                 "node": "vectorProduct",
                 "inputs": [
                     ["input1X", "input1Y", "input1Z"],
@@ -414,7 +420,7 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('length', attr_a, attr_b)
 
     @staticmethod
-    def distanceBetweenMatrices(matrix_a, matrix_b):
+    def matrix_distance(matrix_a, matrix_b):
         """
         Create distanceBetween-node hooked up to inMatrix attrs
 
@@ -428,7 +434,7 @@ class OperatorMetaClass(object):
         Example:
             >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
         """
-        return _create_and_connect_node('distanceInMatrix', matrix_a, matrix_b)
+        return _create_and_connect_node('matrix_distance', matrix_a, matrix_b)
 
     @staticmethod
     def clamp(attr_a, min_value=0, max_value=1):
@@ -507,7 +513,7 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('cross', attr_a, attr_b, normalize)
 
     @staticmethod
-    def normalizeVector(in_vector, normalize=True):
+    def normalize_vector(in_vector, normalize=True):
         """
         Create vectorProduct-node to normalize the given vector
 
@@ -519,10 +525,10 @@ class OperatorMetaClass(object):
             Node-object with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.normalizeVector(Node("pCube.t"))
+            >>> Op.normalize_vector(Node("pCube.t"))
         """
         # Making normalize a flag allows the user to connect attributes to it
-        return _create_and_connect_node('normalizeVector', in_vector, normalize)
+        return _create_and_connect_node('normalize_vector', in_vector, normalize)
 
     @staticmethod
     def average(*attrs):
@@ -541,7 +547,7 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('average', *attrs)
 
     @staticmethod
-    def multMatrix(*attrs):
+    def mult_matrix(*attrs):
         """
         Create multMatrix-node for multiplying matrices
 
@@ -553,18 +559,18 @@ class OperatorMetaClass(object):
 
         Example:
             out = Node('pSphere')
-            matrix_mult = Op.multMatrix(
+            matrix_mult = Op.mult_matrix(
                 Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
             )
-            decomp = Op.decomposeMatrix(matrix_mult)
+            decomp = Op.decompose_matrix(matrix_mult)
             out.t = decomp.outputTranslate
             out.r = decomp.outputRotate
             out.s = decomp.outputScale
         """
-        return _create_and_connect_node('multMatrix', *attrs)
+        return _create_and_connect_node('mult_matrix', *attrs)
 
     @staticmethod
-    def decomposeMatrix(in_matrix):
+    def decompose_matrix(in_matrix):
         """
         Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
 
@@ -577,15 +583,15 @@ class OperatorMetaClass(object):
         Example:
             driver = Node('pCube1')
             driven = Node('pSphere1')
-            decomp = Op.decomposeMatrix(driver.worldMatrix)
+            decomp = Op.decompose_matrix(driver.worldMatrix)
             driven.t = decomp.outputTranslate
             driven.r = decomp.outputRotate
             driven.s = decomp.outputScale
         """
-        return _create_and_connect_node('decomposeMatrix', in_matrix)
+        return _create_and_connect_node('decompose_matrix', in_matrix)
 
     @staticmethod
-    def composeMatrix(
+    def compose_matrix(
             t=0, r=0, s=1, sh=0, ro=0,
             translate=None, rotate=None, scale=None, shear=None, rotateOrder=None,
             useEulerRotation=True,
@@ -608,9 +614,9 @@ class OperatorMetaClass(object):
         Example:
             in_a = Node('pCube1')
             in_b = Node('pCube2')
-            decomp_a = Op.decomposeMatrix(in_a.worldMatrix)
-            decomp_b = Op.decomposeMatrix(in_b.worldMatrix)
-            Op.composeMatrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
+            decomp_a = Op.decompose_matrix(in_a.worldMatrix)
+            decomp_b = Op.decompose_matrix(in_b.worldMatrix)
+            Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
         """
         if translate is not None:
             t = translate
@@ -623,7 +629,7 @@ class OperatorMetaClass(object):
         if rotateOrder is not None:
             ro = rotateOrder
 
-        return _create_and_connect_node('composeMatrix', t, r, s, sh, ro, useEulerRotation)
+        return _create_and_connect_node('compose_matrix', t, r, s, sh, ro, useEulerRotation)
 
     @staticmethod
     def choice(*inputs, **kwargs):
