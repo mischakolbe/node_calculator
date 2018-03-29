@@ -24,29 +24,6 @@ Example:
         with noca.Tracer(pprint_trace=True) as tracer:
             e = b.customAttr.as_float(value=c.tx)
             a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
-
-ToDo:
-    - Try to reduce connections of compound-attributes (plusMinusAverage, etc.)
-    - Not depend on name of object..?
-    - Add short, byte, vector, matrix, ... attributes
-    - Attributes currently always unravel. That is not always desirable!
-      For example choice-nodes should pass through EXACTLY what is given/asked!
-      But these different cases are hard to detect right now (what is connected to what)
-      Currently connecting a.t to choice-node connects a.tz and b.t = choice.output
-      connects choice.output to all 3 directions (b.tx, b.ty, b.tz).
-      Should connect this way: a.t -> choice.input[0] and choice.output -> b.t
-
-      Given conn A to B: unravelling A doesn't make sense if B doesn't get unravelled.
-      A type-query with excluded node-types for unravelling might help? Not perfect either...
-    - It's currently impossible to access indexed attributes:
-      choice.input[0] = a.tx  # This won't do anything, because the index bombs
-      Add setting of values by using index: a.attrs[0] = 3.5
-      Might need an Attr-Class that allows to identify attrs as such! Otherwise it's a
-      normal list indexing!
-    - Add getAttr to Tracer. Maybe would need ID for each Node-object to keep track of values?
-      Otherwise a getAttr-result becomes a normal int/float! Not distinguishable anymore and
-      therefore variables within Tracer become impossible. With IDs there could be a check
-      for which Node-object is evaluated and that object could be identified
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -67,7 +44,8 @@ reload(logger)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # LOAD NECESSARY PLUGINS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-cmds.loadPlugin("matrixNodes", quiet=True)
+for required_plugin in ["matrixNodes"]:
+    cmds.loadPlugin(required_plugin, quiet=True)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1083,7 +1061,7 @@ class Node(object):
             The Node-instance with the node and new attribute
 
         Example:
-            >>> Node("pCube1").userAttr.as_bool(value=True)
+            >>> Node("pCube1").add_bool(value=True)
         """
         return self._add_traced_attr("bool", name, **kwargs)
 
@@ -1099,7 +1077,7 @@ class Node(object):
             The Node-instance with the node and new attribute
 
         Example:
-            >>> Node("pCube1").userAttr.as_int(value=123)
+            >>> Node("pCube1").add_int(value=123)
         """
         return self._add_traced_attr("int", name, **kwargs)
 
@@ -1115,7 +1093,7 @@ class Node(object):
             The Node-instance with the node and new attribute
 
         Example:
-            >>> Node("pCube1").userAttr.as_float(value=3.21)
+            >>> Node("pCube1").add_float(value=3.21)
         """
         return self._add_traced_attr("float", name, **kwargs)
 
@@ -1133,7 +1111,7 @@ class Node(object):
             The Node-instance with the node and new attribute
 
         Example:
-            >>> Node("pCube1").userAttr.as_enum(cases=["A", "B", "C"], value=2)
+            >>> Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
         """
         if cases is not None:
             enumName = cases
@@ -1956,6 +1934,7 @@ def _get_unravelled_value(input_val):
                 _get_unravelled_plug("{}.{}".format(input_val.node, attr))
                 for attr in input_val.attrs
             ]
+
             if len(unravelled_attrs) > 1:
                 return unravelled_attrs
 
