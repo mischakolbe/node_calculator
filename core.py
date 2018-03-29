@@ -42,8 +42,20 @@ reload(logger)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-<<<<<<< HEAD
-=======
+# AUTHORSHIP
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+__author__ = "Mischa Kolbe"
+__credits__ = [
+    "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner",
+    "Niels Kleinheinz"
+]
+__version__ = "1.1.2"
+__maintainer__ = "Mischa Kolbe"
+__email__ = "mischakolbe@gmail.com"
+__updated__ = "2018 03 26"
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # LOAD NECESSARY PLUGINS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 for required_plugin in ["matrixNodes"]:
@@ -56,21 +68,6 @@ for required_plugin in ["matrixNodes"]:
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.WARN)
 log = logger.log
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->>>>>>> 7e4e142c4fbd47c9493a00cfc7f7b496908a72e0
-# AUTHORSHIP
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-__author__ = "Mischa Kolbe"
-__credits__ = [
-    "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner",
-    "Niels Kleinheinz"
-]
-__version__ = "1.1.2"
-__maintainer__ = "Mischa Kolbe"
-__email__ = "mischakolbe@gmail.com"
-__updated__ = "2018 03 26"
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
