@@ -8,9 +8,12 @@ Turn those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr into r
 Major change merged on 30th of March 2018. Changing from a single file to a module (folder).
 
 Before:
-import node_calculator as noca
+
+~~import node_calculator as noca~~ 
+
 Now:
-from node_calculator import core as noca
+
+**from node_calculator import core as noca**
 
 ### Features:
 * Supports
