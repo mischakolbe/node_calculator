@@ -1,70 +1,65 @@
 """
-Module with overloaded base types (int, str, float, ...) that allow storing metadata
+Module with custom base types (int, str, float, ...) that allow storing metadata
 
+Creating a child-class for each variable type allows to store metadata on variables.
+For example:
+DOES NOT WORK:
+a = 1
+a.metadata = "metadata"
+AttributeError: 'int' object has no attribute 'metadata'
+
+WORKS:
+a = var(1)
+a.metadata = "metadata"
+print a.metadata
+>>> "metadata"
+print a
+>>> 1
+print a.basetype
+>>> <type 'int'>
 """
 
 
-def create_class(class_type):
+def create_metadata_var_class(class_type):
     """
     Closure to create classes for all types
     """
-    # Inheritance for dictionaries are complicated: Can't catch metadata easily!
-    if class_type is dict:
-        raise NotImplementedError("MetaVariables can NOT be dictionary!")
-
-    # Can't inherit bool: TypeError: type 'bool' is not an acceptable base type
+    # Can't inherit bool (TypeError: 'bool' not acceptable base type). Redirect to integer!
     if class_type is bool:
-        # Redirecting bool to an integer
         class_type = int
 
-    # If dealing with hashable types: Override __new__
-    if class_type.__hash__:
-        # int, str, float, ... are hashable (= immutable for our purposes)
-        class NewClass(class_type):
-            def __new__(self, value, metadata):
-                return class_type.__new__(self, value)
+    class MetadataVarOfGivenType(class_type):
+        def __init__(self, *args, **kwargs):
+            """ Leave the init method unchanged """
+            class_type.__init__(self, *args, **kwargs)
 
-            def __init__(self, value, metadata):
-                class_type.__init__(value)
-                self.metadata = metadata
+        @property
+        def basetype(self):
+            """ Convenience property to access the base type easily """
+            return class_type
 
-            @property
-            def basetype(self):
-                return class_type
-
-    else:
-        class NewClass(class_type):
-            def __init__(self, args, metadata):
-                class_type.__init__(self, args)
-                self.metadata = metadata
-
-            @property
-            def basetype(self):
-                return class_type
-
-    return NewClass
+    return MetadataVarOfGivenType
 
 
 def var(value, metadata=""):
-    value_type = type(value)
+    # Construct the class name out of the type of the given value
+    class_name = "{}MetadataVar".format(type(value).__name__.capitalize())
 
-    class_name = "{}Var".format(value_type.__name__.capitalize())
     if class_name not in globals():
-        # Create a new instance of the
-        ReturnClass = create_class(value_type)
-        # Setting __name__ allows to use the variable class_name as the actual name for the class
+        # If the necessary class type doesn't exist in the globals yet: Create it
+        ReturnClass = create_metadata_var_class(type(value))
+
+        # Setting __name__ sets the class name so it's not "ReturnClass" for all types!
         ReturnClass.__name__ = class_name
+        # Add the new type to the globals
         globals()[class_name] = ReturnClass
+
     else:
+        # If the necessary class type already exists: Return it from the globals
         ReturnClass = globals()[class_name]
 
-    # Return a new instance of the specified type with the given value and metadata
-    return_value = ReturnClass(value, metadata)
-    # return_value.metadata = "asdfasdf"
+    # Create a new instance of the specified type with the given value and metadata
+    return_value = ReturnClass(value)
+    return_value.metadata = metadata
 
     return return_value
-
-
-# a = var(1, "bla")
-# print a
-# print a.metadata

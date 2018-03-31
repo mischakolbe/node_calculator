@@ -14,11 +14,15 @@ else:
 
 class TestCore(unittest.TestCase):
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # TEST FOR CORRECT VALUE AND METADATA FOR EACH TYPE
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_bool(self):
         variable = metadata_variables.var(True, "metadata")
         self.assertEqual(variable, True)
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "BoolVar")
+        self.assertEqual(variable.__class__.__name__, "BoolMetadataVar")
         self.assertNotEqual(variable.__class__.__bases__[0], bool)
         self.assertEqual(variable.basetype, int)
         self.assertEqual(variable.__class__.__bases__[0], int)
@@ -27,7 +31,7 @@ class TestCore(unittest.TestCase):
         variable = metadata_variables.var(1, "metadata")
         self.assertEqual(variable, 1)
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "IntVar")
+        self.assertEqual(variable.__class__.__name__, "IntMetadataVar")
         self.assertEqual(variable.basetype, int)
         self.assertEqual(variable.__class__.__bases__[0], int)
 
@@ -35,7 +39,7 @@ class TestCore(unittest.TestCase):
         variable = metadata_variables.var(1.0, "metadata")
         self.assertEqual(variable, 1.0)
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "FloatVar")
+        self.assertEqual(variable.__class__.__name__, "FloatMetadataVar")
         self.assertEqual(variable.basetype, float)
         self.assertEqual(variable.__class__.__bases__[0], float)
 
@@ -43,7 +47,7 @@ class TestCore(unittest.TestCase):
         variable = metadata_variables.var("one", "metadata")
         self.assertEqual(variable, "one")
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "StrVar")
+        self.assertEqual(variable.__class__.__name__, "StrMetadataVar")
         self.assertEqual(variable.basetype, str)
         self.assertEqual(variable.__class__.__bases__[0], str)
 
@@ -51,7 +55,7 @@ class TestCore(unittest.TestCase):
         variable = metadata_variables.var((1, 2, 3), "metadata")
         self.assertEqual(variable, (1, 2, 3))
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "TupleVar")
+        self.assertEqual(variable.__class__.__name__, "TupleMetadataVar")
         self.assertEqual(variable.basetype, tuple)
         self.assertEqual(variable.__class__.__bases__[0], tuple)
 
@@ -59,7 +63,7 @@ class TestCore(unittest.TestCase):
         variable = metadata_variables.var(set([1, 2, 3]), "metadata")
         self.assertEqual(variable, set([1, 2, 3]))
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "SetVar")
+        self.assertEqual(variable.__class__.__name__, "SetMetadataVar")
         self.assertEqual(variable.basetype, set)
         self.assertEqual(variable.__class__.__bases__[0], set)
 
@@ -67,9 +71,21 @@ class TestCore(unittest.TestCase):
         variable = metadata_variables.var([1, 2, 3], "metadata")
         self.assertEqual(variable, [1, 2, 3])
         self.assertEqual(variable.metadata, "metadata")
-        self.assertEqual(variable.__class__.__name__, "ListVar")
+        self.assertEqual(variable.__class__.__name__, "ListMetadataVar")
         self.assertEqual(variable.basetype, list)
         self.assertEqual(variable.__class__.__bases__[0], list)
+
+    def test_dict(self):
+        variable = metadata_variables.var({"one": 1, "two": 2}, "metadata")
+        self.assertEqual(variable, {"one": 1, "two": 2})
+        self.assertEqual(variable.metadata, "metadata")
+        self.assertEqual(variable.__class__.__name__, "DictMetadataVar")
+        self.assertEqual(variable.basetype, dict)
+        self.assertEqual(variable.__class__.__bases__[0], dict)
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # TEST FOR CLASS SINGLETONS FOR EACH TYPE
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_bool_singleton(self):
         variable_a = metadata_variables.var(True, "metadata_a")
@@ -106,9 +122,14 @@ class TestCore(unittest.TestCase):
         variable_b = metadata_variables.var([3, 4], "metadata_b")
         self.assertIs(variable_a.basetype, variable_b.basetype)
 
-    def test_dict(self):
-        with self.assertRaises(NotImplementedError):
-            metadata_variables.var({"a": 1, "b": 2})
+    def test_dict_singleton(self):
+        variable_a = metadata_variables.var({"one": 1}, "metadata_a")
+        variable_b = metadata_variables.var({"two": 2}, "metadata_b")
+        self.assertIs(variable_a.basetype, variable_b.basetype)
+
+    # def test_dict(self):
+    #     with self.assertRaises(NotImplementedError):
+    #         metadata_variables.var({"a": 1, "b": 2})
 
 
 if __name__ == '__main__':
