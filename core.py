@@ -355,7 +355,7 @@ class OperatorMetaClass(object):
         Example:
             ::
 
-                Op.condition(Node("pCube1.tx") => 2, Node("pCube2.ty")+2, 5 - 1234567890)
+                Op.condition(Node("pCube1.tx") >= 2, Node("pCube2.ty")+2, 5 - 1234567890)
                        |    condition-part    |   "if true"-part   | "if false"-part
         """
         # Make sure condition_node is of expected Node-type!
