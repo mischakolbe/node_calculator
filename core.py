@@ -69,21 +69,6 @@ for required_plugin in ["matrixNodes"]:
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SETUP LOGGER
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-logger.clear_handlers()
-logger.setup_stream_handler(level=logger.logging.WARN)
-log = logger.log
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# LOAD NECESSARY PLUGINS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-for required_plugin in ["matrixNodes"]:
-    cmds.loadPlugin(required_plugin, quiet=True)
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PYTHON 2.7 & 3 COMPATIBILITY
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try:
@@ -687,7 +672,7 @@ class Attrs(object):
     def __init__(self, attrs=None):
         """
         """
-        logger.debug("Attrs init method with attrs {}".format(attrs))
+        log.debug("Attrs init method with attrs {}".format(attrs))
 
         if attrs is None:
             self.__dict__["attrs"] = []
@@ -696,7 +681,7 @@ class Attrs(object):
         elif isinstance(attrs, (tuple, list)):
             self.__dict__["attrs"] = attrs
         else:
-            logger.warn("Unrecognised Attrs type for attrs {}".format(attrs))
+            log.warn("Unrecognised Attrs type for attrs {}".format(attrs))
 
     def __str__(self):
         """
@@ -705,7 +690,7 @@ class Attrs(object):
         Returns:
             String of concatenated attrs-attributes
         """
-        logger.debug("Attrs str method with self")
+        log.debug("Attrs str method with self")
 
         return str(self.__dict__["attrs"])
 
@@ -716,7 +701,7 @@ class Attrs(object):
         Returns:
             String of separate elements that make up Node-instance
         """
-        logger.debug("Attrs repr method with self")
+        log.debug("Attrs repr method with self")
 
         return self.__dict__["attrs"]
 
@@ -742,7 +727,7 @@ class Attrs(object):
             index (int): Index of item to be set
             value (Node, str, int, float): desired value for the given index
         """
-        logger.debug("Attrs setitem method with index {} & value {}".format(index, value))
+        log.debug("Attrs setitem method with index {} & value {}".format(index, value))
 
         # self.attrs[index] = value
 
@@ -756,7 +741,7 @@ class Attrs(object):
         Returns:
             Object that is at the desired index
         """
-        logger.debug("Attrs getitem method with index {}".format(index))
+        log.debug("Attrs getitem method with index {}".format(index))
 
         # if isinstance(self.attrs[index], numbers.Real):
         #     return self.attrs[index]
