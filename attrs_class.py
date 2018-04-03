@@ -12,6 +12,8 @@ import numbers
 import logger
 reload(logger)
 
+import om_util
+reload(om_util)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SETUP LOGGER
@@ -83,21 +85,27 @@ class NewAttrs(Atom):
         """
         log.debug("Attrs getitem method with index {}".format(index))
 
-        return NewNode(self.node, self.attrs[index])
+        return NewNode(self.holder_node.mobj, self.attrs[index])
 
 
 class NewNode(Atom):
     """
+    Since new node is directly set up using the given nodes MObject it's no longer
+    possible to create noca.Nodes without the Maya nodes existing(!)
+    This was not very sensible anyways, because as soon as operations on that node
+    are performed that node MUST exist anyways (plug-connections, etc.)
+
         Note:
         Each Node-object has a mandatory node-attribute and an optional attrs-attribute.
         The attribute "attrs" is a keyword!!!
         Node().attrs returns the currently stored node/attrs-combo!
     """
 
-    def __init__(self, node, attrs=None):
+    def __init__(self, node_mobj, attrs=None):
         # Redirect plain values right away to a metadata_value
-        if isinstance(node, numbers.Real):
-            log.warning("Redirecting from NewNode to metadata_values: {}".format(node))
+        if isinstance(node_mobj, numbers.Real):
+            log.warning("Redirecting from NewNode to metadata_values: {}".format(node_mobj))
+            # metadata_varlues.val(node_mobj)
             return
 
         super(NewNode, self).__init__()
@@ -105,20 +113,27 @@ class NewNode(Atom):
         # Handle case where no attrs were given
         if attrs is None:
             # Initialization with "object.attrs" string
-            if "." in node:
-                node, attrs = node.split(".")
+            if "." in node_mobj:
+                node_mobj, attrs = node_mobj.split(".")
             else:
                 attrs = []
+
+        # Make sure node_mobj is an mobj indeed!
+        node_mobj = om_util.get_mobj_of_node(node_mobj)
 
         # Initialize node and attrs instance variable
         # node should be MObject!
         # Using __dict__, because the setattr & getattr methods are overridden!
-        self.__dict__["node"] = node
+        self.__dict__["node_mobj"] = node_mobj
         self.__dict__["held_attrs"] = NewAttrs(self, attrs)
 
     @property
     def attrs(self):
         return self.held_attrs.attrs
+
+    @property
+    def node(self):
+        return om_util.get_long_name_of_mobj(self.node_mobj)
 
     def __getitem__(self, index):
         """
@@ -126,7 +141,7 @@ class NewNode(Atom):
         """
         log.debug("Attrs getitem method with index {}".format(index))
 
-        return NewNode(self.node, self.attrs[index])
+        return NewNode(self.node_mobj, self.attrs[index])
 
     def __repr__(self):
         """
@@ -167,7 +182,7 @@ class NewNode(Atom):
                 log.error("No attributes on requested Node-object! {}".format(self.node))
             return self
         else:
-            return NewNode(self.node, name)
+            return NewNode(self.node_mobj, name)
 
     def __setitem__(self, index, value):
         """
@@ -179,8 +194,15 @@ class NewNode(Atom):
         """
         log.debug("Node setitem method with index {} & value {}".format(index, value))
 
-        _set_or_connect_a_to_b(NewNode(self.node, self.attrs[index]), value)
+        _set_or_connect_a_to_b(NewNode(self.node_mobj, self.attrs[index]), value)
         # self.attrs[index] = value
+
+    def rename(self, new_name):
+        """
+        Mostly for fun: Enabling the renaming of the Maya node.
+        Currently not properly undoable!!
+        """
+        om_util.rename_mobj(self.node_mobj, new_name)
 
 
 def _set_or_connect_a_to_b(obj_a, obj_b):
