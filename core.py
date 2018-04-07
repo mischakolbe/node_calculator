@@ -1,32 +1,143 @@
-"""
-node_calculator - Create a node-network by entering a math-formula.
+"""Create a node-network by entering a math-formula.
 
-Supported operations (defaultValues after '='):
-- Basic math:   +, -, *, /, **
-- condition:    Op.condition(condition, if_part=False, else_part=True)
-- length:       Op.length(attr_a, attr_b=0)
-- average:      Op.average(*attrs)  # Any number of inputs possible
-- dot-product:  Op.dot(attr_a, attr_b=0, normalize=False)
-- cross-product:Op.cross(attr_a, attr_b=0, normalize=False)
-- vector-norm:  Op.normalize_vector(in_vector, normalize=True)
-- mult matrix:  Op.mult_matrix(*attrs)  # Any number of inputs possible
-- decomp matrix:Op.decompose_matrix(in_matrix)
-- comp matrix:  Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
-- blend:        Op.blend(attr_a, attr_b, blend_value=0.5)
-- remap:        Op.remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1)
-- clamp:        Op.clamp(attr_a, min_value=0, max_value=1)
-- choice:       Op.choice(*attrs, selector=1)  # Any number of inputs possible
+:created: 03/04/2018
+:author: Mischa Kolbe <mik@dneg.com>
+:credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly, Adam Vanner, Niels Kleinheinz
+:version: 1.1.3
+
+
+Supported operations:
+    .. code-block:: python
+
+        # basic math
+        +, -, *, /, **
+
+        # condition
+        Op.condition(condition, if_part=False, else_part=True)
+
+        # length
+        Op.length(attr_a, attr_b=0)
+
+        # average
+        Op.average(*attrs)  # Any number of inputs possible
+
+        # dot-product
+        Op.dot(attr_a, attr_b=0, normalize=False)
+
+        # cross-product
+        Op.cross(attr_a, attr_b=0, normalize=False)
+
+        # vector-norm
+        Op.normalize_vector(in_vector, normalize=True)
+
+        # mult matrix
+        Op.mult_matrix(*attrs)  # Any number of inputs possible
+
+        # decomp matrix
+        Op.decompose_matrix(in_matrix)
+
+        # comp matrix
+        Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
+
+        # blend
+        Op.blend(attr_a, attr_b, blend_value=0.5)
+
+        # remap
+        Op.remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1)
+
+        # clamp
+        Op.clamp(attr_a, min_value=0, max_value=1)
+
+        # choice
+        Op.choice(*attrs, selector=1)  # Any number of inputs possible
+
+        # sin
+        Op.sin(attr)
+
+        # cos
+        Op.cos(attr)
+
+        # tan
+        Op.tan(attr)
+
+        # asin
+        Op.asin(attr)
+
+        # acos
+        Op.acos(attr)
+
+        # atan
+        Op.atan(attr)
+
+        # sqrt
+        Op.sqrt(attr)
+
+        # exp
+        Op.exp(attr)
+
+        # ln
+        Op.ln(attr)
+
+        # log2
+        Op.log2(attr)
+
+        # log10
+        Op.log10(attr)
+
+        # pow
+        Op.pow(attr)
+
+        # normalise
+        Op.normalise(attr)
+
+        # hypot
+        Op.hypot(attr)
+
+        # atan2
+        Op.atan2(attr)
+
+        # modulus
+        Op.modulus(attr)
+
+        # abs
+        Op.abs(attr)
+
+
+Note:
+    min/max operations temporary unavailable, due to broken dnMinMax-node:
+        .. code-block:: python
+
+            # min
+            Op.min(*attrs)  # Any number of inputs possible
+
+            # max
+            Op.max(*attrs)  # Any number of inputs possible
+
+            # min_abs
+            Op.min_abs(*attrs)  # Any number of inputs possible
+
+            # max_abs
+            Op.max_abs(*attrs)  # Any number of inputs possible
+
+            # abs_min_abs
+            Op.abs_min_abs(*attrs)  # Any number of inputs possible
+
+            # abs_max_abs
+            Op.abs_max_abs(*attrs)  # Any number of inputs possible
 
 
 Example:
     ::
 
         import node_calculator as noca
+
         a = noca.Node("pCube1")
         b = noca.Node("pCube2")
         c = noca.Node("pCube3")
+
         with noca.Container(name="my_cont", notes="Formula: b.ty-2*c.tz", create=True) as cont:
             a.t = noca.Op.blend(b.ty - 2 * c.tz, c.s, 0.3)
+
         with noca.Tracer(pprint_trace=True) as tracer:
             e = b.customAttr.as_float(value=c.tx)
             a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
@@ -43,22 +154,17 @@ from itertools import izip
 from maya import cmds
 
 # Local imports
-import logger
+from . import logger
 reload(logger)
+from . import lookup_tables
+reload(lookup_tables)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# AUTHORSHIP
+# LOAD NECESSARY PLUGINS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-__author__ = "Mischa Kolbe"
-__credits__ = [
-    "Mischa Kolbe", "Steven Bills", "Marco D'Ambros", "Benoit Gielly", "Adam Vanner",
-    "Niels Kleinheinz"
-]
-__version__ = "2.0.0"
-__maintainer__ = "Mischa Kolbe"
-__email__ = "mischakolbe@gmail.com"
-__updated__ = "2018 03 26"
+for required_plugin in ["matrixNodes"]:
+    cmds.loadPlugin(required_plugin, quiet=True)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,47 +176,12 @@ log = logger.log
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# LOAD NECESSARY PLUGINS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-for required_plugin in ["matrixNodes"]:
-    cmds.loadPlugin(required_plugin, quiet=True)
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PYTHON 2.7 & 3 COMPATIBILITY
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try:
     basestring
 except NameError:
     basestring = str
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# GLOBALS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Dict of all available operations: used node-type, inputs, outputs, etc.
-NODE_LOOKUP_TABLE = {}
-
-# All attribute types that can be created by the node_calculator and their default creation values
-ATTR_LOOKUP_TABLE = {
-    # General settings - Applies to ALL attribute types!
-    "base_attr": {
-        "keyable": True,
-    },
-    # Individual settings - Applies only to that specific type
-    "bool": {
-        "attributeType": "bool",
-    },
-    "int": {
-        "attributeType": "long",
-    },
-    "float": {
-        "attributeType": "double",
-    },
-    "enum": {
-        "attributeType": "enum",
-    },
-}
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -132,191 +203,7 @@ class OperatorMetaClass(object):
         Note:
             name, bases, body are necessary for metaClass to work properly
         """
-        # Initialize the NODE_LOOKUP_TABLE_dictionary with all available operations
-        self._initialize_node_lookup_table()
-
-    def _initialize_node_lookup_table(self):
-        """
-        Fill the global NODE_LOOKUP_TABLE-dictionary with all available operations
-
-        Note:
-            NODE_LOOKUP_TABLE is a dict that holds the data for each available operation:
-            the necessary node-type, its inputs, outputs, etc.
-            This unified data enables to abstract node creation, connection, etc.
-        """
-        global NODE_LOOKUP_TABLE
-
-        NODE_LOOKUP_TABLE = {
-            "blend": {
-                "node": "blendColors",
-                "inputs": [
-                    ["color1R", "color1G", "color1B"],
-                    ["color2R", "color2G", "color2B"],
-                    ["blender"],
-                ],
-                "output": ["outputR", "outputG", "outputB"],
-            },
-            "length": {
-                "node": "distanceBetween",
-                "inputs": [
-                    ["point1X", "point1Y", "point1Z"],
-                    ["point2X", "point2Y", "point2Z"],
-                ],
-                "output": ["distance"],
-            },
-            "matrix_distance": {
-                "node": "distanceBetween",
-                "inputs": [
-                    ["inMatrix1"],
-                    ["inMatrix2"],
-                ],
-                "output": ["distance"],
-            },
-            "clamp": {
-                "node": "clamp",
-                "inputs": [
-                    ["inputR", "inputG", "inputB"],
-                    ["minR", "minG", "minB"],
-                    ["maxR", "maxG", "maxB"],
-                ],
-                "output": ["outputR", "outputG", "outputB"],
-            },
-            "remap": {
-                "node": "setRange",
-                "inputs": [
-                    ["valueX", "valueY", "valueZ"],
-                    ["minX", "minY", "minZ"],
-                    ["maxX", "maxY", "maxZ"],
-                    ["oldMinX", "oldMinY", "oldMinZ"],
-                    ["oldMaxX", "oldMaxY", "oldMaxZ"],
-                ],
-                "output": ["outValueX", "outValueY", "outValueZ"],
-            },
-            "average": {
-                "node": "plusMinusAverage",
-                "inputs": [
-                    [
-                        "input3D[{multi_index}].input3Dx",
-                        "input3D[{multi_index}].input3Dy",
-                        "input3D[{multi_index}].input3Dz"
-                    ],
-                ],
-                "multi_index": True,
-                "output": ["output3Dx", "output3Dy", "output3Dz"],
-                "operation": 3,
-            },
-            "mult_matrix": {
-                "node": "multMatrix",
-                "inputs": [
-                    [
-                        "matrixIn[{multi_index}]",
-                    ],
-                ],
-                "multi_index": True,
-                "output": ["matrixSum"],
-            },
-            "decompose_matrix": {
-                "node": "decomposeMatrix",
-                "inputs": [
-                    ["inputMatrix"],
-                ],
-                "output": [
-                    "outputTranslateX", "outputTranslateY", "outputTranslateZ",
-                    "outputRotateX", "outputRotateY", "outputRotateZ",
-                    "outputScaleX", "outputScaleY", "outputScaleZ",
-                    "outputShearX", "outputShearY", "outputShearZ",
-                ],
-            },
-            "compose_matrix": {
-                "node": "composeMatrix",
-                "inputs": [
-                    ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
-                    ["inputRotateX", "inputRotateY", "inputRotateZ"],
-                    ["inputScaleX", "inputScaleY", "inputScaleZ"],
-                    ["inputShearX", "inputShearY", "inputShearZ"],
-                    ["inputRotateOrder"],
-                    ["useEulerRotation"],
-                ],
-                "output": ["outputMatrix"],
-            },
-            "choice": {
-                "node": "choice",
-                "inputs": [
-                    [
-                        "input[{multi_index}]",
-                    ],
-                ],
-                "multi_index": True,
-                "output": ["output"],
-            },
-            "normalize_vector": {
-                "node": "vectorProduct",
-                "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["normalizeOutput"],
-                ],
-                "output": ["outputX", "outputY", "outputZ"],
-                "operation": 0,
-            }
-        }
-
-        # Fill NODE_LOOKUP_TABLE with condition operations
-        for i, condition_operator in enumerate(["eq", "ne", "gt", "ge", "lt", "le"]):
-            NODE_LOOKUP_TABLE[condition_operator] = {
-                "node": "condition",
-                "inputs": [
-                    ["firstTerm"],
-                    ["secondTerm"],
-                ],
-                # The condition node is a special case!
-                # It gets created during the magic-method-comparison and fully connected after
-                # being passed on to the cond()-method in this OperatorMetaClass
-                "output": [
-                    None
-                ],
-                "operation": i,
-            }
-
-        # Fill NODE_LOOKUP_TABLE with +,- operations
-        for i, add_sub_operator in enumerate(["add", "sub"]):
-            NODE_LOOKUP_TABLE[add_sub_operator] = {
-                "node": "plusMinusAverage",
-                "inputs": [
-                    [
-                        "input3D[{multi_index}].input3Dx",
-                        "input3D[{multi_index}].input3Dy",
-                        "input3D[{multi_index}].input3Dz"
-                    ],
-                ],
-                "multi_index": True,
-                "output": ["output3Dx", "output3Dy", "output3Dz"],
-                "operation": i + 1,
-            }
-
-        # Fill NODE_LOOKUP_TABLE with *,/,** operations
-        for i, mult_div_operator in enumerate(["mul", "div", "pow"]):
-            NODE_LOOKUP_TABLE[mult_div_operator] = {
-                "node": "multiplyDivide",
-                "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["input2X", "input2Y", "input2Z"],
-                ],
-                "output": ["outputX", "outputY", "outputZ"],
-                "operation": i + 1,
-            }
-
-        # Fill NODE_LOOKUP_TABLE with vectorProduct operations
-        for i, vector_product_operator in enumerate(["dot", "cross"]):
-            NODE_LOOKUP_TABLE[vector_product_operator] = {
-                "node": "vectorProduct",
-                "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["input2X", "input2Y", "input2Z"],
-                    ["normalizeOutput"],
-                ],
-                "output": ["outputX", "outputY", "outputZ"],
-                "operation": i + 1,
-            }
+        super(OperatorMetaClass, self).__init__()
 
     @staticmethod
     def condition(condition_node, if_part=False, else_part=True):
@@ -335,7 +222,7 @@ class OperatorMetaClass(object):
             else_part (Node, str, int, float): Value/plug if condition is false
 
         Returns:
-            Node-object with condition-node and outColorR-attribute
+            Node: Instance with condition-node and outColor-attributes
 
         Example:
             ::
@@ -358,9 +245,7 @@ class OperatorMetaClass(object):
 
         max_dim = max([len(_get_unravelled_value_as_list(x)) for x in [if_part, else_part]])
 
-        for i, (condition_node_input, obj_to_connect) in enumerate(
-            zip(condition_inputs, [if_part, else_part])
-        ):
+        for condition_node_input, obj_to_connect in zip(condition_inputs, [if_part, else_part]):
             condition_node_input_list = [
                 (condition_node.node + "." + x) for x in condition_node_input[:max_dim]
             ]
@@ -380,7 +265,7 @@ class OperatorMetaClass(object):
             blend_value (Node, str, int, float): Plug or value defining blend-amount
 
         Returns:
-            Node-object with blend-node and outputR-attribute
+            Node: Instance with blend-node and output-attributes
 
         Example:
             >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
@@ -414,7 +299,7 @@ class OperatorMetaClass(object):
             matrix_b (Node, str): Matrix Plug
 
         Returns:
-            Node-object with distanceBetween-node and distance-attribute
+            Node: Instance with distanceBetween-node and distance-attribute
 
         Example:
             >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
@@ -432,7 +317,7 @@ class OperatorMetaClass(object):
             max_value (Node, int, float, list): max-value for clamp-operation
 
         Returns:
-            Node-object with clamp-node and output-attribute(s)
+            Node: Instance with clamp-node and output-attribute(s)
 
         Example:
             >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
@@ -452,7 +337,7 @@ class OperatorMetaClass(object):
             old_max_value (Node, int, float, list): old max-value for remap-operation
 
         Returns:
-            Node-object with setRange-node and output-attribute(s)
+            Node: Instance with setRange-node and output-attribute(s)
 
         Example:
             >>> Op.remap(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
@@ -472,7 +357,7 @@ class OperatorMetaClass(object):
             normalize (Node, boolean): Whether resulting vector should be normalized
 
         Returns:
-            Node-object with vectorProduct-node and output-attribute(s)
+            Node: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
             >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
@@ -490,7 +375,7 @@ class OperatorMetaClass(object):
             normalize (Node, boolean): Whether resulting vector should be normalized
 
         Returns:
-            Node-object with vectorProduct-node and output-attribute(s)
+            Node: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
             >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
@@ -507,7 +392,7 @@ class OperatorMetaClass(object):
             normalize (Node, boolean): Whether resulting vector should be normalized
 
         Returns:
-            Node-object with vectorProduct-node and output-attribute(s)
+            Node: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
             >>> Op.normalize_vector(Node("pCube.t"))
@@ -524,7 +409,7 @@ class OperatorMetaClass(object):
             attrs (Node, string, list): Any number of inputs to be averaged
 
         Returns:
-            Node-object with plusMinusAverage-node and output-attribute(s)
+            Node: Instance with plusMinusAverage-node and output-attribute(s)
 
         Example:
             >>> Op.average(Node("pCube.t"), [1, 2, 3])
@@ -540,7 +425,7 @@ class OperatorMetaClass(object):
             attrs (Node, string, list): Any number of matrix inputs to be multiplied
 
         Returns:
-            Node-object with multMatrix-node and output-attribute(s)
+            Node: Instance with multMatrix-node and output-attribute(s)
 
         Example:
             out = Node('pSphere')
@@ -563,7 +448,7 @@ class OperatorMetaClass(object):
             in_matrix (Node, string): one matrix attribute to be decomposed
 
         Returns:
-            Node-object with decomposeMatrix-node and output-attribute(s)
+            Node: Instance with decomposeMatrix-node and output-attribute(s)
 
         Example:
             driver = Node('pCube1')
@@ -576,25 +461,21 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('decompose_matrix', in_matrix)
 
     @staticmethod
-    def compose_matrix(
-            t=0, r=0, s=1, sh=0, ro=0,
-            translate=None, rotate=None, scale=None, shear=None, rotateOrder=None,
-            useEulerRotation=True,
-    ):
+    def compose_matrix(**kwargs):
         """
         Create composeMatrix-node to assemble matrix from components (translation, rotation etc.)
 
         Args:
-            t (Node, str, int, float): translate for matrix composition
-            r (Node, str, int, float): rotate for matrix composition
-            s (Node, str, int, float): scale for matrix composition
-            sh (Node, str, int, float): shear for matrix composition
-            ro (Node, str, int, float): rotateOrder for matrix composition
-            translate, rotate, scale, shear, rotateOrder: Reflect the long names
-                for the flags above. LongName flags take precedence!
+            kwargs: Possible kwargs described below (longName flags take precedence!)
+            translate (Node, str, int, float): [t] translate for matrix composition
+            rotate (Node, str, int, float): [r] rotate for matrix composition
+            scale (Node, str, int, float): [s] scale for matrix composition
+            shear (Node, str, int, float): [sh] shear for matrix composition
+            rotate_order (Node, str, int, float): [ro] rotate_order for matrix composition
+            euler_rotation (bool): Apply Euler filter on rotations
 
         Returns:
-            Node-object with composeMatrix-node and output-attribute(s)
+            Node: Instance with composeMatrix-node and output-attribute(s)
 
         Example:
             in_a = Node('pCube1')
@@ -603,18 +484,25 @@ class OperatorMetaClass(object):
             decomp_b = Op.decompose_matrix(in_b.worldMatrix)
             Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
         """
-        if translate is not None:
-            t = translate
-        if rotate is not None:
-            r = rotate
-        if scale is not None:
-            s = scale
-        if shear is not None:
-            sh = shear
-        if rotateOrder is not None:
-            ro = rotateOrder
 
-        return _create_and_connect_node('compose_matrix', t, r, s, sh, ro, useEulerRotation)
+        translate = kwargs.get("translate", kwargs.get("t", 0))
+        rotate = kwargs.get("rotate", kwargs.get("r", 0))
+        scale = kwargs.get("scale", kwargs.get("s", 1))
+        shear = kwargs.get("shear", kwargs.get("sh", 0))
+        rotate_order = kwargs.get("rotate_order", kwargs.get("ro", 0))
+        euler_rotation = kwargs.get("euler_rotation", True)
+
+        compose_matrix_node = _create_and_connect_node(
+            'compose_matrix',
+            translate,
+            rotate,
+            scale,
+            shear,
+            rotate_order,
+            euler_rotation
+        )
+
+        return compose_matrix_node
 
     @staticmethod
     def choice(*inputs, **kwargs):
@@ -627,7 +515,7 @@ class OperatorMetaClass(object):
             a copy of the same selector for each input
 
         Returns:
-            Node-object with choice-node and output-attribute(s)
+            Node: Instance with choice-node and output-attribute(s)
 
         Example:
             option_a = Node("pCube1")
@@ -644,8 +532,8 @@ class OperatorMetaClass(object):
         return choice_node_obj
 
 
-# Create Operator-class from OperatorMetaClass (check its doc string for reason why)
 class Op(object):
+    """ Create Operator-class from OperatorMetaClass (check its doc string for reason why) """
     __metaclass__ = OperatorMetaClass
 
 
@@ -794,7 +682,7 @@ class Node(object):
         """
         log.debug("Node init method with node {} & attrs {}".format(node, attrs))
 
-        if isinstance(node, numbers.Real) or isinstance(node, (list, tuple)):
+        if isinstance(node, (numbers.Real, list, tuple)):
             self.__dict__["node"] = None
             self.__dict__["attrs"] = node
         # Initialization with "object.attrs" string
@@ -1028,8 +916,10 @@ class Node(object):
 
         if self.node is None:
             return str(self.attrs)
-        else:
-            return str(self.plug())
+        elif self.attrs is None:
+            return str(self.node)
+
+        return str(self.plug())
 
     def __repr__(self):
         """
@@ -1049,7 +939,9 @@ class Node(object):
         Returns:
             Int: 0 if attrs is None, 1 if it's not an array, otherwise len(attrs)
         """
-        log.warn("Node len method used!")
+        log.warn("Using the Node-len method!")
+        if self.attrs is None:
+            return 0
 
         if isinstance(self.attrs, (list, tuple)):
             return len(self.attrs)
@@ -1236,14 +1128,14 @@ class Node(object):
         """
         return self._add_traced_attr("float", name, **kwargs)
 
-    def add_enum(self, name, enumName=["Off", "On"], cases=None, **kwargs):
+    def add_enum(self, name, enum_name="", cases=None, **kwargs):
         """
         Create a boolean-attribute for the given attribute
 
         Args:
             name (str): Name for the new attribute to be created
-            enumName (list, str): User-choices for the resulting enum-attribute
-            cases (list, str): Overrides enumName, which I find a horrific name
+            enum_name (list, str): User-choices for the resulting enum-attribute
+            cases (list, str): Overrides enum_name, which I find a horrific name
             kwargs (dict): User specified attributes to be set for the new attribute
 
         Returns:
@@ -1253,11 +1145,11 @@ class Node(object):
             >>> Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
         """
         if cases is not None:
-            enumName = cases
-        if isinstance(enumName, (list, tuple)):
-            enumName = ":".join(enumName)
+            enum_name = cases
+        if isinstance(enum_name, (list, tuple)):
+            enum_name = ":".join(enum_name)
 
-        return self._add_traced_attr("enum", name, enumName=enumName, **kwargs)
+        return self._add_traced_attr("enum", name, enumName=enum_name, **kwargs)
 
     @classmethod
     def add_to_node_stack(cls, node):
@@ -1341,8 +1233,8 @@ class Node(object):
             return Node(attr)
 
         # Make a copy of the default values for the given attrType
-        attr_variables = ATTR_LOOKUP_TABLE["base_attr"].copy()
-        attr_variables.update(ATTR_LOOKUP_TABLE[attr_type])
+        attr_variables = lookup_tables.ATTR_LOOKUP_TABLE["base_attr"].copy()
+        attr_variables.update(lookup_tables.ATTR_LOOKUP_TABLE[attr_type])
         log.debug("Copied default attr_variables: {}".format(attr_variables))
 
         # Add the attr variable into the dictionary
@@ -1380,11 +1272,13 @@ class Node(object):
         return Node(attr)
 
 
-def _is_valid_maya_attr(attr):
-    if isinstance(attr, basestring) and "." in attr and cmds.objExists(attr):
-        return True
-    else:
-        return False
+def _is_valid_maya_attr(path):
+    """ Check if given attr-path is of an existing Maya attribute """
+    if isinstance(path, basestring) and "." in path:
+        node, attr = path.split(".")
+        return cmds.attributeQuery(attr, node=node, exists=True)
+
+    return False
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1414,10 +1308,7 @@ class Tracer(object):
         Flushes executed_commands_stack (Node-classAttribute) and starts tracing
         """
         # Do not add to stack if unwanted
-        if self.trace:
-            Node.trace_commands = True
-        else:
-            Node.trace_commands = False
+        Node.trace_commands = bool(self.trace)
 
         Node.flush_command_stack()
         Node.traced_nodes = []
@@ -1425,7 +1316,7 @@ class Tracer(object):
 
         return Node.executed_commands_stack
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, value, traceback):
         """
         with-statement; exit-method
         Print all executed commands, if desired
@@ -1468,6 +1359,7 @@ class Container(object):
             self.notes = notes
         self.name = name
         self.create = create
+        self.container_node = None
 
     def __enter__(self):
         """
@@ -1485,7 +1377,7 @@ class Container(object):
         # Returned as the variable after "with Container() as"
         return self.container_node
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, value, traceback):
         """
         with-statement; exit-method
         Stick all nodes that were created within the with-statement into the container
@@ -1535,7 +1427,7 @@ class Container(object):
             node_name = ''.join(e for e in plug_name[0] if e.isalnum())
             attr_name = ''.join(e for e in plug_name[1] if e.isalnum())
             name = node_name + "_I_" + attr_name
-            cmds.container(self.container_node, e=True, pb=(plug, name))
+            cmds.container(self.container_node, edit=True, publishAndBind=(plug, name))
 
         # Add optional notes to the container. notes-attr doesn't exist by default!
         if self.notes:
@@ -1546,7 +1438,7 @@ class Container(object):
                     shortName="nts",
                     dataType="string"
                 )
-            cmds.setAttr(self.container_node + ".notes", str(self.notes), type="string")
+            cmds.setAttr(self.container_node + ".notes", str(self.notes), exc_type="string")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1565,9 +1457,9 @@ def _create_and_connect_node(operation, *args):
     """
     # If a multi_index-attribute is given; create list with it of same length than args
     log.debug("Creating a new {}-operationNode with args: {}".format(operation, args))
-    new_node_inputs = NODE_LOOKUP_TABLE[operation]["inputs"]
-    if NODE_LOOKUP_TABLE[operation].get("multi_index", False):
-        new_node_inputs = len(args) * NODE_LOOKUP_TABLE[operation]["inputs"][:]
+    new_node_inputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"]
+    if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
+        new_node_inputs = len(args) * lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"][:]
 
     # Check dimension-match: args vs. NODE_LOOKUP_TABLE-inputs:
     if len(args) != len(new_node_inputs):
@@ -1583,7 +1475,7 @@ def _create_and_connect_node(operation, *args):
     # Add to created_nodes_stack Node-classAttr. Necessary for container creation!
     Node.add_to_node_stack(new_node)
     # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
-    node_operation = NODE_LOOKUP_TABLE[operation].get("operation", None)
+    node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
         _set_or_connect_a_to_b(new_node + ".operation", node_operation)
 
@@ -1595,7 +1487,7 @@ def _create_and_connect_node(operation, *args):
 
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
-        if NODE_LOOKUP_TABLE[operation].get("multi_index", False):
+        if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
         # Support for single-dimension-inputs in the NODE_LOOKUP_TABLE. For example:
@@ -1620,7 +1512,7 @@ def _create_and_connect_node(operation, *args):
 
     # Support for single-dimension-outputs in the NODE_LOOKUP_TABLE. For example:
     # distanceBetween returns 1D attr, no matter what dimension the inputs were
-    outputs = NODE_LOOKUP_TABLE[operation]["output"]
+    outputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["output"]
     if len(outputs) == 1:
         return Node(new_node, outputs)
     else:
@@ -1677,7 +1569,7 @@ def _create_node_name(operation, *args):
         "nc",  # Common node_calculator-prefix
         operation.upper(),  # Operation type
         "_".join(node_name),  # Involved args
-        NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
+        lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
     ])
 
     return name
@@ -1688,7 +1580,7 @@ def _traced_create_node(operation, involved_attributes):
     Maya-createNode that adds the executed command to the command_stack if Tracer is active
     Creates a named node of appropriate type for the necessary operation
     """
-    node_type = NODE_LOOKUP_TABLE[operation]["node"]
+    node_type = lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]
     node_name = _create_node_name(operation, involved_attributes)
     new_node = cmds.ls(cmds.createNode(node_type, name=node_name), long=True)[0]
 
@@ -1703,7 +1595,7 @@ def _traced_create_node(operation, involved_attributes):
         Node.add_to_command_stack(
             "{var} = cmds.createNode('{op}', name='{name}')".format(
                 var=current_variable,
-                op=NODE_LOOKUP_TABLE[operation]["node"],
+                op=lookup_tables.NODE_LOOKUP_TABLE[operation]["node"],
                 name=new_node
             )
         )
@@ -1769,14 +1661,18 @@ def _traced_set_attr(attr, value=None, **kwargs):
         if value is not None:
             if joined_kwargs:
                 # If both value and kwargs were given
-                Node.add_to_command_stack("cmds.setAttr({}, {}, edit=True, {})".format(attr, value, joined_kwargs))
+                Node.add_to_command_stack(
+                    "cmds.setAttr({}, {}, edit=True, {})".format(attr, value, joined_kwargs)
+                )
             else:
                 # If only a value was given
                 Node.add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
         else:
             if joined_kwargs:
                 # If only kwargs were given
-                Node.add_to_command_stack("cmds.setAttr({}, edit=True, {})".format(attr, joined_kwargs))
+                Node.add_to_command_stack(
+                    "cmds.setAttr({}, edit=True, {})".format(attr, joined_kwargs)
+                )
             else:
                 # If neither value or kwargs were given it was a redundant setAttr. Don't store!
                 pass
@@ -1883,7 +1779,7 @@ def _traced_connect_attr(attr_a, attr_b):
 
         # Add the connectAttr-command to the command stack
         Node.add_to_command_stack(
-            "cmds.connectAttr({0[0]}, {0[1]}, force=True)".format(formatted_attrs)
+            "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_attrs)
         )
 
 
