@@ -196,6 +196,14 @@ class OperatorMetaClass(object):
     is more elegant (thanks, @sbi!).
     """
 
+    def __init__(self, name, bases, body):
+        """
+        Operator-class constructor
+        Note:
+            name, bases, body are necessary for metaClass to work properly
+        """
+        super(OperatorMetaClass, self).__init__()
+
     @staticmethod
     def condition(condition_node, if_part=False, else_part=True):
         """
