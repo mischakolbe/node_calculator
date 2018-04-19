@@ -170,7 +170,7 @@ class NewNode(Atom):
     def __getattr__(self, name):
         """
         A getattr of a Node-object returns a Node-object. Always returns a new
-        Node-instance, EXCEPT when keyword "attr" is used to return itself!
+        Node-instance, EXCEPT when keyword "attrs" is used to return itself!
 
         __getattr__ does NOT get called if attribute already exists on Node:
         self.held_attrs does not call __getattr__!
@@ -179,7 +179,7 @@ class NewNode(Atom):
 
         if name == "attrs":
             if not len(self.attrs):
-                log.error("No attributes on requested Node-object! {}".format(self.node))
+                log.warning("No attributes on requested Node-object! {}".format(self.node))
             return self
         else:
             return NewNode(self.node_mobj, name)
@@ -197,12 +197,12 @@ class NewNode(Atom):
         _set_or_connect_a_to_b(NewNode(self.node_mobj, self.attrs[index]), value)
         # self.attrs[index] = value
 
-    def rename(self, new_name):
+    def rename(self, name):
         """
         Mostly for fun: Enabling the renaming of the Maya node.
         Currently not properly undoable!!
         """
-        om_util.rename_mobj(self.node_mobj, new_name)
+        om_util.rename_mobj(self.node_mobj, name)
 
 
 def _set_or_connect_a_to_b(obj_a, obj_b):
