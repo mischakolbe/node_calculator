@@ -1,5 +1,23 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# IMPORTS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Python imports
+
+# Third party imports
 import maya.api.OpenMaya as om
 from maya import cmds
+
+# Local imports
+from . import logger
+reload(logger)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SETUP LOGGER
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+logger.clear_handlers()
+logger.setup_stream_handler(level=logger.logging.DEBUG)
+log = logger.log
 
 
 def get_name_of_mobj(mobj):
@@ -29,8 +47,14 @@ def get_mobj_from_mdag_path(mdag):
 
 def get_long_name_of_mobj(mobj, full=False):
     """
+    If the given mobj corresponds to a dag-path node: Return the partial or full path
+    (depending on the full-flag). Otherwise return the name of the mobj directly.
+
     full takes precedence - otherwise partial.
     """
+    if not isinstance(mobj, om.MObject):
+        log.error("Given mobj {} is not an instance of om.MObject".format(mobj))
+
     mdag_path = get_mdag_path_of_mobj(mobj)
     if mdag_path:
         if full:
@@ -38,7 +62,7 @@ def get_long_name_of_mobj(mobj, full=False):
         else:
             dag_path = mdag_path.partialPathName()
     else:
-        dag_path = None
+        dag_path = get_name_of_mobj(mobj)
 
     return dag_path
 

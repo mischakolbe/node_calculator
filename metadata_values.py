@@ -43,11 +43,12 @@ def create_metadata_val_class(class_type):
     return MetadataValueClass
 
 
-def val(value, metadata=None):
+def val(value, metadata=None, created_by_user=True):
     """
     Args:
         value (bool, int, float, list, dict, ...): Value of any data type
         metadata (bool, int, float, list, ...): Any data that should be attached to this value
+        created_by_user (bool): Whether this val was created by the user or via script
 
     Returns:
         New instance of MetadataValue whose baseclass matches the base-type of the given value
@@ -101,5 +102,6 @@ def val(value, metadata=None):
     # Create a new instance of the specified type with the given value and metadata
     return_value = MetadataValue(value)
     return_value.metadata = metadata
+    return_value.created_by_user = created_by_user
 
     return return_value

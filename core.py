@@ -1,146 +1,20 @@
 """Create a node-network by entering a math-formula.
 
-:created: 03/04/2018
-:author: Mischa Kolbe <mik@dneg.com>
-:credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly, Adam Vanner, Niels Kleinheinz
-:version: 1.1.3
+# Scenarios:
 
+# User creates a NewNode:
+# noca.NewNode("A.tx") OR noca.NewNode("A") OR noca.NewNode("A", ["tx", "tz"])
+# -> NewNode with MObject of "A" and attributes
 
-Supported operations:
-    .. code-block:: python
+# User creates a variable of a type other than NewNode:
+# noca.NewNode(10.2) OR noca.var(25)
+# -> var with value and possible metadata (user_input = True (?))
 
-        # basic math
-        +, -, *, /, **
+# User creates a Mixed input:
+# noca.NewNode("A.tx", "B.ty") OR noca.Collection([4, 2, "B.ty"])
+# -> Collection with NewNode and var elements
+# -> When dealing with a Collection the unravelling would have to unravel this Collection first
 
-        # condition
-        Op.condition(condition, if_part=False, else_part=True)
-
-        # length
-        Op.length(attr_a, attr_b=0)
-
-        # average
-        Op.average(*attrs)  # Any number of inputs possible
-
-        # dot-product
-        Op.dot(attr_a, attr_b=0, normalize=False)
-
-        # cross-product
-        Op.cross(attr_a, attr_b=0, normalize=False)
-
-        # vector-norm
-        Op.normalize_vector(in_vector, normalize=True)
-
-        # mult matrix
-        Op.mult_matrix(*attrs)  # Any number of inputs possible
-
-        # decomp matrix
-        Op.decompose_matrix(in_matrix)
-
-        # comp matrix
-        Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
-
-        # blend
-        Op.blend(attr_a, attr_b, blend_value=0.5)
-
-        # remap
-        Op.remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1)
-
-        # clamp
-        Op.clamp(attr_a, min_value=0, max_value=1)
-
-        # choice
-        Op.choice(*attrs, selector=1)  # Any number of inputs possible
-
-        # sin
-        Op.sin(attr)
-
-        # cos
-        Op.cos(attr)
-
-        # tan
-        Op.tan(attr)
-
-        # asin
-        Op.asin(attr)
-
-        # acos
-        Op.acos(attr)
-
-        # atan
-        Op.atan(attr)
-
-        # sqrt
-        Op.sqrt(attr)
-
-        # exp
-        Op.exp(attr)
-
-        # ln
-        Op.ln(attr)
-
-        # log2
-        Op.log2(attr)
-
-        # log10
-        Op.log10(attr)
-
-        # pow
-        Op.pow(attr)
-
-        # normalise
-        Op.normalise(attr)
-
-        # hypot
-        Op.hypot(attr)
-
-        # atan2
-        Op.atan2(attr)
-
-        # modulus
-        Op.modulus(attr)
-
-        # abs
-        Op.abs(attr)
-
-
-Note:
-    min/max operations temporary unavailable, due to broken dnMinMax-node:
-        .. code-block:: python
-
-            # min
-            Op.min(*attrs)  # Any number of inputs possible
-
-            # max
-            Op.max(*attrs)  # Any number of inputs possible
-
-            # min_abs
-            Op.min_abs(*attrs)  # Any number of inputs possible
-
-            # max_abs
-            Op.max_abs(*attrs)  # Any number of inputs possible
-
-            # abs_min_abs
-            Op.abs_min_abs(*attrs)  # Any number of inputs possible
-
-            # abs_max_abs
-            Op.abs_max_abs(*attrs)  # Any number of inputs possible
-
-
-Example:
-    ::
-
-        import node_calculator as noca
-
-        a = noca.Node("pCube1")
-        b = noca.Node("pCube2")
-        c = noca.Node("pCube3")
-
-        with noca.Container(name="my_cont", notes="Formula: b.ty-2*c.tz", create=True) as cont:
-            a.t = noca.Op.blend(b.ty - 2 * c.tz, c.s, 0.3)
-
-        with noca.Tracer(pprint_trace=True) as tracer:
-            e = b.customAttr.as_float(value=c.tx)
-            a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,20 +32,17 @@ from . import logger
 reload(logger)
 from . import lookup_tables
 reload(lookup_tables)
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# LOAD NECESSARY PLUGINS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-for required_plugin in ["matrixNodes"]:
-    cmds.loadPlugin(required_plugin, quiet=True)
+import om_util
+reload(om_util)
+import metadata_values
+reload(metadata_values)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SETUP LOGGER
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 logger.clear_handlers()
-logger.setup_stream_handler(level=logger.logging.WARN)
+logger.setup_stream_handler(level=logger.logging.DEBUG)
 log = logger.log
 
 
@@ -185,790 +56,184 @@ except NameError:
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# OPERATORS
+# ATOM
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class OperatorMetaClass(object):
+class Atom(object):
     """
-    Base class for node_calculator operators: Everything that goes beyond basic operators (+-*/)
-
-    A meta-class was used, because many methods of this class are created on the fly
-    in the __init__ method. First I simply instantiated the class, but a metaclass
-    is more elegant (thanks, @sbi!).
+    Base class for Node and Attrs.
+    Once instantiated this class will have access to the .node and .attrs attributes.
+    Therefore all connections and operations on a Node can live in here.
     """
 
-    def __init__(self, name, bases, body):
-        """
-        Operator-class constructor
-
-        Note:
-            name, bases, body are necessary for metaClass to work properly
-        """
-        super(OperatorMetaClass, self).__init__()
-
-    @staticmethod
-    def condition(condition_node, if_part=False, else_part=True):
-        """
-        Create condition-node
-
-        Note:
-            condition_node must be a Node-object.
-            This Node-object gets automatically created by the overloaded
-            comparison-operators of the Node-class and should not require manual setup!
-            Simply use the usual comparison operators (==, >, <=, etc.) in the first argument.
-
-        Args:
-            condition_node (Node): Condition-statement. Node is automatically created; see notes!
-            if_part (Node, str, int, float): Value/plug if condition is true
-            else_part (Node, str, int, float): Value/plug if condition is false
-
-        Returns:
-            Node: Instance with condition-node and outColor-attributes
-
-        Example:
-            ::
-
-                Op.condition(Node("pCube1.tx") >= 2, Node("pCube2.ty")+2, 5 - 1234567890)
-                       |    condition-part    |   "if true"-part   | "if false"-part
-        """
-        # Make sure condition_node is of expected Node-type!
-        # condition_node was created during comparison of Node-object(s)
-        if not isinstance(condition_node, Node):
-            log.error("{0} isn't Node-instance.".format(condition_node))
-        if cmds.objectType(condition_node.node) != "condition":
-            log.error("{0} isn't of type condition.".format(condition_node))
-
-        condition_inputs = [
-            ["colorIfTrueR", "colorIfTrueG", "colorIfTrueB"],
-            ["colorIfFalseR", "colorIfFalseG", "colorIfFalseB"],
-        ]
-        condition_outputs = ["outColorR", "outColorG", "outColorB"]
-
-        max_dim = max([len(_get_unravelled_value_as_list(x)) for x in [if_part, else_part]])
-
-        for condition_node_input, obj_to_connect in zip(condition_inputs, [if_part, else_part]):
-            condition_node_input_list = [
-                (condition_node.node + "." + x) for x in condition_node_input[:max_dim]
-            ]
-
-            _set_or_connect_a_to_b(condition_node_input_list, obj_to_connect)
-
-        return Node(condition_node.node, condition_outputs[:max_dim])
-
-    @staticmethod
-    def blend(attr_a, attr_b, blend_value=0.5):
-        """
-        Create blendColor-node
-
-        Args:
-            attr_a (Node, str, int, float): Plug or value to blend from
-            attr_b (Node, str, int, float): Plug or value to blend to
-            blend_value (Node, str, int, float): Plug or value defining blend-amount
-
-        Returns:
-            Node: Instance with blend-node and output-attributes
-
-        Example:
-            >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
-        """
-        return _create_and_connect_node('blend', attr_a, attr_b, blend_value)
-
-    @staticmethod
-    def length(attr_a, attr_b=0):
-        """
-        Create distanceBetween-node
-
-        Args:
-            attr_a (Node, str, int, float): Plug or value for point A
-            attr_b (Node, str, int, float): Plug or value for point B
-
-        Returns:
-            Node-object with distanceBetween-node and distance-attribute
-
-        Example:
-            >>> Op.len(Node("pCube.t"), [1, 2, 3])
-        """
-        return _create_and_connect_node('length', attr_a, attr_b)
-
-    @staticmethod
-    def matrix_distance(matrix_a, matrix_b):
-        """
-        Create distanceBetween-node hooked up to inMatrix attrs
-
-        Args:
-            matrix_a (Node, str): Matrix Plug
-            matrix_b (Node, str): Matrix Plug
-
-        Returns:
-            Node: Instance with distanceBetween-node and distance-attribute
-
-        Example:
-            >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
-        """
-        return _create_and_connect_node('matrix_distance', matrix_a, matrix_b)
-
-    @staticmethod
-    def clamp(attr_a, min_value=0, max_value=1):
-        """
-        Create clamp-node
-
-        Args:
-            attr_a (Node, str, int, float): Input value
-            min_value (Node, int, float, list): min-value for clamp-operation
-            max_value (Node, int, float, list): max-value for clamp-operation
-
-        Returns:
-            Node: Instance with clamp-node and output-attribute(s)
-
-        Example:
-            >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
-        """
-        return _create_and_connect_node('clamp', attr_a, min_value, max_value)
-
-    @staticmethod
-    def remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1):
-        """
-        Create setRange-node
-
-        Args:
-            attr_a (Node, str, int, float): Input value
-            min_value (Node, int, float, list): min-value for remap-operation
-            max_value (Node, int, float, list): max-value for remap-operation
-            old_min_value (Node, int, float, list): old min-value for remap-operation
-            old_max_value (Node, int, float, list): old max-value for remap-operation
-
-        Returns:
-            Node: Instance with setRange-node and output-attribute(s)
-
-        Example:
-            >>> Op.remap(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
-        """
-        return _create_and_connect_node(
-            'remap', attr_a, min_value, max_value, old_min_value, old_max_value
-        )
-
-    @staticmethod
-    def dot(attr_a, attr_b=0, normalize=False):
-        """
-        Create vectorProduct-node for vector dot-multiplication
-
-        Args:
-            attr_a (Node, str, int, float, list): Plug or value for vector A
-            attr_b (Node, str, int, float, list): Plug or value for vector B
-            normalize (Node, boolean): Whether resulting vector should be normalized
-
-        Returns:
-            Node: Instance with vectorProduct-node and output-attribute(s)
-
-        Example:
-            >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
-        """
-        return _create_and_connect_node('dot', attr_a, attr_b, normalize)
-
-    @staticmethod
-    def cross(attr_a, attr_b=0, normalize=False):
-        """
-        Create vectorProduct-node for vector cross-multiplication
-
-        Args:
-            attr_a (Node, str, int, float, list): Plug or value for vector A
-            attr_b (Node, str, int, float, list): Plug or value for vector B
-            normalize (Node, boolean): Whether resulting vector should be normalized
-
-        Returns:
-            Node: Instance with vectorProduct-node and output-attribute(s)
-
-        Example:
-            >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
-        """
-        return _create_and_connect_node('cross', attr_a, attr_b, normalize)
-
-    @staticmethod
-    def normalize_vector(in_vector, normalize=True):
-        """
-        Create vectorProduct-node to normalize the given vector
-
-        Args:
-            in_vector (Node, str, int, float, list): Plug or value for vector A
-            normalize (Node, boolean): Whether resulting vector should be normalized
-
-        Returns:
-            Node: Instance with vectorProduct-node and output-attribute(s)
-
-        Example:
-            >>> Op.normalize_vector(Node("pCube.t"))
-        """
-        # Making normalize a flag allows the user to connect attributes to it
-        return _create_and_connect_node('normalize_vector', in_vector, normalize)
-
-    @staticmethod
-    def average(*attrs):
-        """
-        Create plusMinusAverage-node for averaging input attrs
-
-        Args:
-            attrs (Node, string, list): Any number of inputs to be averaged
-
-        Returns:
-            Node: Instance with plusMinusAverage-node and output-attribute(s)
-
-        Example:
-            >>> Op.average(Node("pCube.t"), [1, 2, 3])
-        """
-        return _create_and_connect_node('average', *attrs)
-
-    @staticmethod
-    def mult_matrix(*attrs):
-        """
-        Create multMatrix-node for multiplying matrices
-
-        Args:
-            attrs (Node, string, list): Any number of matrix inputs to be multiplied
-
-        Returns:
-            Node: Instance with multMatrix-node and output-attribute(s)
-
-        Example:
-            out = Node('pSphere')
-            matrix_mult = Op.mult_matrix(
-                Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
-            )
-            decomp = Op.decompose_matrix(matrix_mult)
-            out.t = decomp.outputTranslate
-            out.r = decomp.outputRotate
-            out.s = decomp.outputScale
-        """
-        return _create_and_connect_node('mult_matrix', *attrs)
-
-    @staticmethod
-    def decompose_matrix(in_matrix):
-        """
-        Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
-
-        Args:
-            in_matrix (Node, string): one matrix attribute to be decomposed
-
-        Returns:
-            Node: Instance with decomposeMatrix-node and output-attribute(s)
-
-        Example:
-            driver = Node('pCube1')
-            driven = Node('pSphere1')
-            decomp = Op.decompose_matrix(driver.worldMatrix)
-            driven.t = decomp.outputTranslate
-            driven.r = decomp.outputRotate
-            driven.s = decomp.outputScale
-        """
-        return _create_and_connect_node('decompose_matrix', in_matrix)
-
-    @staticmethod
-    def compose_matrix(**kwargs):
-        """
-        Create composeMatrix-node to assemble matrix from components (translation, rotation etc.)
-
-        Args:
-            kwargs: Possible kwargs described below (longName flags take precedence!)
-            translate (Node, str, int, float): [t] translate for matrix composition
-            rotate (Node, str, int, float): [r] rotate for matrix composition
-            scale (Node, str, int, float): [s] scale for matrix composition
-            shear (Node, str, int, float): [sh] shear for matrix composition
-            rotate_order (Node, str, int, float): [ro] rotate_order for matrix composition
-            euler_rotation (bool): Apply Euler filter on rotations
-
-        Returns:
-            Node: Instance with composeMatrix-node and output-attribute(s)
-
-        Example:
-            in_a = Node('pCube1')
-            in_b = Node('pCube2')
-            decomp_a = Op.decompose_matrix(in_a.worldMatrix)
-            decomp_b = Op.decompose_matrix(in_b.worldMatrix)
-            Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
-        """
-
-        translate = kwargs.get("translate", kwargs.get("t", 0))
-        rotate = kwargs.get("rotate", kwargs.get("r", 0))
-        scale = kwargs.get("scale", kwargs.get("s", 1))
-        shear = kwargs.get("shear", kwargs.get("sh", 0))
-        rotate_order = kwargs.get("rotate_order", kwargs.get("ro", 0))
-        euler_rotation = kwargs.get("euler_rotation", True)
-
-        compose_matrix_node = _create_and_connect_node(
-            'compose_matrix',
-            translate,
-            rotate,
-            scale,
-            shear,
-            rotate_order,
-            euler_rotation
-        )
-
-        return compose_matrix_node
-
-    @staticmethod
-    def choice(*inputs, **kwargs):
-        """
-        Create choice-node to switch between various input attributes
-
-        Args:
-            One or many inputs (any type possible). Optional selector (s=node.attr).
-            Note: Multi index input seems to also require one 'selector' per index. So we package
-            a copy of the same selector for each input
-
-        Returns:
-            Node: Instance with choice-node and output-attribute(s)
-
-        Example:
-            option_a = Node("pCube1")
-            option_b = Node("pCube2")
-            driver_attr = Node("pSphere.tx")
-            choice_node_obj = Op.choice(option_a.tx, option_b.tx, selector=driver_attr)
-            Node("pTorus1").tx = choice_node_obj
-        """
-        choice_node_obj = _create_and_connect_node('choice', *inputs)
-        # Since this is a multi-attr node it's hard to filter out the selector keyword
-        # in a perfect manner. This should do fine though.
-        _set_or_connect_a_to_b(choice_node_obj.selector, kwargs.get("selector", 0))
-
-        return choice_node_obj
-
-
-class Op(object):
-    """ Create Operator-class from OperatorMetaClass (check its doc string for reason why) """
-    __metaclass__ = OperatorMetaClass
+    def __init__(self):
+        super(Atom, self).__init__()
+
+    def connect_something(self):
+        print("Connecting node {} with attrs {}".format(self.node, self.attrs))
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ATTRS
-# Attrs would need to be aware of holding Node, otherwise the setitem can not act as a setAttr for the node with attr!
-
-# Maybe this?
-
-# class Outer(object):
-
-#     def createInner(self):
-#         return Outer.Inner(self)
-
-#     class Inner(object):
-#         def __init__(self, outer_instance):
-#             self.outer_instance = outer_instance
-#             self.outer_instance.somemethod()
-
-#         def inner_method(self):
-#             self.outer_instance.anothermethod()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Attrs(object):
-    def __init__(self, attrs=None):
-        """
-        """
-        log.debug("Attrs init method with attrs {}".format(attrs))
+class Attrs(Atom):
+    """
+    Could have subclassed list, but need to replace most magic methods anyways, so...
+    """
 
-        if attrs is None:
-            self.__dict__["attrs"] = []
-        elif isinstance(attrs, basestring):
-            self.__dict__["attrs"] = [attrs]
-        elif isinstance(attrs, (tuple, list)):
-            self.__dict__["attrs"] = attrs
+    def __init__(self, holder_node, attrs):
+        # super(TheAttr, self).__init__()
+        self.holder_node = holder_node
+
+        if isinstance(attrs, basestring):
+            self.attrs = [attrs]
         else:
-            log.warn("Unrecognised Attrs type for attrs {}".format(attrs))
+            self.attrs = attrs
 
-    def __str__(self):
-        """
-        Pretty print of Attrs class
-
-        Returns:
-            String of concatenated attrs-attributes
-        """
-        log.debug("Attrs str method with self")
-
-        return str(self.__dict__["attrs"])
+    @property
+    def node(self):
+        return self.holder_node.node
 
     def __repr__(self):
         """
         Repr-method for debugging purposes
-
-        Returns:
-            String of separate elements that make up Node-instance
         """
         log.debug("Attrs repr method with self")
 
-        return self.__dict__["attrs"]
+        return self.attrs
 
-    def plug(self):
+    def __str__(self):
         """
-        Helper function to allow easy access to the Node-attributes.
+        Pretty print of Attrs class
+        """
+        log.debug("Attrs str method with self")
 
-        Returns:
-            String of common notation "node.attrs" or None if attrs is undefined!
-        """
-        if self.node is None:
-            return self.attrs
-        elif isinstance(self.attrs, (list, tuple)):
-            return ["{n}.{a}".format(n=self.node, a=a) for a in self.attrs]
-        else:
-            return "{n}.{a}".format(n=self.node, a=self.attrs)
+        return str(self.attrs)
 
     def __setitem__(self, index, value):
         """
         Support indexed assignments for Node-instances with list-attrs
-
-        Args:
-            index (int): Index of item to be set
-            value (Node, str, int, float): desired value for the given index
         """
         log.debug("Attrs setitem method with index {} & value {}".format(index, value))
 
-        # self.attrs[index] = value
+        self.attrs[index] = value
 
     def __getitem__(self, index):
         """
         Support indexed lookup for Node-instances with list-attrs
-
-        Args:
-            index (int): Index of desired item
-
-        Returns:
-            Object that is at the desired index
         """
         log.debug("Attrs getitem method with index {}".format(index))
 
-        # if isinstance(self.attrs[index], numbers.Real):
-        #     return self.attrs[index]
-        # elif self.node is None:
-        #     return Node(self.attrs[index])
-        # else:
-        #     return Node(self.node, self.attrs[index])
+        return Node(self.holder_node.mobj, self.attrs[index])
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NODE
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Node(object):
+class Node(Atom):
     """
-    Base class for node_calculator objects: Components involved in a calculation.
+    Since new node is directly set up using the given nodes MObject it's no longer
+    possible to create noca.Nodes without the Maya nodes existing(!)
+    This was not very sensible anyways, because as soon as operations on that node
+    are performed that node MUST exist anyways (plug-connections, etc.)
 
-    Note:
+        Note:
         Each Node-object has a mandatory node-attribute and an optional attrs-attribute.
         The attribute "attrs" is a keyword!!!
         Node().attrs returns the currently stored node/attrs-combo!
     """
-    # Stack that keeps track of the created nodes. Used for Container-class
-    created_nodes_stack = []
-    # Stack that keeps track of all executed maya-commands. Used for Tracer-class
-    executed_commands_stack = []
-    trace_commands = False
-    traced_nodes = None
-    traced_variables = None
 
-    def __init__(self, node, attrs=None):
+    def __init__(self, node_mobj, attrs=None):
+        log.debug("Node init method with node_mobj {} & attrs {}".format(node_mobj, attrs))
+
+        # Redirect plain values right away to a metadata_value
+        if isinstance(node_mobj, numbers.Real):
+            log.warning("Redirecting from Node to metadata_values: {}".format(node_mobj))
+            metadata_values.val(node_mobj)
+            return
+
+        super(Node, self).__init__()
+
+        # Handle case where no attrs were given
+        if attrs is None:
+            # Initialization with "object.attrs" string
+            if "." in node_mobj:
+                node_mobj, attrs = node_mobj.split(".")
+            else:
+                attrs = []
+
+        # Make sure node_mobj is an mobj indeed!
+        node_mobj = om_util.get_mobj_of_node(node_mobj)
+
+        # Initialize node and attrs instance variable
+        # node should be MObject!
+        # Using __dict__, because the setattr & getattr methods are overridden!
+        self.__dict__["node_mobj"] = node_mobj
+        self.__dict__["held_attrs"] = Attrs(self, attrs)
+
+    @property
+    def attrs(self):
+        return self.held_attrs.attrs
+
+    @property
+    def node(self):
+        return om_util.get_long_name_of_mobj(self.node_mobj)
+
+    def __getitem__(self, index):
         """
-        Node-class constructor
-
-        Note:
-            __setattr__ is changed and the usual "self.node = node" results in a loop.
-            Therefore attributes need to be set directly via __dict__!
-
-        Args:
-            node (str): Represents a Maya node
-            attrs (str): Represents attributes on the node
-
-        Example:
-            ::
-
-                a = Node("pCube1")
-                b = Node("pCube2.ty")
-                c = b.sx   # This is possible, because the "." (dot) invokes a getattr of
-                             object b. This returns a new Node-object consisting of
-                             b.node (="pCube2") and the given attributes (=["sx"])!
+        Support indexed lookup for Node-instances with list-attrs
         """
-        log.debug("Node init method with node {} & attrs {}".format(node, attrs))
+        log.debug("Attrs getitem method with index {}".format(index))
 
-        if isinstance(node, (numbers.Real, list, tuple)):
-            self.__dict__["node"] = None
-            self.__dict__["attrs"] = node
-        # Initialization with "object.attrs" string
-        elif attrs is None and "." in node:
-            node_part, attrs_part = node.split(".")
-            self.__dict__["node"], self.__dict__["attrs"] = node_part, Attrs(attrs_part)
-        # Initialization where node and attribute(optional) are specifically given
-        else:
-            self.__dict__["node"] = node
-            self.__dict__["attrs"] = Attrs(attrs)
-            # if attrs is None:
-            #     self.__dict__["attrs"] = []
-            # elif isinstance(attrs, basestring):
-            #     self.__dict__["attrs"] = [attrs]
-            # else:
-            #     self.__dict__["attrs"] = attrs
+        if len(self.attrs) < index + 1:
+            log.error(
+                "Tried to access attrs index that is outside of range: Max "
+                "index of attrs {} is {}, tried to access index {}.".format(
+                    self.attrs, len(self.attrs)-1, index
+                )
+            )
 
-    def __getattr__(self, name):
+        return Node(self.node_mobj, self.attrs[index])
+
+    def __repr__(self):
         """
-        A getattr of a Node-object returns a Node-object. Always returns a new
-        Node-instance, EXCEPT when keyword "attr" is used to return itself!
-
-        Args:
-            name (str): Name of requested attribute
-
-        Returns:
-            New Node-object OR itself, if keyword "attr" was used!
-
-        Example:
-            ::
-
-                a = Node("pCube1") # Create new Node-object
-                a.tx  # invokes __getattr__ and returns a new Node-object.
-                        It's the same as typing Node("a.tx")
+        Repr-method for debugging purposes
         """
-        log.debug("Node getattr method with name".format(name))
+        log.debug("Attrs repr method with self")
 
-        if name == "attrs":
-            if not len(self.attrs):
-                log.error("No attributes on requested Node-object! {}".format(self.node))
-            return self
-        else:
-            return Node(self.node, name)
+        return "(> {}, {} <)".format(self.node, self.attrs)
+
+    def __str__(self):
+        """
+        Pretty print of Attrs class
+        """
+        log.debug("Attrs str method with self")
+
+        return "Node instance with node {} and attrs {}".format(self.node, self.attrs)
 
     def __setattr__(self, name, value):
         """
         Set or connect attribute (name) to the given value.
-
-        Note:
-            setattr is invoked by equal-sign. Does NOT work without attribute given:
-            a = Node("pCube1.ty")  # Initialize Node-object with attribute given
-            a.ty = 7  # Works fine if attribute is specifically called
-            a = 7  # Does NOT work! It looks like the same operation as above,
-                     but here Python calls the assignment operation, NOT setattr.
-                     The assignment-operation can't be overridden. Sad but true.
-
-        Args:
-            name (str): Name of the attribute to be set
-            value (Node, str, int, float, list, tuple): Connect attribute to this
-                object or set attribute to this value/array
-
-        Example:
-            ::
-
-                a = Node("pCube1") # Create new Node-object
-                a.tx = 7  # Set pCube1.tx to the value 7
-                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
-                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
         """
         log.debug("Node setattr method with name {} & value {}".format(name, value))
 
         _set_or_connect_a_to_b(self.__getattr__(name), value)
 
-    def __add__(self, other):
+    def __getattr__(self, name):
         """
-        Regular addition operator.
+        A getattr of a Node-object returns a Node-object. Always returns a new
+        Node-instance, EXCEPT when keyword "attrs" is used to return itself!
 
-        Example:
-            >>> Node("pCube1.ty") + 4
+        __getattr__ does NOT get called if attribute already exists on Node:
+        self.held_attrs does not call __getattr__!
         """
-        return _create_and_connect_node("add", self, other)
+        log.debug("Node getattr method with name {}".format(name))
 
-    def __radd__(self, other):
-        """
-        Reflected addition operator.
-        Fall-back method in case regular addition is not defined & fails.
-
-        Example:
-            >>> 4 + Node("pCube1.ty")
-        """
-        return _create_and_connect_node("add", other, self)
-
-    def __sub__(self, other):
-        """
-        Regular subtraction operator.
-
-        Example:
-            >>> Node("pCube1.ty") - 4
-        """
-        return _create_and_connect_node("sub", self, other)
-
-    def __rsub__(self, other):
-        """
-        Reflected subtraction operator.
-        Fall-back method in case regular subtraction is not defined & fails.
-
-        Example:
-            >>> 4 - Node("pCube1.ty")
-        """
-        return _create_and_connect_node("sub", other, self)
-
-    def __mul__(self, other):
-        """
-        Regular multiplication operator.
-
-        Example:
-            >>> Node("pCube1.ty") * 4
-        """
-        return _create_and_connect_node("mul", self, other)
-
-    def __rmul__(self, other):
-        """
-        Reflected multiplication operator.
-        Fall-back method in case regular multiplication is not defined & fails.
-
-        Example:
-            >>> 4 * Node("pCube1.ty")
-        """
-        return _create_and_connect_node("mul", other, self)
-
-    def __div__(self, other):
-        """
-        Regular division operator.
-
-        Example:
-            >>> Node("pCube1.ty") / 4
-        """
-        return _create_and_connect_node("div", self, other)
-
-    def __rdiv__(self, other):
-        """
-        Reflected division operator.
-        Fall-back method in case regular division is not defined & fails.
-
-        Example:
-            >>> 4 / Node("pCube1.ty")
-        """
-        return _create_and_connect_node("div", other, self)
-
-    def __pow__(self, other):
-        """
-        Regular power operator.
-
-        Example:
-            >>> Node("pCube1.ty") ** 4
-        """
-        return _create_and_connect_node("pow", self, other)
-
-    def __rpow__(self, other):
-        """
-        Reflected power operator.
-        Fall-back method in case regular power is not defined & fails.
-
-        Example:
-            >>> 4 ** Node("pCube1.ty")
-        """
-        return _create_and_connect_node("pow", other, self)
-
-    def __eq__(self, other):
-        """
-        Equality operator: ==
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        return self._compare(other, "eq")
-
-    def __ne__(self, other):
-        """
-        Inequality operator: !=
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        return self._compare(other, "ne")
-
-    def __gt__(self, other):
-        """
-        Greater than operator: >
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        return self._compare(other, "gt")
-
-    def __ge__(self, other):
-        """
-        Greater equal operator: >=
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        return self._compare(other, "ge")
-
-    def __lt__(self, other):
-        """
-        Less than operator: <
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        return self._compare(other, "lt")
-
-    def __le__(self, other):
-        """
-        Less equal operator: <=
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        return self._compare(other, "le")
-
-    def __str__(self):
-        """
-        Pretty print of the class
-
-        Returns:
-            String of concatenated node- & attrs-attributes
-        """
-        log.debug("Node str method with self")
-
-        if self.node is None:
-            return str(self.attrs)
-        elif self.attrs is None:
-            return str(self.node)
-
-        return str(self.plug())
-
-    def __repr__(self):
-        """
-        Repr-method for debugging purposes
-
-        Returns:
-            String of separate elements that make up Node-instance
-        """
-        log.debug("Node repr method with self")
-
-        return "Node('{0}', '{1}')".format(self.node, self.attrs)
-
-    def __len__(self):
-        """
-        Return the length of the Node-attrs variable.
-
-        Returns:
-            Int: 0 if attrs is None, 1 if it's not an array, otherwise len(attrs)
-        """
-        log.warn("Using the Node-len method!")
-        if self.attrs is None:
-            return 0
-
-        if isinstance(self.attrs, (list, tuple)):
-            return len(self.attrs)
+        if name == "attrs":
+            if not len(self.attrs):
+                log.warning("No attributes on requested Node-object! {}".format(self.node))
+            return self
         else:
-            return 1
-
-    def __iter__(self):
-        """
-        Generator to iterate over list of attributes
-
-        Yields:
-            Next item in list of attributes.
-        """
-        log.debug("Node iter method with self")
-
-        i = 0
-        while True:
-            try:
-                if isinstance(self.attrs[i], numbers.Real):
-                    yield self.attrs[i]
-                elif self.node is None:
-                    yield Node(self.attrs[i])
-                else:
-                    yield Node(self.node, self.attrs[i])
-            except IndexError:
-                raise StopIteration
-            i += 1
+            return Node(self.node_mobj, name)
 
     def __setitem__(self, index, value):
         """
@@ -980,26 +245,24 @@ class Node(object):
         """
         log.debug("Node setitem method with index {} & value {}".format(index, value))
 
-        self.attrs[index] = value
+        _set_or_connect_a_to_b(Node(self.node_mobj, self.attrs[index]), value)
+        # self.attrs[index] = value
 
-    def __getitem__(self, index):
+    def rename(self, name):
         """
-        Support indexed lookup for Node-instances with list-attrs
-
-        Args:
-            index (int): Index of desired item
-
-        Returns:
-            Object that is at the desired index
+        Mostly for fun: Enabling the renaming of the Maya node.
+        Currently not properly undoable!!
         """
-        log.debug("Node getitem method with index {}".format(index))
+        om_util.rename_mobj(self.node_mobj, name)
 
-        if isinstance(self.attrs[index], numbers.Real):
-            return self.attrs[index]
-        elif self.node is None:
-            return Node(self.attrs[index])
-        else:
-            return Node(self.node, self.attrs[index])
+    def __add__(self, other):
+        """
+        Regular addition operator.
+
+        Example:
+            >>> Node("pCube1.ty") + 4
+        """
+        return _create_and_connect_node("add", self, other)
 
     def get(self):
         """
@@ -1055,390 +318,16 @@ class Node(object):
         else:
             return "{n}.{a}".format(n=self.node, a=self.attrs)
 
-    def redefine_attrs(self, attrs):
-        """
-        Set the attrs-attribute of the Node-instance to the given attrs.
-
-        Args:
-            attr (str): Name for the new attributes of the Node-object
-
-        Returns:
-            The Node-instance
-
-        Example:
-            ::
-
-            a = Node("pCube1.tx")  # Create the node instance with or without attribute
-            a.redefine_attr("ty")  # Change the attribute of the node instance
-        """
-        log.debug("Node redefine_attr method with attrs {}".format(attrs))
-
-        if isinstance(attrs, basestring):
-            attrs = [attrs]
-
-        self.__dict__["attrs"] = attrs
-
-        return self
-
-    def add_bool(self, name, **kwargs):
-        """
-        Create a boolean-attribute for the given attribute
-
-        Args:
-            name (str): Name for the new attribute to be created
-            kwargs (dict): User specified attributes to be set for the new attribute
-
-        Returns:
-            The Node-instance with the node and new attribute
-
-        Example:
-            >>> Node("pCube1").add_bool(value=True)
-        """
-        return self._add_traced_attr("bool", name, **kwargs)
-
-    def add_int(self, name, **kwargs):
-        """
-        Create an integer-attribute for the given attribute
-
-        Args:
-            name (str): Name for the new attribute to be created
-            kwargs (dict): User specified attributes to be set for the new attribute
-
-        Returns:
-            The Node-instance with the node and new attribute
-
-        Example:
-            >>> Node("pCube1").add_int(value=123)
-        """
-        return self._add_traced_attr("int", name, **kwargs)
-
-    def add_float(self, name, **kwargs):
-        """
-        Create a float-attribute for the given attribute
-
-        Args:
-            name (str): Name for the new attribute to be created
-            kwargs (dict): User specified attributes to be set for the new attribute
-
-        Returns:
-            The Node-instance with the node and new attribute
-
-        Example:
-            >>> Node("pCube1").add_float(value=3.21)
-        """
-        return self._add_traced_attr("float", name, **kwargs)
-
-    def add_enum(self, name, enum_name="", cases=None, **kwargs):
-        """
-        Create a boolean-attribute for the given attribute
-
-        Args:
-            name (str): Name for the new attribute to be created
-            enum_name (list, str): User-choices for the resulting enum-attribute
-            cases (list, str): Overrides enum_name, which I find a horrific name
-            kwargs (dict): User specified attributes to be set for the new attribute
-
-        Returns:
-            The Node-instance with the node and new attribute
-
-        Example:
-            >>> Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
-        """
-        if cases is not None:
-            enum_name = cases
-        if isinstance(enum_name, (list, tuple)):
-            enum_name = ":".join(enum_name)
-
-        return self._add_traced_attr("enum", name, enumName=enum_name, **kwargs)
-
-    @classmethod
-    def add_to_node_stack(cls, node):
-        """
-        Add a node to the class-variable created_nodes_stack
-        """
-        cls.created_nodes_stack.append(node)
-
-    @classmethod
-    def flush_node_stack(cls):
-        """
-        Reset the class-variable created_nodes_stack to an empty list
-        """
-        cls.created_nodes_stack = []
-
-    @classmethod
-    def add_to_command_stack(cls, command):
-        """
-        Add a command to the class-variable executed_commands_stack
-        """
-        cls.executed_commands_stack.append(command)
-
-    @classmethod
-    def flush_command_stack(cls):
-        """
-        Reset the class-variable executed_commands_stack to an empty list
-        """
-        cls.executed_commands_stack = []
-
-    def _compare(self, other, operator):
-        """
-        Create a Maya condition node set to the correct operation-type.
-
-        Args:
-            other (Node, int, float): Attr or value to compare self-attrs with
-            operator (string): Operation type available in Maya condition-nodes
-
-        Returns:
-            Node-instance of a newly created Maya condition-node
-        """
-        # Create new condition node set to the appropriate operation-type
-        return _create_and_connect_node(operator, self, other)
-
-    @staticmethod
-    def _get_maya_attr(attr):
-        """
-        Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
-        """
-        return _traced_get_attr(attr)
-
-        # if _is_valid_maya_attr(attr):
-        #     return_value = cmds.getAttr(attr)
-        #     # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
-        #     if isinstance(return_value, list):
-        #         if len(return_value) == 1 and isinstance(return_value[0], tuple):
-        #             return_value = list(return_value[0])
-        #     return return_value
-        # else:
-        #     return attr
-
-    def _add_traced_attr(self, attr_type, attr_name, **kwargs):
-        """
-        Create an attribute of type attr_type for the given node/attr-combination of self.
-
-        Args:
-            attr_type (str): Attribute type. Must be specified in the ATTR_LOOKUP_TABLE!
-            kwargs (dict): Any user specified flags & their values.
-                           Gets combined with values in ATTR_LOOKUP_TABLE!
-            XXX
-
-        Returns:
-            XXX
-        """
-        # Replace spaces in name not to cause Maya-warnings
-        attr_name = attr_name.replace(' ', '_')
-
-        # Check whether attribute already exists. If so; return early!
-        attr = "{}.{}".format(self.node, attr_name)
-        if cmds.objExists(attr):
-            log.warn("Attribute {} already existed!".format(attr))
-            return Node(attr)
-
-        # Make a copy of the default values for the given attrType
-        attr_variables = lookup_tables.ATTR_LOOKUP_TABLE["base_attr"].copy()
-        attr_variables.update(lookup_tables.ATTR_LOOKUP_TABLE[attr_type])
-        log.debug("Copied default attr_variables: {}".format(attr_variables))
-
-        # Add the attr variable into the dictionary
-        attr_variables["longName"] = attr_name
-        # Override default values with kwargs
-        attr_variables.update(kwargs)
-        log.debug("Added custom attr_variables: {}".format(attr_variables))
-
-        # Extract attributes that need to be set via setAttr-command
-        set_attr_values = {
-            "channelBox": attr_variables.pop("channelBox", None),
-            "lock": attr_variables.pop("lock", None),
-        }
-        attr_value = attr_variables.pop("value", None)
-        log.debug("Extracted set_attr-variables from attr_variables: {}".format(attr_variables))
-        log.debug("set_attr-variables: {}".format(set_attr_values))
-
-        # Add the attribute
-        _traced_add_attr(self.node, **attr_variables)
-
-        # Filter for any values that need to be set via the setAttr command. Oh Maya...
-        set_attr_values = {
-            key: val for (key, val) in set_attr_values.iteritems()
-            if val is not None
-        }
-        log.debug("Pruned set_attr-variables: {}".format(set_attr_values))
-
-        # If there is no value to be set; set any attribute flags directly
-        if attr_value is None:
-            _traced_set_attr(attr, **set_attr_values)
-        else:
-            # If a value is given; use the set_or_connect function
-            _set_or_connect_a_to_b(attr, attr_value, **set_attr_values)
-
-        return Node(attr)
-
-
-def _is_valid_maya_attr(path):
-    """ Check if given attr-path is of an existing Maya attribute """
-    if isinstance(path, basestring) and "." in path:
-        node, attr = path.split(".")
-        return cmds.attributeQuery(attr, node=node, exists=True)
-
-    return False
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# TRACER
+# COLLECTION
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Tracer(object):
-    """
-    Class that returns all maya-commands inside the with-statement
+class Collection(Node):
 
-    Example:
-        ::
+    def __init__(self, *args):
+        super(Collection, self).__init__()
 
-            with Tracer(pprint_trace=True) as s:
-                a.tx = b.ty - 2 * c.tz
-            print(s)
-    """
-
-    def __init__(self, trace=True, print_trace=False, pprint_trace=False):
-        # Allow either note or notes as keywords
-        self.trace = trace
-        self.print_trace = print_trace
-        self.pprint_trace = pprint_trace
-
-    def __enter__(self):
-        """
-        with-statement; entering-method
-        Flushes executed_commands_stack (Node-classAttribute) and starts tracing
-        """
-        # Do not add to stack if unwanted
-        Node.trace_commands = bool(self.trace)
-
-        Node.flush_command_stack()
-        Node.traced_nodes = []
-        Node.traced_variables = []
-
-        return Node.executed_commands_stack
-
-    def __exit__(self, exc_type, value, traceback):
-        """
-        with-statement; exit-method
-        Print all executed commands, if desired
-        """
-        # Tell the user if he/she wants to print results but they were not traced!
-        if not self.trace and (self.print_trace or self.pprint_trace):
-            print("node_calculator commands were not traced!")
-        else:
-            # Print executed commands as list
-            if self.print_trace:
-                print("node_calculator command-stack:", Node.executed_commands_stack)
-            # Print executed commands on separate lines
-            if self.pprint_trace:
-                print("~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~")
-                for item in Node.executed_commands_stack:
-                    print(item)
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        Node.trace_commands = False
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# CONTAINER
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Container(object):
-    """
-    Container class that creates a container around everything inside the with-statement
-
-    Example:
-        ::
-
-            with Container(name="my_cont", notes="Formula: b.ty-2*c.tz", create=True) as cont:
-                a.tx = b.ty - 2 * c.tz
-    """
-
-    def __init__(self, name="noca_formula_container", notes="", create=True, note=None):
-        # Allow either note or notes as keywords
-        if not notes and note is not None:
-            self.notes = note
-        else:
-            self.notes = notes
-        self.name = name
-        self.create = create
-        self.container_node = None
-
-    def __enter__(self):
-        """
-        with-statement; entering-method
-        Flushes created_nodes_stack (Node-classAttribute) and creates a container-node
-        """
-        Node.flush_node_stack()
-
-        # Do not create a container if it should be bypassed
-        if not self.create:
-            return False
-
-        # Create container and return it
-        self.container_node = cmds.container(name=self.name)
-        # Returned as the variable after "with Container() as"
-        return self.container_node
-
-    def __exit__(self, exc_type, value, traceback):
-        """
-        with-statement; exit-method
-        Stick all nodes that were created within the with-statement into the container
-        """
-        # Skip everything if the container was not created
-        if not self.create:
-            return False
-
-        # Add all created nodes to the container
-        cmds.container(
-            self.container_node,
-            edit=True,
-            addNode=Node.created_nodes_stack,
-            includeNetwork=False,
-            includeHierarchyBelow=False,
-        )
-
-        # Expose connections in to/out of container
-        container_plugs = []
-        # listConnections with connections=True returns a single list, where;
-        # - every Nth element is plug >X< on the queried node
-        # - every N+1th element is the plug that is connected to plug >X<
-        # The izip(*[iter()]*2)-part simply creates a list of pairs out of this single list.
-        for node in Node.created_nodes_stack:
-            connections = cmds.listConnections(
-                node,
-                plugs=True,
-                source=True,
-                destination=True,
-                connections=True
-            )
-            connections = izip(*[iter(connections)]*2)
-
-            for plug_inside_container, plug_to_check in connections:
-                # plug_to_check is what plug_inside_container is connected to.
-                # If that is a node inside the container, too;
-                # don't expose a plug on the container for it!
-                if plug_to_check.split(".")[0] not in Node.created_nodes_stack:
-                    # Ignore the message-plugs
-                    if plug_inside_container.split(".")[1] != "message":
-                        container_plugs.append(plug_inside_container)
-
-        # For each plug that should be exposed: Generate a name and expose it
-        for plug in container_plugs:
-            # Make sure there are no forbidden characters in the name
-            plug_name = plug.split("|")[-1].split(".")
-            node_name = ''.join(e for e in plug_name[0] if e.isalnum())
-            attr_name = ''.join(e for e in plug_name[1] if e.isalnum())
-            name = node_name + "_I_" + attr_name
-            cmds.container(self.container_node, edit=True, publishAndBind=(plug, name))
-
-        # Add optional notes to the container. notes-attr doesn't exist by default!
-        if self.notes:
-            if not cmds.attributeQuery("notes", node=self.container_node, exists=True):
-                cmds.addAttr(
-                    self.container_node,
-                    longName="notes",
-                    shortName="nts",
-                    dataType="string"
-                )
-            cmds.setAttr(self.container_node + ".notes", str(self.notes), exc_type="string")
+        self.elements = args
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1472,8 +361,6 @@ def _create_and_connect_node(operation, *args):
     unravelled_args_list = [_get_unravelled_value_as_list(x) for x in args]
     new_node = _traced_create_node(operation, unravelled_args_list)
 
-    # Add to created_nodes_stack Node-classAttr. Necessary for container creation!
-    Node.add_to_node_stack(new_node)
     # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
     node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
@@ -1584,98 +471,17 @@ def _traced_create_node(operation, involved_attributes):
     node_name = _create_node_name(operation, involved_attributes)
     new_node = cmds.ls(cmds.createNode(node_type, name=node_name), long=True)[0]
 
-    if Node.trace_commands:
-        current_variable = Node.traced_variables
-        if not current_variable:
-            current_variable = "var1"
-        else:
-            current_variable = "var{}".format(
-                int(current_variable[-1].split("var")[-1])+1
-            )
-        Node.add_to_command_stack(
-            "{var} = cmds.createNode('{op}', name='{name}')".format(
-                var=current_variable,
-                op=lookup_tables.NODE_LOOKUP_TABLE[operation]["node"],
-                name=new_node
-            )
-        )
-        Node.traced_variables.append(current_variable)
-        Node.traced_nodes.append(new_node)
-
     return new_node
-
-
-def _traced_add_attr(node, **kwargs):
-    """
-    Maya-addAttr that adds the executed command to the command_stack if Tracer is active
-    """
-    cmds.addAttr(node, **kwargs)
-
-    # If commands are traced...
-    if Node.trace_commands:
-
-        if node in Node.traced_nodes:
-            # ...check if node is already part of the traced nodes: Use its variable instead
-            node = Node.traced_variables[Node.traced_nodes.index(node)]
-        else:
-            # ...otherwise add quotes around it
-            node = "'{}'".format(node)
-
-        # Join any given kwargs so they can be passed on to the addAttr-command
-        joined_kwargs = _join_kwargs_for_cmds(**kwargs)
-
-        # Add the addAttr-command to the command stack
-        Node.add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
 
 
 def _traced_set_attr(attr, value=None, **kwargs):
     """
     Maya-setAttr that adds the executed command to the command_stack if Tracer is active
     """
-
-    # Set attr to value
     if value is None:
         cmds.setAttr(attr, edit=True, **kwargs)
     else:
         cmds.setAttr(attr, value, edit=True, **kwargs)
-
-    # If commands are traced...
-    if Node.trace_commands:
-
-        # ...look for the node of the given attribute...
-        node = attr.split(".")[0]
-        if node in Node.traced_nodes:
-            # ...if it is already part of the traced nodes: Use its variable instead
-            attr = "{} + '.{}'".format(
-                Node.traced_variables[Node.traced_nodes.index(node)],
-                ".".join(attr.split(".")[1:])
-            )
-        else:
-            # ...otherwise add quotes around original attr
-            attr = "'{}'".format(attr)
-
-        # Join any given kwargs so they can be passed on to the setAttr-command
-        joined_kwargs = _join_kwargs_for_cmds(**kwargs)
-
-        # Add the setAttr-command to the command stack
-        if value is not None:
-            if joined_kwargs:
-                # If both value and kwargs were given
-                Node.add_to_command_stack(
-                    "cmds.setAttr({}, {}, edit=True, {})".format(attr, value, joined_kwargs)
-                )
-            else:
-                # If only a value was given
-                Node.add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
-        else:
-            if joined_kwargs:
-                # If only kwargs were given
-                Node.add_to_command_stack(
-                    "cmds.setAttr({}, edit=True, {})".format(attr, joined_kwargs)
-                )
-            else:
-                # If neither value or kwargs were given it was a redundant setAttr. Don't store!
-                pass
 
 
 def _traced_get_attr(attr):
@@ -1683,48 +489,7 @@ def _traced_get_attr(attr):
     Maya-getAttr that adds the executed command to the command_stack if Tracer is active,
     Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
     """
-
-    # Variable to keep track of whether return value had to be unpacked or not
-    list_of_tuples_returned = False
-
-    if _is_valid_maya_attr(attr):
-        return_value = cmds.getAttr(attr)
-        # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
-        if isinstance(return_value, list):
-            if len(return_value) == 1 and isinstance(return_value[0], tuple):
-                list_of_tuples_returned = True
-                return_value = list(return_value[0])
-    else:
-        return_value = attr
-
-    '''
-    NEED TO FIND A WAY TO KEEP TRACK OF THESE VALUES!
-    AS SOON AS VALUE IS RETURNED: THERE IS NO WAY TO TELL WHETHER THAT'S A NUMBER
-    OR A QUERIED NUMBER!
-
-
-    # If commands are traced...
-    if Node.trace_commands:
-
-        # ...look for the node of the given attribute...
-        node = attr.split(".")[0]
-        if node in Node.traced_nodes:
-            # ...if it is already part of the traced nodes: Use its variable instead
-            attr = "{} + '.{}'".format(
-                Node.traced_variables[Node.traced_nodes.index(node)],
-                ".".join(attr.split(".")[1:])
-            )
-        else:
-            # ...otherwise add quotes around original attr
-            attr = "'{}'".format(attr)
-
-        queried_var = "AAAAA" # This would have to be like Node.traced_variables!
-        # Add the getAttr-command to the command stack
-        if list_of_tuples_returned:
-            Node.add_to_command_stack("{} = cmds.getAttr({})".format(queried_var, attr))
-        else:
-            Node.add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(queried_var, attr))
-    '''
+    return_value = cmds.getAttr(attr)
 
     return return_value
 
@@ -1756,31 +521,16 @@ def _traced_connect_attr(attr_a, attr_b):
     """
     Maya-connectAttr that adds the executed command to the command_stack if Tracer is active
     """
-    # Connect attr_a to attr_b
     cmds.connectAttr(attr_a, attr_b, force=True)
 
-    # If commands are traced...
-    if Node.trace_commands:
 
-        # Format both attributes correctly
-        formatted_attrs = []
-        for attr in [attr_a, attr_b]:
+def _is_valid_maya_attr(path):
+    """ Check if given attr-path is of an existing Maya attribute """
+    if isinstance(path, basestring) and "." in path:
+        node, attr = path.split(".")
+        return cmds.attributeQuery(attr, node=node, exists=True)
 
-            # Look for the node of the current attribute...
-            node = attr.split(".")[0]
-            # ...if it is already part of the traced nodes: Use its variable instead...
-            if node in Node.traced_nodes:
-                node_variable = Node.traced_variables[Node.traced_nodes.index(node)]
-                formatted_attr = "{} + '.{}'".format(node_variable, ".".join(attr.split(".")[1:]))
-            # ...otherwise make sure it's stored as a string
-            else:
-                formatted_attr = "'{}'".format(attr)
-            formatted_attrs.append(formatted_attr)
-
-        # Add the connectAttr-command to the command stack
-        Node.add_to_command_stack(
-            "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_attrs)
-        )
+    return False
 
 
 def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
