@@ -109,6 +109,13 @@ class Attrs(Atom):
 
         return str(self.attrs)
 
+    def __unicode__(self):
+        """
+        """
+        log.debug("Attrs unicode method with self")
+
+        return str(self.attrs)
+
     def __setitem__(self, index, value):
         """
         Support indexed assignments for Node-instances with list-attrs
@@ -157,7 +164,7 @@ class Node(Atom):
         if attrs is None:
             # Initialization with "object.attrs" string
             if "." in node_mobj:
-                node_mobj, attrs = node_mobj.split(".")
+                node_mobj, attrs = node_mobj.split(".", 1)
             else:
                 attrs = []
 
@@ -198,17 +205,52 @@ class Node(Atom):
         """
         Repr-method for debugging purposes
         """
-        log.debug("Attrs repr method with self")
+        log.debug("Node repr method with self")
 
         return "(> {}, {} <)".format(self.node, self.attrs)
 
     def __str__(self):
         """
-        Pretty print of Attrs class
+        Pretty print of Node class
         """
-        log.debug("Attrs str method with self")
+        log.debug("Node str method with self")
 
         return "Node instance with node {} and attrs {}".format(self.node, self.attrs)
+
+    def __unicode__(self):
+        """
+        Maya is using this method, if a Node-instance is passed to commands:
+        cmds.hide(noca.Node("A_geo")) will use __str__ of noca.Node
+
+        For some reason Maya is bitchy:
+        cmds.getAttr(a) DOESN'T work. cmds.getAttr(a.__unicode__()) DOES work
+        even though both call the same __unicode__ method... Wtf?!
+
+        cmds.getAttr(a)
+        # 04/25/2018 00:35:22 - node_calculator.logger - DEBUG - Node unicode method with self
+        A <type 'unicode'>
+        ['tx'] <type 'list'>
+        tx <type 'str'>
+        A.tx <type 'str'>
+        # Error: TypeError: file <maya console> line 1: Object A.tx is invalid #
+
+        cmds.getAttr(a.__unicode__())
+        # 04/25/2018 00:35:26 - node_calculator.logger - DEBUG - Node unicode method with self
+        A <type 'unicode'>
+        ['tx'] <type 'list'>
+        tx <type 'str'>
+        A.tx <type 'str'>
+        # Result: 0.0 #
+        """
+        log.debug("Node unicode method with self")
+
+        return_value = [
+            u"{}.{}".format(self.node, attr) for attr in self.attrs
+        ]
+
+        return_value = "{}.{}".format(str(self.node), str(self.attrs[0]))
+
+        return return_value
 
     def __setattr__(self, name, value):
         """
@@ -527,7 +569,7 @@ def _traced_connect_attr(attr_a, attr_b):
 def _is_valid_maya_attr(path):
     """ Check if given attr-path is of an existing Maya attribute """
     if isinstance(path, basestring) and "." in path:
-        node, attr = path.split(".")
+        node, attr = path.split(".", 1)
         return cmds.attributeQuery(attr, node=node, exists=True)
 
     return False
@@ -663,8 +705,7 @@ def _check_for_parent_attribute(attribute_list):
         # Any numeric value instantly breaks any chance for a parent_attr
         if isinstance(attr, numbers.Real):
             return None
-        node = attr.split(".")[0]
-        attr = ".".join(attr.split(".")[1:])
+        node, attr = attr.split(".", 1)
         parent_attr = cmds.attributeQuery(
             attr,
             node=node,
@@ -807,8 +848,7 @@ def _get_unravelled_plug(input_plug):
     if not cmds.objExists(input_plug):
         log.error("input_plug does not exist: {}".format(input_plug))
 
-    attr = ".".join(input_plug.split(".")[1:])
-    node = input_plug.split(".")[0]
+    node, attr = input_plug.split(".", 1)
     unravelled_plug = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True)
 
     if isinstance(unravelled_plug, list):
