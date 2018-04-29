@@ -16,6 +16,12 @@ print b, type(b)
 
 c = noca.new(["A", "B"])
 print c, type(c)
+
+
+Node or Attrs instance:
+node -> returns str of Maya node
+attrs -> returns Attrs-instance
+attrs_list -> returns list of attributes in Attrs
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,24 +102,55 @@ class Atom(object):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class BaseNode(Atom):
 
-    def unifriggincode(self):
-        """
-        Using the __unicode__ method in Attrs class somehow doesn't work well
-        with the __getitem__ method together. Still don't know why...
-        """
-        if len(self.attrs) == 0:
-            return "{}".format(self.node)
-        elif len(self.attrs) > 1:
-            return "{}, {}".format(self.node, self.attrs)
-        return "{}.{}".format(self.node, self.attrs[0])
-
     def __init__(self):
-        self.__dict__["node"] = None
+        self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
 
     def __len__(self):
         log.debug("BaseNode __len__ for ({})".format(self.attrs))
-        return len(self.attrs)
+        return len(self.attrs_list)
+
+    def as_str(self):
+        """
+        Using the __unicode__ method in Attrs class somehow doesn't work well
+        with the __getitem__ method together. Still don't know why...
+
+        To make cmds.setAttr(a2.attrs, 1) work:
+        - Specifically returning a unicode/str in attrs-@property of Node class works.
+        - Commenting out __getitem__ method in Attrs class works, too but throws this error:
+            # Error: Problem calling __apiobject__ method of passed object #
+            # Error: attribute of type 'Attrs' is not callable #
+        """
+        if len(self.attrs) == 0:
+            return_str = self.node
+        elif len(self.attrs) == 1:
+            return_str = "{}.{}".format(self.node, self.attrs_list[0])
+        else:
+            return_str = "{}, {}".format(self.node, self.attrs_list)
+
+        return return_str
+
+    def as_list(self):
+        """
+        Using the __unicode__ method in Attrs class somehow doesn't work well
+        with the __getitem__ method together. Still don't know why...
+
+        To make cmds.setAttr(a2.attrs, 1) work:
+        - Specifically returning a unicode/str in attrs-@property of Node class works.
+        - Commenting out __getitem__ method in Attrs class works, too but throws this error:
+            # Error: Problem calling __apiobject__ method of passed object #
+            # Error: attribute of type 'Attrs' is not callable #
+        """
+        if len(self.attrs) == 0:
+            return_list = [self.node]
+        elif len(self.attrs) == 1:
+            return_list = ["{}.{}".format(self.node, self.attrs_list[0])]
+        else:
+            return_list = [
+                "{}.{}".format(self.node, attr) for attr in self.attrs_list
+            ]
+
+        return return_list
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,12 +162,12 @@ class Attrs(BaseNode):
 
     def __init__(self, holder_node, attrs):
         log.debug("Attrs __init__ ({}, {})".format(holder_node, attrs))
-        self._holder_node = holder_node
+        self.__dict__["_holder_node"] = holder_node
 
         if isinstance(attrs, basestring):
-            self._held_attrs = [attrs]
+            self.__dict__["_held_attrs"] = [attrs]
         else:
-            self._held_attrs = attrs
+            self.__dict__["_held_attrs"] = attrs
 
     @property
     def node(self):
@@ -140,23 +177,56 @@ class Attrs(BaseNode):
     @property
     def attrs(self):
         # log.debug("Attrs @property attrs")
+        return self
+
+    @property
+    def attrs_list(self):
         return self._held_attrs
 
     def __str__(self):
         """
         For example for print(Node-instance)
         """
-        log.debug("Attrs __str__ ({}, {})".format(self.node, self.attrs))
+        log.debug("Attrs __str__ ({}, {})".format(self.node, self.attrs_list))
 
-        return "Attrs({})".format(self.attrs)
+        return "Attrs({})".format(self.attrs_list)
 
     def __repr__(self):
         """
         For example for running highlighted Node-instance
         """
-        log.debug("Attrs __repr__ ({}, {})".format(self.node, self.attrs))
+        log.debug("Attrs __repr__ ({}, {})".format(self.node, self.attrs_list))
 
-        return "Attrs({})".format(self.attrs)
+        return "Attrs({})".format(self.attrs_list)
+
+    def __unicode__(self):
+        """
+        For example for cmds.setAttr(Node-instance)
+        """
+        log.debug("Attrs __unicode__ ({}, {})".format(self.node, self.attrs_list))
+
+        if len(self.attrs_list) == 0:
+            return_value = self.node
+        elif len(self.attrs_list) == 1:
+            return_value = "{}.{}".format(self.node, self.attrs_list[0])
+        else:
+            return_value = "{}, {}".format(self.node, self.attrs_list)
+
+        return return_value
+
+    def __getattr__(self, name):
+        log.debug("Attrs __getattr__ ({})".format(name))
+
+        if len(self.attrs_list) != 1:
+            log.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
+
+        return Attrs(self._holder_node, self.attrs_list[0] + "." + name)
+        # return Attrs(self.__dict__["_holder_node"], self.__dict__["_held_attrs"][0] + "." + name)
+
+    def __setattr__(self, name, value):
+        log.debug("Attrs __setattr__ ({})".format(name, value))
+
+        _set_or_connect_a_to_b(self.__getattr__(name), value)
 
     def __getitem__(self, index):
         """
@@ -168,30 +238,16 @@ class Attrs(BaseNode):
         """
         log.debug("Attrs __getitem__ ({})".format(index))
 
-        return Attrs(self._holder_node, self._held_attrs[index])
+        return Attrs(self._holder_node, self.attrs_list[index])
 
-    def __getattr__(self, name):
-        log.debug("Attrs __getattr__ ({})".format(name))
+    def __setitem__(self, index, value):
+        log.debug("Attrs __setitem__ ({}, {})".format(index, value))
 
-        if len(self._held_attrs) != 1:
-            log.error("Tried to get attr of non-singular attribute: {}".format(self._held_attrs))
-
-        return Attrs(self._holder_node, self._held_attrs[0] + "." + name)
-
-    def __unicode__(self):
-        """
-        For example for cmds.setAttr(Node-instance)
-        """
-        log.debug("Attrs __unicode__ ({}, {})".format(self.node, self.attrs))
-
-        if len(self.attrs) == 0:
-            return_value = self.node
-        elif len(self.attrs) == 1:
-            return_value = "{}.{}".format(self.node, self.attrs[0])
-        else:
-            return_value = "{}, {}".format(self.node, self.attrs)
-
-        return return_value
+        if isinstance(value, numbers.Real):
+            log.error(
+                "Can't set Attrs item to number {}. Use a Value instance for this!".format(value)
+            )
+        self.attrs_list[index] = value
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,19 +257,19 @@ class Node(BaseNode):
     """
     """
 
-    def __init__(self, node_mobj, attrs=None):
-        log.debug("Node __init__ ({}, {})".format(node_mobj, attrs))
+    def __init__(self, node, attrs=None):
+        log.debug("Node __init__ ({}, {})".format(node, attrs))
 
         # Plain values should be Value-instance!
-        if isinstance(node_mobj, numbers.Real):
-            log.error("Explicit Node __init__ with number ({}). Should be Value!".format(node_mobj))
-            self.create_value(node_mobj)
+        if isinstance(node, numbers.Real):
+            log.error("Explicit Node __init__ with number ({}). Should be Value!".format(node))
+            self.create_value(node)
             return None
 
         # Lists or tuples should be Collection!
-        if isinstance(node_mobj, (list, tuple)):
-            log.warning("Explicit Node __init__ with list or tuple ({}). Should be Collection!".format(node_mobj))
-            Collection(node_mobj)
+        if isinstance(node, (list, tuple)):
+            log.warning("Explicit Node __init__ with list or tuple ({}). Should be Collection!".format(node))
+            Collection(node)
             return None
 
         super(Node, self).__init__()
@@ -221,17 +277,23 @@ class Node(BaseNode):
         # Handle case where no attrs were given
         if attrs is None:
             # Initialization with "object.attrs" string
-            if "." in node_mobj:
-                node_mobj, attrs = node_mobj.split(".", 1)
+            if "." in node:
+                node, attrs = node.split(".", 1)
             else:
                 attrs = []
 
-        # Make sure node_mobj truly is an mobj!
-        node_mobj = om_util.get_mobj_of_node(node_mobj)
+        # Make sure node truly is an mobj!
+        if isinstance(node, Node):
+            node_mobj = node._node_mobj
+        else:
+            node_mobj = om_util.get_mobj_of_node(node)
 
         # Using __dict__, because the setattr & getattr methods are overridden!
-        self.__dict__["node_mobj"] = node_mobj
-        self.__dict__["_held_attrs"] = Attrs(self, attrs)
+        self.__dict__["_node_mobj"] = node_mobj
+        if isinstance(attrs, Attrs):
+            self.__dict__["_held_attrs"] = attrs
+        else:
+            self.__dict__["_held_attrs"] = Attrs(self, attrs)
 
     def __str__(self):
         """
@@ -264,30 +326,64 @@ class Node(BaseNode):
 
         return Attrs(self, name)
 
+    def __setattr__(self, name, value):
+        log.debug("Node __setattr__ ({})".format(name, value))
+
+        _set_or_connect_a_to_b(Node(self, name), value)
+
+    def __getitem__(self, index):
+        log.debug("Node __getitem__ ({})".format(index))
+
+        return Node(self._node_mobj, self.attrs[0])
+
+    def __setitem__(self, index, value):
+        log.debug("Node __setitem__ ({}, {})".format(index, value))
+
+        _set_or_connect_a_to_b(self[index], value)
+
     @property
     def attrs(self):
-        # log.debug("Node @property attrs")
-        # This exception is necessary for during the Node-initialization:
-        # The _held_attrs is None when undefined. debug-messages might error.
-        # if self._held_attrs is None:
-        #     return None
         return self._held_attrs
+
+    @property
+    def attrs_list(self):
+        return self.attrs.attrs_list
 
     @property
     def node(self):
         # log.debug("Node @property node")
-        return om_util.get_long_name_of_mobj(self.node_mobj)
+        return om_util.get_long_name_of_mobj(self._node_mobj)
 
 
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# # COLLECTION
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# COLLECTION
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Collection(Atom):
 
     def __init__(self, *args):
         super(Collection, self).__init__()
 
         self.elements = args
+
+    # @property
+    # def node(self):
+    #     return self.elements
+
+    def __getattr__(self, name):
+        log.error("Collection __getattr__ undefined!")
+
+    def __setattr__(self, name, value):
+        log.error("Collection __setattr__ undefined!")
+
+    def __getitem__(self, index):
+        log.debug("Collection __getitem__ ({})".format(index))
+
+        return self.elements[index]
+
+    def __setitem__(self, index, value):
+        log.debug("Collection __setitem__ ({}, {})".format(index, value))
+
+        self.elements[index] = value
 
 
 # def _traced_create_node(operation, involved_attributes):
@@ -329,109 +425,111 @@ class Collection(Atom):
 #     cmds.connectAttr(attr_a, attr_b, force=True)
 
 
-# def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
-#     """
-#     Generic function to set obj_a to value of obj_b OR connect obj_b to obj_a.
+def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
+    """
+    Generic function to set obj_a to value of obj_b OR connect obj_b to obj_a.
 
-#     Note:
-#         Allowed assignments are:
-#         (1-D stands for 1-dimensional, X-D for multi-dimensional; 2-D, 3-D, ...)
-#         Setting 1-D attribute to a 1-D value/attr  # pCube1.tx = 7
-#         Setting X-D attribute to a 1-D value/attr  # pCube1.t = 7  # same as pCube1.t = [7]*3
-#         Setting X-D attribute to a X-D value/attr  # pCube1.t = [1, 2, 3]
+    Note:
+        Allowed assignments are:
+        (1-D stands for 1-dimensional, X-D for multi-dimensional; 2-D, 3-D, ...)
+        Setting 1-D attribute to a 1-D value/attr  # pCube1.tx = 7
+        Setting X-D attribute to a 1-D value/attr  # pCube1.t = 7  # same as pCube1.t = [7]*3
+        Setting X-D attribute to a X-D value/attr  # pCube1.t = [1, 2, 3]
 
-#     Args:
-#         obj_a (Node, str): Needs to be a plug. Either as a Node-object or as a string ("node.attr")
-#         obj_b (Node, int, float, list, tuple, string): Can be a numeric value, a list of values
-#             or another plug either in the form of a Node-object or as a string ("node.attr")
-#     """
-#     # #######################
-#     # Make sure inputs are ok to process
-#     log.debug('_set_or_connect_a_to_b({}, {}) - RAW INPUT'.format(obj_a, obj_b))
+    Args:
+        obj_a (Node, str): Needs to be a plug. Either as a Node-object or as a string ("node.attr")
+        obj_b (Node, int, float, list, tuple, string): Can be a numeric value, a list of values
+            or another plug either in the form of a Node-object or as a string ("node.attr")
+    """
+    # #######################
+    # Make sure inputs are ok to process
+    log.debug('_set_or_connect_a_to_b({}, {}) - RAW INPUT'.format(obj_a, obj_b))
 
-#     # Make sure obj_a and obj_b aren't unspecified
-#     if obj_a is None:
-#         log.error("obj_a is unspecified!")
-#     if obj_b is None:
-#         log.error("obj_b is unspecified!")
+    return False
+    '''
+    # Make sure obj_a and obj_b aren't unspecified
+    if obj_a is None:
+        log.error("obj_a is unspecified!")
+    if obj_b is None:
+        log.error("obj_b is unspecified!")
 
-#     obj_a_unravelled_list = _get_unravelled_value_as_list(obj_a)
-#     obj_b_unravelled_list = _get_unravelled_value_as_list(obj_b)
-#     log.debug('obj_a_unravelled_list {} from obj_a {}'.format(obj_a_unravelled_list, obj_a))
-#     log.debug('obj_b_unravelled_list {} from obj_b {}'.format(obj_b_unravelled_list, obj_b))
+    obj_a_unravelled_list = _get_unravelled_value_as_list(obj_a)
+    obj_b_unravelled_list = _get_unravelled_value_as_list(obj_b)
+    log.debug('obj_a_unravelled_list {} from obj_a {}'.format(obj_a_unravelled_list, obj_a))
+    log.debug('obj_b_unravelled_list {} from obj_b {}'.format(obj_b_unravelled_list, obj_b))
 
-#     obj_a_dim = len(obj_a_unravelled_list)
-#     obj_b_dim = len(obj_b_unravelled_list)
+    obj_a_dim = len(obj_a_unravelled_list)
+    obj_b_dim = len(obj_b_unravelled_list)
 
-#     # Neither given object can have dimensionality (=list-length) above 3!
-#     if obj_a_dim > 3:
-#         log.error("Dimensionality of obj_a is higher than 3! {}".format(obj_a_unravelled_list))
-#     if obj_b_dim > 3:
-#         log.error("Dimensionality of obj_b is higher than 3! {}".format(obj_b_unravelled_list))
-#     # #######################
-#     # Match input-dimensions: After this block both obj_X_unravelled_list's have the same length
+    # Neither given object can have dimensionality (=list-length) above 3!
+    if obj_a_dim > 3:
+        log.error("Dimensionality of obj_a is higher than 3! {}".format(obj_a_unravelled_list))
+    if obj_b_dim > 3:
+        log.error("Dimensionality of obj_b is higher than 3! {}".format(obj_b_unravelled_list))
+    # #######################
+    # Match input-dimensions: After this block both obj_X_unravelled_list's have the same length
 
-#     # If the dimensions of both given attributes match: Don't process them
-#     if obj_a_dim == obj_b_dim:
-#         pass
+    # If the dimensions of both given attributes match: Don't process them
+    if obj_a_dim == obj_b_dim:
+        pass
 
-#     # If one object is a single value/plug; match the others length...
-#     elif obj_a_dim == 1 or obj_b_dim == 1:
-#         if obj_a_dim < obj_b_dim:
-#             # ...by creating a list with the same length
-#             log.debug("Matching obj_a_dim to obj_b_dim!")
-#             obj_a_unravelled_list = obj_a_unravelled_list * obj_b_dim
-#         else:
-#             log.debug("Matching obj_b_dim to obj_a_dim!")
-#             obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
-#     else:
-#         # Any other dimension-pairings are not allowed
-#         log.error(
-#             "Due to dimensions there is no reasonable way to connect "
-#             "{}D: {} > to > {}D: {}".format(
-#                 obj_a_dim, obj_a_unravelled_list,
-#                 obj_b_dim, obj_b_unravelled_list,
-#             )
-#         )
-#         return False
+    # If one object is a single value/plug; match the others length...
+    elif obj_a_dim == 1 or obj_b_dim == 1:
+        if obj_a_dim < obj_b_dim:
+            # ...by creating a list with the same length
+            log.debug("Matching obj_a_dim to obj_b_dim!")
+            obj_a_unravelled_list = obj_a_unravelled_list * obj_b_dim
+        else:
+            log.debug("Matching obj_b_dim to obj_a_dim!")
+            obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
+    else:
+        # Any other dimension-pairings are not allowed
+        log.error(
+            "Due to dimensions there is no reasonable way to connect "
+            "{}D: {} > to > {}D: {}".format(
+                obj_a_dim, obj_a_unravelled_list,
+                obj_b_dim, obj_b_unravelled_list,
+            )
+        )
+        return False
 
-#     # #######################
-#     # Connect or set attributes, based on whether a value or attribute is given
+    # #######################
+    # Connect or set attributes, based on whether a value or attribute is given
 
-#     # A 3D to 3D connection can be 1 connection if both have a parent-attribute!
-#     reduced_obj_a_list = _check_for_parent_attribute(obj_a_unravelled_list)
-#     reduced_obj_b_list = _check_for_parent_attribute(obj_b_unravelled_list)
-#     # Only reduce the connection if BOTH objects have a parent-attribute!
-#     # A 1D attr can not connect to a 3D attr!
-#     if reduced_obj_a_list is not None and reduced_obj_b_list is not None:
-#         obj_a_unravelled_list = reduced_obj_a_list
-#         obj_b_unravelled_list = reduced_obj_b_list
+    # A 3D to 3D connection can be 1 connection if both have a parent-attribute!
+    reduced_obj_a_list = _check_for_parent_attribute(obj_a_unravelled_list)
+    reduced_obj_b_list = _check_for_parent_attribute(obj_b_unravelled_list)
+    # Only reduce the connection if BOTH objects have a parent-attribute!
+    # A 1D attr can not connect to a 3D attr!
+    if reduced_obj_a_list is not None and reduced_obj_b_list is not None:
+        obj_a_unravelled_list = reduced_obj_a_list
+        obj_b_unravelled_list = reduced_obj_b_list
 
-#     log.debug("obj_a_unravelled_list: {}".format(obj_a_unravelled_list))
-#     log.debug("obj_b_unravelled_list: {}".format(obj_b_unravelled_list))
-#     for obj_a_item, obj_b_item in zip(obj_a_unravelled_list, obj_b_unravelled_list):
-#         # Make sure obj_a_item exists in the Maya scene and get its dimensionality
-#         if not cmds.objExists(obj_a_item):
-#             log.error("obj_a_item does not exist: {}. Must be Maya-attr!".format(obj_a_item))
+    log.debug("obj_a_unravelled_list: {}".format(obj_a_unravelled_list))
+    log.debug("obj_b_unravelled_list: {}".format(obj_b_unravelled_list))
+    for obj_a_item, obj_b_item in zip(obj_a_unravelled_list, obj_b_unravelled_list):
+        # Make sure obj_a_item exists in the Maya scene and get its dimensionality
+        if not cmds.objExists(obj_a_item):
+            log.error("obj_a_item does not exist: {}. Must be Maya-attr!".format(obj_a_item))
 
-#         # If obj_b_item is a simple number...
-#         if isinstance(obj_b_item, numbers.Real):
-#             # # ...set 1-D obj_a_item to 1-D obj_b_item-value.
-#             _traced_set_attr(obj_a_item, obj_b_item, **kwargs)
+        # If obj_b_item is a simple number...
+        if isinstance(obj_b_item, numbers.Real):
+            # # ...set 1-D obj_a_item to 1-D obj_b_item-value.
+            _traced_set_attr(obj_a_item, obj_b_item, **kwargs)
 
-#         # If obj_b_item is a valid attribute in the Maya scene...
-#         elif _is_valid_maya_attr(obj_b_item):
-#             #  ...connect it.
-#             _traced_connect_attr(obj_b_item, obj_a_item)
+        # If obj_b_item is a valid attribute in the Maya scene...
+        elif _is_valid_maya_attr(obj_b_item):
+            #  ...connect it.
+            _traced_connect_attr(obj_b_item, obj_a_item)
 
-#         # If obj_b_item didn't match anything; obj_b_item-type is not recognized/supported.
-#         else:
-#             msg = "Cannot set obj_b_item: {1} because of unknown type: {0}".format(
-#                 obj_b_item,
-#                 type(obj_b_item),
-#             )
-#             log.error(msg)
-
+        # If obj_b_item didn't match anything; obj_b_item-type is not recognized/supported.
+        else:
+            msg = "Cannot set obj_b_item: {1} because of unknown type: {0}".format(
+                obj_b_item,
+                type(obj_b_item),
+            )
+            log.error(msg)
+    '''
 
 # # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # # UNRAVELLING INPUTS

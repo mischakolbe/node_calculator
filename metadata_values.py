@@ -14,6 +14,18 @@ Example:
         # >>> AttributeError: 'int' object has no attribute 'metadata'
 """
 
+# Local imports
+from . import logger
+reload(logger)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SETUP LOGGER
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+logger.clear_handlers()
+logger.setup_stream_handler(level=logger.logging.DEBUG)
+log = logger.log
+
 
 def create_metadata_val_class(class_type):
     """
@@ -34,6 +46,18 @@ def create_metadata_val_class(class_type):
         def __init__(self, *args, **kwargs):
             """ Leave the init method unchanged """
             class_type.__init__(self, *args, **kwargs)
+
+        def __getattr__(self, name):
+            log.error("{} __getattr__ undefined!".format(class_type))
+
+        def __setattr__(self, name, value):
+            log.error("{} __setattr__ undefined!".format(class_type))
+
+        def __getitem__(self, index):
+            log.error("{} __getitem__ undefined!".format(class_type))
+
+        def __setitem__(self, index, value):
+            log.error("{} __setitem__ undefined!".format(class_type))
 
         @property
         def basetype(self):
