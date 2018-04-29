@@ -107,7 +107,7 @@ class BaseNode(Atom):
         self.__dict__["_held_attrs"] = None
 
     def __len__(self):
-        log.debug("BaseNode __len__ for ({})".format(self.attrs))
+        log.debug("BaseNode __len__ ({})".format(self))
         return len(self.attrs_list)
 
     def as_str(self):
@@ -165,9 +165,9 @@ class Attrs(BaseNode):
         self.__dict__["_holder_node"] = holder_node
 
         if isinstance(attrs, basestring):
-            self.__dict__["_held_attrs"] = [attrs]
+            self.__dict__["_held_attrs_list"] = [attrs]
         else:
-            self.__dict__["_held_attrs"] = attrs
+            self.__dict__["_held_attrs_list"] = attrs
 
     @property
     def node(self):
@@ -181,7 +181,7 @@ class Attrs(BaseNode):
 
     @property
     def attrs_list(self):
-        return self._held_attrs
+        return self._held_attrs_list
 
     def __str__(self):
         """
@@ -221,7 +221,6 @@ class Attrs(BaseNode):
             log.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
 
         return Attrs(self._holder_node, self.attrs_list[0] + "." + name)
-        # return Attrs(self.__dict__["_holder_node"], self.__dict__["_held_attrs"][0] + "." + name)
 
     def __setattr__(self, name, value):
         log.debug("Attrs __setattr__ ({})".format(name, value))
@@ -363,17 +362,38 @@ class Collection(Atom):
     def __init__(self, *args):
         super(Collection, self).__init__()
 
-        self.elements = args
+        # If arguments are given as a list: Unpack the items from it
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            args = args[0]
 
-    # @property
-    # def node(self):
-    #     return self.elements
+        collection_elements = []
+        for arg in args:
+            if isinstance(arg, (basestring, numbers.Real)):
+                collection_elements.append(new(arg))
+            elif isinstance(arg, (Node, Attrs, )) or "MetadataValue" in str(type(arg)):
+                collection_elements.append(arg)
+            else:
+                log.error(
+                    "Collection element {} is of unsupported type {}!".format(arg, type(arg))
+                )
 
-    def __getattr__(self, name):
-        log.error("Collection __getattr__ undefined!")
+        self.elements = collection_elements
 
-    def __setattr__(self, name, value):
-        log.error("Collection __setattr__ undefined!")
+    def __str__(self):
+        """
+        For example for print(Node-instance)
+        """
+        log.debug("Collection __str__ ({})".format(self.elements))
+
+        return "Collection({})".format(self.elements)
+
+    def __repr__(self):
+        """
+        For example for running highlighted Node-instance
+        """
+        log.debug("Collection __repr__ ({})".format(self.elements))
+
+        return "{}".format(self.elements)
 
     def __getitem__(self, index):
         log.debug("Collection __getitem__ ({})".format(index))

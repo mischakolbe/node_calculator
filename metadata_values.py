@@ -26,6 +26,14 @@ logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
 log = logger.log
 
+# This is just to iterate faster. The MetadataValue-types stay in the globals() even when reloaded.
+# Therefore cleaning globals() by hand so I don't have to restart Maya to clean globals()
+import copy
+a = copy.copy(globals())
+for key, value in a.iteritems():
+    if "MetadataValue" in str(key):
+        del globals()[key]
+
 
 def create_metadata_val_class(class_type):
     """
@@ -47,22 +55,131 @@ def create_metadata_val_class(class_type):
             """ Leave the init method unchanged """
             class_type.__init__(self, *args, **kwargs)
 
-        def __getattr__(self, name):
-            log.error("{} __getattr__ undefined!".format(class_type))
-
-        def __setattr__(self, name, value):
-            log.error("{} __setattr__ undefined!".format(class_type))
-
-        def __getitem__(self, index):
-            log.error("{} __getitem__ undefined!".format(class_type))
-
-        def __setitem__(self, index, value):
-            log.error("{} __setitem__ undefined!".format(class_type))
-
         @property
         def basetype(self):
             """ Convenience property to access the base type easily """
             return class_type
+
+        @property
+        def _value(self):
+            """ Returns the held value as an instance of the basetype """
+            return self.basetype(self)
+
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        # All subsequent magic methods return a new MetadataValue! This is to
+        # preserve the origin of the values, even when used with another regular number!
+        # The property "_value" is necessary, otherwise it gets stuck in a loop!
+        # -> "_value" sticks the held value into its basetype-class to perform the calculation
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+        def __add__(self, other):
+            """
+            Regular addition operator.
+            """
+            return_value = self._value + other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __radd__(self, other):
+            """
+            Reflected addition operator.
+            Fall-back method in case regular addition is not defined & fails.
+            """
+            return_value = other + self._value
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __sub__(self, other):
+            """
+            Regular subtraction operator.
+            """
+            return_value = self._value - other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __rsub__(self, other):
+            """
+            Reflected subtraction operator.
+            Fall-back method in case regular subtraction is not defined & fails.
+            """
+            return_value = other - self._value
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __mul__(self, other):
+            """
+            Regular multiplication operator.
+            """
+            return_value = self._value * other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __rmul__(self, other):
+            """
+            Reflected multiplication operator.
+            Fall-back method in case regular multiplication is not defined & fails.
+            """
+            return_value = other * self._value
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __div__(self, other):
+            """
+            Regular division operator.
+            """
+            return_value = self._value / other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __rdiv__(self, other):
+            """
+            Reflected division operator.
+            Fall-back method in case regular division is not defined & fails.
+            """
+            return_value = other / self._value
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __pow__(self, other):
+            """
+            Regular power operator.
+            """
+            return_value = self._value ** other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __eq__(self, other):
+            """
+            Equality operator: ==
+            """
+            return_value = self._value == other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __ne__(self, other):
+            """
+            Inequality operator: !=
+            """
+            return_value = self._value != other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __gt__(self, other):
+            """
+            Greater than operator: >
+            """
+            return_value = self._value > other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __ge__(self, other):
+            """
+            Greater equal operator: >=
+            """
+            return_value = self._value >= other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __lt__(self, other):
+            """
+            Less than operator: <
+            """
+            return_value = self._value < other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
+
+        def __le__(self, other):
+            """
+            Less equal operator: <=
+            """
+            return_value = self._value <= other
+            return val(return_value, metadata=self.metadata, created_by_user=False)
 
     return MetadataValueClass
 
