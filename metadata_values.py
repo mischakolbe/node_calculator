@@ -12,6 +12,14 @@ Example:
         a = 1
         a.metadata = "metadata"
         # >>> AttributeError: 'int' object has no attribute 'metadata'
+
+TODO: Metadata and Tracer work already pretty nicely together. But if user
+does basic math operations with a metadata_value the metadata won't update correctly!
+Need to find a way how to trace user calculations. Does it simply forget that it was a traced val?
+The additional operations could be added as a separate metadata:  "+ 1" and the noca could
+concatenate the variable-name and these additional operations when they get plugged in somewhere:
+val1 -> val1 + 1
+Question then is: How to deal with parentheses and such things...
 """
 
 # Local imports

@@ -97,6 +97,7 @@ class Atom(object):
     trace_commands = False
     traced_nodes = None
     traced_variables = None
+    traced_values = None
 
     def __init__(self):
         super(Atom, self).__init__()
@@ -271,32 +272,37 @@ class Atom(object):
         return self._compare(other, "le")
 
     @classmethod
-    def add_to_node_stack(cls, node):
+    def _add_to_node_stack(cls, node):
         """
         Add a node to the class-variable created_nodes_stack
         """
         cls.created_nodes_stack.append(node)
 
     @classmethod
-    def flush_node_stack(cls):
+    def _flush_node_stack(cls):
         """
         Reset the class-variable created_nodes_stack to an empty list
         """
         cls.created_nodes_stack = []
 
     @classmethod
-    def add_to_command_stack(cls, command):
+    def _add_to_command_stack(cls, command):
         """
         Add a command to the class-variable executed_commands_stack
         """
         cls.executed_commands_stack.append(command)
 
     @classmethod
-    def flush_command_stack(cls):
+    def _flush_command_stack(cls):
         """
         Reset the class-variable executed_commands_stack to an empty list
         """
         cls.executed_commands_stack = []
+
+    @classmethod
+    def _get_next_value_name(cls):
+        value_name = "val{}".format(len(cls.traced_values)+1)
+        return value_name
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -902,7 +908,7 @@ def _create_and_connect_node(operation, *args):
     new_node = _traced_create_node(operation, unravelled_args_list)
 
     # Add to created_nodes_stack Node-classAttr. Necessary for container creation!
-    Atom.add_to_node_stack(new_node)
+    Atom._add_to_node_stack(new_node)
     # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
     node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
@@ -1022,7 +1028,7 @@ def _traced_create_node(operation, involved_attributes):
             current_variable = "var{}".format(
                 int(current_variable[-1].split("var")[-1])+1
             )
-        Atom.add_to_command_stack(
+        Atom._add_to_command_stack(
             "{var} = cmds.createNode('{op}', name='{name}')".format(
                 var=current_variable,
                 op=lookup_tables.NODE_LOOKUP_TABLE[operation]["node"],
@@ -1055,7 +1061,7 @@ def _traced_add_attr(node, **kwargs):
         joined_kwargs = _join_kwargs_for_cmds(**kwargs)
 
         # Add the addAttr-command to the command stack
-        Atom.add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
+        Atom._add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
 
 
 def _traced_set_attr(attr, value=None, **kwargs):
@@ -1089,18 +1095,21 @@ def _traced_set_attr(attr, value=None, **kwargs):
 
         # Add the setAttr-command to the command stack
         if value is not None:
+            if _is_metadata_value(value):
+                value = value.metadata
+
             if joined_kwargs:
                 # If both value and kwargs were given
-                Atom.add_to_command_stack(
+                Atom._add_to_command_stack(
                     "cmds.setAttr({}, {}, edit=True, {})".format(attr, value, joined_kwargs)
                 )
             else:
                 # If only a value was given
-                Atom.add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
+                Atom._add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
         else:
             if joined_kwargs:
                 # If only kwargs were given
-                Atom.add_to_command_stack(
+                Atom._add_to_command_stack(
                     "cmds.setAttr({}, edit=True, {})".format(attr, joined_kwargs)
                 )
             else:
@@ -1127,14 +1136,12 @@ def _traced_get_attr(attr):
     else:
         return_value = attr
 
-    '''
-    NEED TO FIND A WAY TO KEEP TRACK OF THESE VALUES!
-    AS SOON AS VALUE IS RETURNED: THERE IS NO WAY TO TELL WHETHER THAT'S A NUMBER
-    OR A QUERIED NUMBER!
-
-
-    # If commands are traced...
     if Atom.trace_commands:
+        value_name = Atom._get_next_value_name()
+
+        return_value = metadata_values.val(return_value, metadata=value_name)
+
+        Atom.traced_values.append(return_value)
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
@@ -1148,13 +1155,11 @@ def _traced_get_attr(attr):
             # ...otherwise add quotes around original attr
             attr = "'{}'".format(attr)
 
-        queried_var = "AAAAA" # This would have to be like Node.traced_variables!
         # Add the getAttr-command to the command stack
         if list_of_tuples_returned:
-            Atom.add_to_command_stack("{} = cmds.getAttr({})".format(queried_var, attr))
+            Atom._add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(value_name, attr))
         else:
-            Atom.add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(queried_var, attr))
-    '''
+            Atom._add_to_command_stack("{} = cmds.getAttr({})".format(value_name, attr))
 
     return return_value
 
@@ -1208,7 +1213,7 @@ def _traced_connect_attr(attr_a, attr_b):
             formatted_attrs.append(formatted_attr)
 
         # Add the connectAttr-command to the command stack
-        Atom.add_to_command_stack(
+        Atom._add_to_command_stack(
             "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_attrs)
         )
 
@@ -1386,9 +1391,10 @@ class Tracer(object):
         # Do not add to stack if unwanted
         Atom.trace_commands = bool(self.trace)
 
-        Atom.flush_command_stack()
+        Atom._flush_command_stack()
         Atom.traced_nodes = []
         Atom.traced_variables = []
+        Atom.traced_values = []
 
         return Atom.executed_commands_stack
 
