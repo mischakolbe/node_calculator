@@ -35,6 +35,12 @@ reload(metadata_values)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CONSTANTS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+STANDARD_SEPARATOR_NICENAME = "_"*8
+STANDARD_SEPARATOR_VALUE = "_"*8
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SETUP LOGGER
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 logger.clear_handlers()
@@ -814,6 +820,27 @@ class BaseNode(Atom):
             enum_name = ":".join(enum_name)
 
         return self._add_traced_attr("enum", name, enumName=enum_name, **kwargs)
+
+    def add_separator(
+            self,
+            name=STANDARD_SEPARATOR_NICENAME,
+            enum_name=STANDARD_SEPARATOR_VALUE,
+            cases=None,
+            **kwargs):
+        """
+        Create a separator-attribute
+        """
+
+        # Find the next available longName for the new separator
+        node = self.node
+        base_long_name = "channelBoxSeparator"
+        index = 1
+        unique_long_name = "{}{}".format(base_long_name, index)
+        while cmds.attributeQuery(unique_long_name, node=node, exists=True):
+            index += 1
+            unique_long_name = "{}{}".format(base_long_name, index)
+
+        return self.add_enum(unique_long_name, enum_name=enum_name, cases=cases, niceName=name)
 
     def _add_traced_attr(self, attr_type, attr_name, **kwargs):
         """
