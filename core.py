@@ -862,7 +862,7 @@ class BaseNode(Atom):
         attr = "{}.{}".format(self.node, attr_name)
         if cmds.objExists(attr):
             log.warn("Attribute {} already existed!".format(attr))
-            return self.__getattr__(attr)
+            return self.__getattr__(attr_name)
 
         # Make a copy of the default values for the given attrType
         attr_variables = lookup_tables.ATTR_LOOKUP_TABLE["base_attr"].copy()
