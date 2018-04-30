@@ -48,7 +48,7 @@ reload(metadata_values)
 # SETUP LOGGER
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 logger.clear_handlers()
-logger.setup_stream_handler(level=logger.logging.DEBUG)
+logger.setup_stream_handler(level=logger.logging.INFO)
 log = logger.log
 
 
@@ -68,15 +68,15 @@ def new(item, attrs=None, prevent_unravelling=False):
 
     # Redirect plain values right away to a metadata_value
     if isinstance(item, numbers.Real):
-        log.debug("new: Redirecting to Value({})".format(item))
+        log.info("new: Redirecting to Value({})".format(item))
         return metadata_values.val(item)
 
     # Redirect lists or tuples right away to a Collection
     if isinstance(item, (list, tuple)):
-        log.debug("new: Redirecting to Collection({})".format(item))
+        log.info("new: Redirecting to Collection({})".format(item))
         return Collection(item)
 
-    log.debug("new: Redirecting to Node({})".format(item))
+    log.info("new: Redirecting to Node({})".format(item))
     return Node(item, attrs, prevent_unravelling)
 
 
@@ -101,6 +101,203 @@ class Atom(object):
     def __init__(self):
         super(Atom, self).__init__()
 
+    def __add__(self, other):
+        """
+        Regular addition operator.
+
+        Example:
+            >>> Node("pCube1.ty") + 4
+        """
+        log.info("Atom __add__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("add", self, other)
+
+    def __radd__(self, other):
+        """
+        Reflected addition operator.
+        Fall-back method in case regular addition is not defined & fails.
+
+        Example:
+            >>> 4 + Node("pCube1.ty")
+        """
+        log.info("Atom __radd__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("add", other, self)
+
+    def __sub__(self, other):
+        """
+        Regular subtraction operator.
+
+        Example:
+            >>> Node("pCube1.ty") - 4
+        """
+        log.info("Atom __sub__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("sub", self, other)
+
+    def __rsub__(self, other):
+        """
+        Reflected subtraction operator.
+        Fall-back method in case regular subtraction is not defined & fails.
+
+        Example:
+            >>> 4 - Node("pCube1.ty")
+        """
+        log.info("Atom __rsub__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("sub", other, self)
+
+    def __mul__(self, other):
+        """
+        Regular multiplication operator.
+
+        Example:
+            >>> Node("pCube1.ty") * 4
+        """
+        log.info("Atom __mul__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("mul", self, other)
+
+    def __rmul__(self, other):
+        """
+        Reflected multiplication operator.
+        Fall-back method in case regular multiplication is not defined & fails.
+
+        Example:
+            >>> 4 * Node("pCube1.ty")
+        """
+        log.info("Atom __rmul__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("mul", other, self)
+
+    def __div__(self, other):
+        """
+        Regular division operator.
+
+        Example:
+            >>> Node("pCube1.ty") / 4
+        """
+        log.info("Atom __div__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("div", self, other)
+
+    def __rdiv__(self, other):
+        """
+        Reflected division operator.
+        Fall-back method in case regular division is not defined & fails.
+
+        Example:
+            >>> 4 / Node("pCube1.ty")
+        """
+        log.info("Atom __rdiv__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("div", other, self)
+
+    def __pow__(self, other):
+        """
+        Regular power operator.
+
+        Example:
+            >>> Node("pCube1.ty") ** 4
+        """
+        log.info("Atom __pow__ ({}, {})".format(self, other))
+
+        return _create_and_connect_node("pow", self, other)
+
+    def __eq__(self, other):
+        """
+        Equality operator: ==
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        log.info("Atom __eq__ ({}, {})".format(self, other))
+
+        return self._compare(other, "eq")
+
+    def __ne__(self, other):
+        """
+        Inequality operator: !=
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        log.info("Atom __ne__ ({}, {})".format(self, other))
+
+        return self._compare(other, "ne")
+
+    def __gt__(self, other):
+        """
+        Greater than operator: >
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        log.info("Atom __gt__ ({}, {})".format(self, other))
+
+        return self._compare(other, "gt")
+
+    def __ge__(self, other):
+        """
+        Greater equal operator: >=
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        log.info("Atom __ge__ ({}, {})".format(self, other))
+
+        return self._compare(other, "ge")
+
+    def __lt__(self, other):
+        """
+        Less than operator: <
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        log.info("Atom __lt__ ({}, {})".format(self, other))
+
+        return self._compare(other, "lt")
+
+    def __le__(self, other):
+        """
+        Less equal operator: <=
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        log.info("Atom __le__ ({}, {})".format(self, other))
+
+        return self._compare(other, "le")
+
+    @classmethod
+    def add_to_node_stack(cls, node):
+        """
+        Add a node to the class-variable created_nodes_stack
+        """
+        cls.created_nodes_stack.append(node)
+
+    @classmethod
+    def flush_node_stack(cls):
+        """
+        Reset the class-variable created_nodes_stack to an empty list
+        """
+        cls.created_nodes_stack = []
+
+    @classmethod
+    def add_to_command_stack(cls, command):
+        """
+        Add a command to the class-variable executed_commands_stack
+        """
+        cls.executed_commands_stack.append(command)
+
+    @classmethod
+    def flush_command_stack(cls):
+        """
+        Reset the class-variable executed_commands_stack to an empty list
+        """
+        cls.executed_commands_stack = []
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BaseNode
@@ -114,7 +311,7 @@ class BaseNode(Atom):
         self.__dict__["prevent_unravelling"] = prevent_unravelling
 
     def __len__(self):
-        log.debug("BaseNode __len__ ({})".format(self))
+        log.info("BaseNode __len__ ({})".format(self))
         return len(self.attrs_list)
 
     def as_str(self):
@@ -159,6 +356,29 @@ class BaseNode(Atom):
 
         return return_list
 
+    def get(self):
+        """
+        Helper function to allow easy access to the value of a Node-attributes.
+        Equivalent to a getAttr.
+
+        Returns:
+            Int, Float, List - depending on the "queried" attributes.
+        """
+        log.info("BaseNode get ({})".format(self))
+
+        if len(self.attrs_list) == 1:
+            return_value = _traced_get_attr("{}.{}".format(self.node, self.attrs_list[0]))
+            return return_value
+        elif len(self.attrs_list):
+            return_value = _traced_get_attr([
+                "{}.{}".format(self.node, attr) for attr in self.attrs_list
+            ])
+            return return_value
+        else:
+            log.warn("No attribute exists on {}! Returned None".format(self))
+
+            return None
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ATTRS
@@ -168,7 +388,7 @@ class Attrs(BaseNode):
     """
 
     def __init__(self, holder_node, attrs):
-        log.debug("Attrs __init__ ({}, {})".format(holder_node, attrs))
+        log.info("Attrs __init__ ({}, {})".format(holder_node, attrs))
         self.__dict__["_holder_node"] = holder_node
 
         if isinstance(attrs, basestring):
@@ -178,12 +398,12 @@ class Attrs(BaseNode):
 
     @property
     def node(self):
-        # log.debug("Attrs @property node")
+        # log.info("Attrs @property node")
         return self._holder_node.node
 
     @property
     def attrs(self):
-        # log.debug("Attrs @property attrs")
+        # log.info("Attrs @property attrs")
         return self
 
     @property
@@ -200,7 +420,7 @@ class Attrs(BaseNode):
         """
         log.debug("Attrs __str__ ({}, {})".format(self.node, self.attrs_list))
 
-        return "Attrs({})".format(self.attrs_list)
+        return "Attrs({})".format(self.attrs_list, self.node)
 
     def __repr__(self):
         """
@@ -226,7 +446,7 @@ class Attrs(BaseNode):
         return return_value
 
     def __getattr__(self, name):
-        log.debug("Attrs __getattr__ ({})".format(name))
+        log.info("Attrs __getattr__ ({})".format(name))
 
         if len(self.attrs_list) != 1:
             log.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
@@ -234,7 +454,7 @@ class Attrs(BaseNode):
         return Attrs(self._holder_node, self.attrs_list[0] + "." + name)
 
     def __setattr__(self, name, value):
-        log.debug("Attrs __setattr__ ({})".format(name, value))
+        log.info("Attrs __setattr__ ({})".format(name, value))
 
         _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
 
@@ -246,12 +466,12 @@ class Attrs(BaseNode):
             index (int): Index of item to be set
             value (Node, str, int, float): desired value for the given index
         """
-        log.debug("Attrs __getitem__ ({})".format(index))
+        log.info("Attrs __getitem__ ({})".format(index))
 
         return Attrs(self._holder_node, self.attrs_list[index])
 
     def __setitem__(self, index, value):
-        log.debug("Attrs __setitem__ ({}, {})".format(index, value))
+        log.info("Attrs __setitem__ ({}, {})".format(index, value))
 
         if isinstance(value, numbers.Real):
             log.error(
@@ -269,7 +489,7 @@ class Node(BaseNode):
     """
 
     def __init__(self, node, attrs=None, prevent_unravelling=False):
-        log.debug("Node __init__ ({}, {}, {})".format(node, attrs, prevent_unravelling))
+        log.info("Node __init__ ({}, {}, {})".format(node, attrs, prevent_unravelling))
 
         # Plain values should be Value-instance!
         if isinstance(node, numbers.Real):
@@ -333,7 +553,7 @@ class Node(BaseNode):
         return return_value
 
     def __getattr__(self, name):
-        log.debug("Node __getattr__ ({})".format(name))
+        log.info("Node __getattr__ ({})".format(name))
 
         # Take care of keyword attrs!
         if name == "attrs":
@@ -342,17 +562,17 @@ class Node(BaseNode):
         return Attrs(self, name)
 
     def __setattr__(self, name, value):
-        log.debug("Node __setattr__ ({})".format(name, value))
+        log.info("Node __setattr__ ({})".format(name, value))
 
         _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
 
     def __getitem__(self, index):
-        log.debug("Node __getitem__ ({})".format(index))
+        log.info("Node __getitem__ ({})".format(index))
 
         return Node(self._node_mobj, self.attrs[index], prevent_unravelling=self.prevent_unravelling)
 
     def __setitem__(self, index, value):
-        log.debug("Node __setitem__ ({}, {})".format(index, value))
+        log.info("Node __setitem__ ({}, {})".format(index, value))
 
         _unravel_and_set_or_connect_a_to_b(self[index], value)
 
@@ -366,7 +586,7 @@ class Node(BaseNode):
 
     @property
     def node(self):
-        # log.debug("Node @property node")
+        # log.info("Node @property node")
         return om_util.get_long_name_of_mobj(self._node_mobj)
 
 
@@ -376,7 +596,7 @@ class Node(BaseNode):
 class Collection(Atom):
 
     def __init__(self, *args):
-        log.debug("Collection __init__ ({})".format(args))
+        log.info("Collection __init__ ({})".format(args))
         super(Collection, self).__init__()
 
         # If arguments are given as a list: Unpack the items from it
@@ -413,53 +633,14 @@ class Collection(Atom):
         return "{}".format(self.elements)
 
     def __getitem__(self, index):
-        log.debug("Collection __getitem__ ({})".format(index))
+        log.info("Collection __getitem__ ({})".format(index))
 
         return self.elements[index]
 
     def __setitem__(self, index, value):
-        log.debug("Collection __setitem__ ({}, {})".format(index, value))
+        log.info("Collection __setitem__ ({}, {})".format(index, value))
 
         self.elements[index] = value
-
-
-# def _traced_create_node(operation, involved_attributes):
-#     """
-#     Maya-createNode that adds the executed command to the command_stack if Tracer is active
-#     Creates a named node of appropriate type for the necessary operation
-#     """
-#     node_type = lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]
-#     node_name = _create_node_name(operation, involved_attributes)
-#     new_node = cmds.ls(cmds.createNode(node_type, name=node_name), long=True)[0]
-
-#     return new_node
-
-
-# def _traced_set_attr(attr, value=None, **kwargs):
-#     """
-#     Maya-setAttr that adds the executed command to the command_stack if Tracer is active
-#     """
-#     if value is None:
-#         cmds.setAttr(attr, edit=True, **kwargs)
-#     else:
-#         cmds.setAttr(attr, value, edit=True, **kwargs)
-
-
-# def _traced_get_attr(attr):
-#     """
-#     Maya-getAttr that adds the executed command to the command_stack if Tracer is active,
-#     Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
-#     """
-#     return_value = cmds.getAttr(attr)
-
-#     return return_value
-
-
-# def _traced_connect_attr(attr_a, attr_b):
-#     """
-#     Maya-connectAttr that adds the executed command to the command_stack if Tracer is active
-#     """
-#     cmds.connectAttr(attr_a, attr_b, force=True)
 
 
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
@@ -478,7 +659,7 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         obj_b (Node, int, float, list, tuple, string): Can be a numeric value, a list of values
             or another plug either in the form of a Node-object or as a string ("node.attr")
     """
-    log.debug("_unravel_and_set_or_connect_a_to_b ({}, {})".format(obj_a, obj_b))
+    log.info("_unravel_and_set_or_connect_a_to_b ({}, {})".format(obj_a, obj_b))
 
     obj_a_unravelled_list, obj_b_unravelled_list = _unravel_a_and_b(obj_a, obj_b)
 
@@ -514,10 +695,25 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         )
         return False
 
+    if obj_a_dim > 3:
+        log.warn(
+            "obj_a {} is {}D; greater than 3D! Many operations only work stable up to 3D!".format(
+                obj_a_unravelled_list,
+                obj_a_dim,
+            )
+        )
+    if obj_b_dim > 3:
+        log.warn(
+            "obj_b {} is {}D; greater than 3D! Many operations only work stable up to 3D!".format(
+                obj_b_unravelled_list,
+                obj_b_dim,
+            )
+        )
+
     # Match input-dimensions: Both obj_X_matched_list have the same length
     # This takes care of 1D to XD setting/connecting
     if obj_a_dim != obj_b_dim:
-        log.debug(
+        log.info(
             "Matched obj_b_unravelled_list {} dimension to obj_a_dim {}!".format(
                 obj_b_unravelled_list,
                 obj_a_dim,
@@ -534,7 +730,7 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
 
 
 def _reduce_a_and_b_to_min_dimension(obj_a_list, obj_b_list):
-    log.debug("_reduce_a_and_b_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
+    log.info("_reduce_a_and_b_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
 
     # A 3D to 3D connection can be 1 connection if both have a parent-attribute!
     reduced_obj_a_list = _check_for_parent_attribute(obj_a_list)
@@ -559,7 +755,7 @@ def _check_for_parent_attribute(plug_list):
                     otherwise returns None
     """
     # Make sure all attributes are unique, so [outputX, outputX, outputZ] doesn't match to output)
-    log.debug("_check_for_parent_attribute ({})".format(plug_list))
+    log.info("_check_for_parent_attribute ({})".format(plug_list))
 
     if len(set(plug_list)) != len(plug_list):
         return None
@@ -625,7 +821,7 @@ def _check_for_parent_attribute(plug_list):
 
 
 def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
-    log.debug("_set_or_connect_a_to_b ({}, {}, {})".format(obj_a_list, obj_b_list, kwargs))
+    log.info("_set_or_connect_a_to_b ({}, {}, {})".format(obj_a_list, obj_b_list, kwargs))
 
     for obj_a_item, obj_b_item in zip(obj_a_list, obj_b_list):
         # Make sure obj_a_item exists in the Maya scene and get its dimensionality
@@ -654,7 +850,7 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
 
 def _is_valid_maya_attr(path):
     """ Check if given attr-path is of an existing Maya attribute """
-    log.debug("_is_valid_maya_attr ({})".format(path))
+    log.info("_is_valid_maya_attr ({})".format(path))
 
     if isinstance(path, basestring) and "." in path:
         node, attr = path.split(".", 1)
@@ -664,12 +860,12 @@ def _is_valid_maya_attr(path):
 
 
 def _unravel_a_and_b(obj_a, obj_b):
-    log.debug("_unravel_a_and_b ({}, {})".format(obj_a, obj_b))
+    log.info("_unravel_a_and_b ({}, {})".format(obj_a, obj_b))
 
     obj_a_unravelled_list = _unravel_item_as_list(obj_a)
-    log.debug("obj_a_unravelled_list {} from obj_a {}".format(obj_a_unravelled_list, obj_a))
+    log.info("obj_a_unravelled_list {} from obj_a {}".format(obj_a_unravelled_list, obj_a))
     obj_b_unravelled_list = _unravel_item_as_list(obj_b)
-    log.debug("obj_b_unravelled_list {} from obj_b {}".format(obj_b_unravelled_list, obj_b))
+    log.info("obj_b_unravelled_list {} from obj_b {}".format(obj_b_unravelled_list, obj_b))
 
     return (obj_a_unravelled_list, obj_b_unravelled_list)
 
@@ -689,7 +885,7 @@ def _create_and_connect_node(operation, *args):
         New Maya-node of type NODE_LOOKUP_TABLE[operation]["node"]
     """
     # If a multi_index-attribute is given; create list with it of same length than args
-    log.debug("Creating a new {}-operationNode with args: {}".format(operation, args))
+    log.info("Creating a new {}-operationNode with args: {}".format(operation, args))
     new_node_inputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"]
     if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
         new_node_inputs = len(args) * lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"][:]
@@ -738,7 +934,7 @@ def _create_and_connect_node(operation, *args):
                 )
                 return False
             else:
-                log.debug("Directly connecting 1D input to 1D obj!")
+                log.info("Directly connecting 1D input to 1D obj!")
                 _set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
                 continue
 
@@ -818,8 +1014,8 @@ def _traced_create_node(operation, involved_attributes):
     node_name = _create_node_name(operation, involved_attributes)
     new_node = cmds.ls(cmds.createNode(node_type, name=node_name), long=True)[0]
 
-    if Node.trace_commands:
-        current_variable = Node.traced_variables
+    if Atom.trace_commands:
+        current_variable = Atom.traced_variables
         if not current_variable:
             current_variable = "var1"
         else:
@@ -833,8 +1029,8 @@ def _traced_create_node(operation, involved_attributes):
                 name=new_node
             )
         )
-        Node.traced_variables.append(current_variable)
-        Node.traced_nodes.append(new_node)
+        Atom.traced_variables.append(current_variable)
+        Atom.traced_nodes.append(new_node)
 
     return new_node
 
@@ -846,11 +1042,11 @@ def _traced_add_attr(node, **kwargs):
     cmds.addAttr(node, **kwargs)
 
     # If commands are traced...
-    if Node.trace_commands:
+    if Atom.trace_commands:
 
-        if node in Node.traced_nodes:
+        if node in Atom.traced_nodes:
             # ...check if node is already part of the traced nodes: Use its variable instead
-            node = Node.traced_variables[Node.traced_nodes.index(node)]
+            node = Atom.traced_variables[Atom.traced_nodes.index(node)]
         else:
             # ...otherwise add quotes around it
             node = "'{}'".format(node)
@@ -874,14 +1070,14 @@ def _traced_set_attr(attr, value=None, **kwargs):
         cmds.setAttr(attr, value, edit=True, **kwargs)
 
     # If commands are traced...
-    if Node.trace_commands:
+    if Atom.trace_commands:
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
-        if node in Node.traced_nodes:
+        if node in Atom.traced_nodes:
             # ...if it is already part of the traced nodes: Use its variable instead
             attr = "{} + '.{}'".format(
-                Node.traced_variables[Node.traced_nodes.index(node)],
+                Atom.traced_variables[Atom.traced_nodes.index(node)],
                 ".".join(attr.split(".")[1:])
             )
         else:
@@ -938,7 +1134,7 @@ def _traced_get_attr(attr):
 
 
     # If commands are traced...
-    if Node.trace_commands:
+    if Atom.trace_commands:
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
@@ -994,7 +1190,7 @@ def _traced_connect_attr(attr_a, attr_b):
     cmds.connectAttr(attr_a, attr_b, force=True)
 
     # If commands are traced...
-    if Node.trace_commands:
+    if Atom.trace_commands:
 
         # Format both attributes correctly
         formatted_attrs = []
@@ -1003,8 +1199,8 @@ def _traced_connect_attr(attr_a, attr_b):
             # Look for the node of the current attribute...
             node = attr.split(".")[0]
             # ...if it is already part of the traced nodes: Use its variable instead...
-            if node in Node.traced_nodes:
-                node_variable = Node.traced_variables[Node.traced_nodes.index(node)]
+            if node in Atom.traced_nodes:
+                node_variable = Atom.traced_variables[Node.traced_nodes.index(node)]
                 formatted_attr = "{} + '.{}'".format(node_variable, ".".join(attr.split(".")[1:]))
             # ...otherwise make sure it's stored as a string
             else:
@@ -1024,7 +1220,7 @@ def _unravel_item_as_list(item):
     """
     Get unravelled item. Ensures that return value is a list
     """
-    log.debug("_unravel_item_as_list ({})".format(item))
+    log.info("_unravel_item_as_list ({})".format(item))
     unravelled_item = _unravel_item(item)
 
     if not isinstance(unravelled_item, list):
@@ -1050,7 +1246,7 @@ def _unravel_item(item):
     - metadata variables
     """
 
-    log.debug("_unravel_item ({})".format(item))
+    log.info("_unravel_item ({})".format(item))
 
     if isinstance(item, Collection):
         return _unravel_collection(item)
@@ -1077,14 +1273,14 @@ def _unravel_item(item):
 
 
 def _unravel_collection(collection_instance):
-    log.debug("_unravel_collection ({})".format(collection_instance))
+    log.info("_unravel_collection ({})".format(collection_instance))
 
     # A Collection is basically just a list, so redirect to _unravel_list
     return _unravel_list(collection_instance.elements)
 
 
 def _unravel_node_instance(node_instance):
-    log.debug("_unravel_node_instance ({})".format(node_instance))
+    log.info("_unravel_node_instance ({})".format(node_instance))
 
     if len(node_instance.attrs_list) == 0:
         return_value = node_instance.node
@@ -1102,7 +1298,7 @@ def _unravel_node_instance(node_instance):
 
 
 def _unravel_attrs_instance(attrs_instance):
-    log.debug("_unravel_attrs_instance ({})".format(attrs_instance))
+    log.info("_unravel_attrs_instance ({})".format(attrs_instance))
 
     # An Attrs instance can be easily made into a Node-instance.
     # That way only the Node unravelling must be handled.
@@ -1117,7 +1313,7 @@ def _unravel_attrs_instance(attrs_instance):
 
 
 def _unravel_list(list_instance):
-    log.debug("_unravel_list ({})".format(list_instance))
+    log.info("_unravel_list ({})".format(list_instance))
 
     unravelled_list = []
     for item in list_instance:
@@ -1129,7 +1325,7 @@ def _unravel_list(list_instance):
 
 
 def _unravel_str(str_instance):
-    log.debug("_unravel_str ({})".format(str_instance))
+    log.info("_unravel_str ({})".format(str_instance))
 
     # Since a string most likely indicates a maya node or attribute:
     # Make it a Node and unravel it
@@ -1149,7 +1345,7 @@ def _unravel_plug(node, attr):
     # Didn't manage to query indexed attrs properly ~.~
     # Since objExists was already run it is probably safe(ish) to ignore...
     """
-    log.debug("_unravel_plug ({}, {})".format(node, attr))
+    log.info("_unravel_plug ({}, {})".format(node, attr))
 
     attr_children = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True)
 
@@ -1159,3 +1355,59 @@ def _unravel_plug(node, attr):
         return_value = "{}.{}".format(node, attr)
 
     return return_value
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# TRACER
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Tracer(object):
+    """
+    Class that returns all maya-commands inside the with-statement
+
+    Example:
+        ::
+
+            with Tracer(pprint_trace=True) as s:
+                a.tx = b.ty - 2 * c.tz
+            print(s)
+    """
+
+    def __init__(self, trace=True, print_trace=False, pprint_trace=False):
+        # Allow either note or notes as keywords
+        self.trace = trace
+        self.print_trace = print_trace
+        self.pprint_trace = pprint_trace
+
+    def __enter__(self):
+        """
+        with-statement; entering-method
+        Flushes executed_commands_stack (Node-classAttribute) and starts tracing
+        """
+        # Do not add to stack if unwanted
+        Atom.trace_commands = bool(self.trace)
+
+        Atom.flush_command_stack()
+        Atom.traced_nodes = []
+        Atom.traced_variables = []
+
+        return Atom.executed_commands_stack
+
+    def __exit__(self, exc_type, value, traceback):
+        """
+        with-statement; exit-method
+        Print all executed commands, if desired
+        """
+        # Tell the user if he/she wants to print results but they were not traced!
+        if not self.trace and (self.print_trace or self.pprint_trace):
+            print("node_calculator commands were not traced!")
+        else:
+            # Print executed commands as list
+            if self.print_trace:
+                print("node_calculator command-stack:", Atom.executed_commands_stack)
+            # Print executed commands on separate lines
+            if self.pprint_trace:
+                print("~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~")
+                for item in Atom.executed_commands_stack:
+                    print(item)
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        Atom.trace_commands = False
