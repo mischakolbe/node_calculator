@@ -3,20 +3,10 @@ Create a node-network by entering a math-formula.
 
 
 a1 = noca.new("A")
-print a1, type(a1)
-
 a2 = noca.new("A", ["tx"])
-print a2, type(a2)
-
 a3 = noca.new("A", ["tx", "ty"])
-print a3, type(a3)
-
 b = noca.new(2)
-print b, type(b)
-
 c = noca.new(["A", "B"])
-print c, type(c)
-
 
 Node or Attrs instance:
 node -> returns str of Maya node
@@ -78,6 +68,359 @@ def new(item, attrs=None, prevent_unravelling=False):
 
     log.info("new: Redirecting to Node({})".format(item))
     return Node(item, attrs, prevent_unravelling)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# OPERATORS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class OperatorMetaClass(object):
+    """
+    Base class for node_calculator operators: Everything that goes beyond basic operators (+-*/)
+
+    A meta-class was used, because many methods of this class are created on the fly
+    in the __init__ method. First I simply instantiated the class, but a metaclass
+    is more elegant (thanks, @sbi!).
+    """
+
+    def __init__(self, name, bases, body):
+        """
+        Operator-class constructor
+
+        Note:
+            name, bases, body are necessary for metaClass to work properly
+        """
+        super(OperatorMetaClass, self).__init__()
+
+    @staticmethod
+    def condition(condition_node, if_part=False, else_part=True):
+        """
+        Create condition-node
+
+        Note:
+            condition_node must be a Node-object.
+            This Node-object gets automatically created by the overloaded
+            comparison-operators of the Node-class and should not require manual setup!
+            Simply use the usual comparison operators (==, >, <=, etc.) in the first argument.
+
+        Args:
+            condition_node (Node): Condition-statement. Node is automatically created; see notes!
+            if_part (Node, str, int, float): Value/plug if condition is true
+            else_part (Node, str, int, float): Value/plug if condition is false
+
+        Returns:
+            Node: Instance with condition-node and outColor-attributes
+
+        Example:
+            ::
+
+                Op.condition(Node("pCube1.tx") >= 2, Node("pCube2.ty")+2, 5 - 1234567890)
+                       |    condition-part    |   "if true"-part   | "if false"-part
+        """
+        # Make sure condition_node is of expected Node-type!
+        # condition_node was created during comparison of Node-object(s)
+        if not isinstance(condition_node, Node):
+            log.error("{0} isn't Node-instance.".format(condition_node))
+        if cmds.objectType(condition_node.node) != "condition":
+            log.error("{0} isn't of type condition.".format(condition_node))
+
+        condition_inputs = [
+            ["colorIfTrueR", "colorIfTrueG", "colorIfTrueB"],
+            ["colorIfFalseR", "colorIfFalseG", "colorIfFalseB"],
+        ]
+        condition_outputs = ["outColorR", "outColorG", "outColorB"]
+
+        max_dim = max([len(_unravel_item_as_list(x)) for x in [if_part, else_part]])
+
+        for condition_node_input, obj_to_connect in zip(condition_inputs, [if_part, else_part]):
+            condition_node_input_list = [
+                (condition_node.node + "." + x) for x in condition_node_input[:max_dim]
+            ]
+
+            _unravel_and_set_or_connect_a_to_b(condition_node_input_list, obj_to_connect)
+
+        return Node(condition_node.node, condition_outputs[:max_dim])
+
+    @staticmethod
+    def blend(attr_a, attr_b, blend_value=0.5):
+        """
+        Create blendColor-node
+
+        Args:
+            attr_a (Node, str, int, float): Plug or value to blend from
+            attr_b (Node, str, int, float): Plug or value to blend to
+            blend_value (Node, str, int, float): Plug or value defining blend-amount
+
+        Returns:
+            Node: Instance with blend-node and output-attributes
+
+        Example:
+            >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
+        """
+        return _create_and_connect_node('blend', attr_a, attr_b, blend_value)
+
+    @staticmethod
+    def length(attr_a, attr_b=0):
+        """
+        Create distanceBetween-node
+
+        Args:
+            attr_a (Node, str, int, float): Plug or value for point A
+            attr_b (Node, str, int, float): Plug or value for point B
+
+        Returns:
+            Node-object with distanceBetween-node and distance-attribute
+
+        Example:
+            >>> Op.len(Node("pCube.t"), [1, 2, 3])
+        """
+        return _create_and_connect_node('length', attr_a, attr_b)
+
+    @staticmethod
+    def matrix_distance(matrix_a, matrix_b):
+        """
+        Create distanceBetween-node hooked up to inMatrix attrs
+
+        Args:
+            matrix_a (Node, str): Matrix Plug
+            matrix_b (Node, str): Matrix Plug
+
+        Returns:
+            Node: Instance with distanceBetween-node and distance-attribute
+
+        Example:
+            >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
+        """
+        return _create_and_connect_node('matrix_distance', matrix_a, matrix_b)
+
+    @staticmethod
+    def clamp(attr_a, min_value=0, max_value=1):
+        """
+        Create clamp-node
+
+        Args:
+            attr_a (Node, str, int, float): Input value
+            min_value (Node, int, float, list): min-value for clamp-operation
+            max_value (Node, int, float, list): max-value for clamp-operation
+
+        Returns:
+            Node: Instance with clamp-node and output-attribute(s)
+
+        Example:
+            >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
+        """
+        return _create_and_connect_node('clamp', attr_a, min_value, max_value)
+
+    @staticmethod
+    def remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1):
+        """
+        Create setRange-node
+
+        Args:
+            attr_a (Node, str, int, float): Input value
+            min_value (Node, int, float, list): min-value for remap-operation
+            max_value (Node, int, float, list): max-value for remap-operation
+            old_min_value (Node, int, float, list): old min-value for remap-operation
+            old_max_value (Node, int, float, list): old max-value for remap-operation
+
+        Returns:
+            Node: Instance with setRange-node and output-attribute(s)
+
+        Example:
+            >>> Op.remap(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
+        """
+        return _create_and_connect_node(
+            'remap', attr_a, min_value, max_value, old_min_value, old_max_value
+        )
+
+    @staticmethod
+    def dot(attr_a, attr_b=0, normalize=False):
+        """
+        Create vectorProduct-node for vector dot-multiplication
+
+        Args:
+            attr_a (Node, str, int, float, list): Plug or value for vector A
+            attr_b (Node, str, int, float, list): Plug or value for vector B
+            normalize (Node, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            Node: Instance with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
+        """
+        return _create_and_connect_node('dot', attr_a, attr_b, normalize)
+
+    @staticmethod
+    def cross(attr_a, attr_b=0, normalize=False):
+        """
+        Create vectorProduct-node for vector cross-multiplication
+
+        Args:
+            attr_a (Node, str, int, float, list): Plug or value for vector A
+            attr_b (Node, str, int, float, list): Plug or value for vector B
+            normalize (Node, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            Node: Instance with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
+        """
+        return _create_and_connect_node('cross', attr_a, attr_b, normalize)
+
+    @staticmethod
+    def normalize_vector(in_vector, normalize=True):
+        """
+        Create vectorProduct-node to normalize the given vector
+
+        Args:
+            in_vector (Node, str, int, float, list): Plug or value for vector A
+            normalize (Node, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            Node: Instance with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.normalize_vector(Node("pCube.t"))
+        """
+        # Making normalize a flag allows the user to connect attributes to it
+        return _create_and_connect_node('normalize_vector', in_vector, normalize)
+
+    @staticmethod
+    def average(*attrs):
+        """
+        Create plusMinusAverage-node for averaging input attrs
+
+        Args:
+            attrs (Node, string, list): Any number of inputs to be averaged
+
+        Returns:
+            Node: Instance with plusMinusAverage-node and output-attribute(s)
+
+        Example:
+            >>> Op.average(Node("pCube.t"), [1, 2, 3])
+        """
+        return _create_and_connect_node('average', *attrs)
+
+    @staticmethod
+    def mult_matrix(*attrs):
+        """
+        Create multMatrix-node for multiplying matrices
+
+        Args:
+            attrs (Node, string, list): Any number of matrix inputs to be multiplied
+
+        Returns:
+            Node: Instance with multMatrix-node and output-attribute(s)
+
+        Example:
+            out = Node('pSphere')
+            matrix_mult = Op.mult_matrix(
+                Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
+            )
+            decomp = Op.decompose_matrix(matrix_mult)
+            out.t = decomp.outputTranslate
+            out.r = decomp.outputRotate
+            out.s = decomp.outputScale
+        """
+        return _create_and_connect_node('mult_matrix', *attrs)
+
+    @staticmethod
+    def decompose_matrix(in_matrix):
+        """
+        Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
+
+        Args:
+            in_matrix (Node, string): one matrix attribute to be decomposed
+
+        Returns:
+            Node: Instance with decomposeMatrix-node and output-attribute(s)
+
+        Example:
+            driver = Node('pCube1')
+            driven = Node('pSphere1')
+            decomp = Op.decompose_matrix(driver.worldMatrix)
+            driven.t = decomp.outputTranslate
+            driven.r = decomp.outputRotate
+            driven.s = decomp.outputScale
+        """
+        return _create_and_connect_node('decompose_matrix', in_matrix)
+
+    @staticmethod
+    def compose_matrix(**kwargs):
+        """
+        Create composeMatrix-node to assemble matrix from components (translation, rotation etc.)
+
+        Args:
+            kwargs: Possible kwargs described below (longName flags take precedence!)
+            translate (Node, str, int, float): [t] translate for matrix composition
+            rotate (Node, str, int, float): [r] rotate for matrix composition
+            scale (Node, str, int, float): [s] scale for matrix composition
+            shear (Node, str, int, float): [sh] shear for matrix composition
+            rotate_order (Node, str, int, float): [ro] rotate_order for matrix composition
+            euler_rotation (bool): Apply Euler filter on rotations
+
+        Returns:
+            Node: Instance with composeMatrix-node and output-attribute(s)
+
+        Example:
+            in_a = Node('pCube1')
+            in_b = Node('pCube2')
+            decomp_a = Op.decompose_matrix(in_a.worldMatrix)
+            decomp_b = Op.decompose_matrix(in_b.worldMatrix)
+            Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
+        """
+
+        translate = kwargs.get("translate", kwargs.get("t", 0))
+        rotate = kwargs.get("rotate", kwargs.get("r", 0))
+        scale = kwargs.get("scale", kwargs.get("s", 1))
+        shear = kwargs.get("shear", kwargs.get("sh", 0))
+        rotate_order = kwargs.get("rotate_order", kwargs.get("ro", 0))
+        euler_rotation = kwargs.get("euler_rotation", True)
+
+        compose_matrix_node = _create_and_connect_node(
+            'compose_matrix',
+            translate,
+            rotate,
+            scale,
+            shear,
+            rotate_order,
+            euler_rotation
+        )
+
+        return compose_matrix_node
+
+    @staticmethod
+    def choice(*inputs, **kwargs):
+        """
+        Create choice-node to switch between various input attributes
+
+        Args:
+            One or many inputs (any type possible). Optional selector (s=node.attr).
+            Note: Multi index input seems to also require one 'selector' per index. So we package
+            a copy of the same selector for each input
+
+        Returns:
+            Node: Instance with choice-node and output-attribute(s)
+
+        Example:
+            option_a = Node("pCube1")
+            option_b = Node("pCube2")
+            driver_attr = Node("pSphere.tx")
+            choice_node_obj = Op.choice(option_a.tx, option_b.tx, selector=driver_attr)
+            Node("pTorus1").tx = choice_node_obj
+        """
+        choice_node_obj = _create_and_connect_node('choice', *inputs)
+        # Since this is a multi-attr node it's hard to filter out the selector keyword
+        # in a perfect manner. This should do fine though.
+        _unravel_and_set_or_connect_a_to_b(choice_node_obj.selector, kwargs.get("selector", 0))
+
+        return choice_node_obj
+
+
+class Op(object):
+    """ Create Operator-class from OperatorMetaClass (check its doc string for reason why) """
+    __metaclass__ = OperatorMetaClass
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -304,6 +647,22 @@ class Atom(object):
         value_name = "val{}".format(len(cls.traced_values)+1)
         return value_name
 
+    def _compare(self, other, operator):
+        """
+        Create a Maya condition node set to the correct operation-type.
+
+        Args:
+            other (Node, int, float): Attr or value to compare self-attrs with
+            operator (string): Operation type available in Maya condition-nodes
+
+        Returns:
+            Node-instance of a newly created Maya condition-node
+        """
+        # Create new condition node set to the appropriate operation-type
+        return_val = _create_and_connect_node(operator, self, other)
+
+        return return_val
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BaseNode
@@ -513,7 +872,7 @@ class BaseNode(Atom):
             _traced_set_attr(attr, **set_attr_values)
         else:
             # If a value is given; use the set_or_connect function
-            _set_or_connect_a_to_b(attr, attr_value, **set_attr_values)
+            _unravel_and_set_or_connect_a_to_b(attr, attr_value, **set_attr_values)
 
         return Node(attr)
 
@@ -1073,7 +1432,7 @@ def _create_and_connect_node(operation, *args):
                 return False
             else:
                 log.info("Directly connecting 1D input to 1D obj!")
-                _set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
+                _unravel_and_set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
                 continue
 
         _unravel_and_set_or_connect_a_to_b(new_node_input_list, obj_to_connect)
