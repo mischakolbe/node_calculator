@@ -385,6 +385,138 @@ class BaseNode(Atom):
 
             return None
 
+    def add_bool(self, name, **kwargs):
+        """
+        Create a boolean-attribute for the given attribute
+
+        Args:
+            name (str): Name for the new attribute to be created
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").add_bool(value=True)
+        """
+        return self._add_traced_attr("bool", name, **kwargs)
+
+    def add_int(self, name, **kwargs):
+        """
+        Create an integer-attribute for the given attribute
+
+        Args:
+            name (str): Name for the new attribute to be created
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").add_int(value=123)
+        """
+        return self._add_traced_attr("int", name, **kwargs)
+
+    def add_float(self, name, **kwargs):
+        """
+        Create a float-attribute for the given attribute
+
+        Args:
+            name (str): Name for the new attribute to be created
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").add_float(value=3.21)
+        """
+        return self._add_traced_attr("float", name, **kwargs)
+
+    def add_enum(self, name, enum_name="", cases=None, **kwargs):
+        """
+        Create a boolean-attribute for the given attribute
+
+        Args:
+            name (str): Name for the new attribute to be created
+            enum_name (list, str): User-choices for the resulting enum-attribute
+            cases (list, str): Overrides enum_name, which I find a horrific name
+            kwargs (dict): User specified attributes to be set for the new attribute
+
+        Returns:
+            The Node-instance with the node and new attribute
+
+        Example:
+            >>> Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
+        """
+        if cases is not None:
+            enum_name = cases
+        if isinstance(enum_name, (list, tuple)):
+            enum_name = ":".join(enum_name)
+
+        return self._add_traced_attr("enum", name, enumName=enum_name, **kwargs)
+
+    def _add_traced_attr(self, attr_type, attr_name, **kwargs):
+        """
+        Create an attribute of type attr_type for the given node/attr-combination of self.
+
+        Args:
+            attr_type (str): Attribute type. Must be specified in the ATTR_LOOKUP_TABLE!
+            kwargs (dict): Any user specified flags & their values.
+                           Gets combined with values in ATTR_LOOKUP_TABLE!
+            XXX
+
+        Returns:
+            XXX
+        """
+        # Replace spaces in name not to cause Maya-warnings
+        attr_name = attr_name.replace(' ', '_')
+
+        # Check whether attribute already exists. If so; return early!
+        attr = "{}.{}".format(self.node, attr_name)
+        if cmds.objExists(attr):
+            log.warn("Attribute {} already existed!".format(attr))
+            return self.__getattr__(attr)
+
+        # Make a copy of the default values for the given attrType
+        attr_variables = lookup_tables.ATTR_LOOKUP_TABLE["base_attr"].copy()
+        attr_variables.update(lookup_tables.ATTR_LOOKUP_TABLE[attr_type])
+        log.debug("Copied default attr_variables: {}".format(attr_variables))
+
+        # Add the attr variable into the dictionary
+        attr_variables["longName"] = attr_name
+        # Override default values with kwargs
+        attr_variables.update(kwargs)
+        log.debug("Added custom attr_variables: {}".format(attr_variables))
+
+        # Extract attributes that need to be set via setAttr-command
+        set_attr_values = {
+            "channelBox": attr_variables.pop("channelBox", None),
+            "lock": attr_variables.pop("lock", None),
+        }
+        attr_value = attr_variables.pop("value", None)
+        log.debug("Extracted set_attr-variables from attr_variables: {}".format(attr_variables))
+        log.debug("set_attr-variables: {}".format(set_attr_values))
+
+        # Add the attribute
+        _traced_add_attr(self.node, **attr_variables)
+
+        # Filter for any values that need to be set via the setAttr command. Oh Maya...
+        set_attr_values = {
+            key: val for (key, val) in set_attr_values.iteritems()
+            if val is not None
+        }
+        log.debug("Pruned set_attr-variables: {}".format(set_attr_values))
+
+        # If there is no value to be set; set any attribute flags directly
+        if attr_value is None:
+            _traced_set_attr(attr, **set_attr_values)
+        else:
+            # If a value is given; use the set_or_connect function
+            _set_or_connect_a_to_b(attr, attr_value, **set_attr_values)
+
+        return Node(attr)
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ATTRS
