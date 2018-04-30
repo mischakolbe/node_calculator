@@ -61,26 +61,23 @@ except NameError:
     basestring = str
 
 
-def new(*args):
+def new(item, attrs=None):
     """
     Create a new node_calculator instance automatically, based on given args
     """
-    if not args:
-        # Should this return a BaseNode?...
-        log.error("new: No arguments given!")
 
     # Redirect plain values right away to a metadata_value
-    if isinstance(args[0], numbers.Real):
-        log.debug("new: Redirecting to Value({})".format(*args))
-        return metadata_values.val(*args)
+    if isinstance(item, numbers.Real):
+        log.debug("new: Redirecting to Value({})".format(item))
+        return metadata_values.val(item)
 
     # Redirect lists or tuples right away to a Collection
-    if isinstance(args[0], (list, tuple)):
-        log.debug("new: Redirecting to Collection({})".format(*args))
-        return Collection(*args)
+    if isinstance(item, (list, tuple)):
+        log.debug("new: Redirecting to Collection({})".format(item))
+        return Collection(item)
 
-    log.debug("new: Redirecting to Node({})".format(*args))
-    return Node(*args)
+    log.debug("new: Redirecting to Node({})".format(item))
+    return Node(item, attrs)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -333,7 +330,7 @@ class Node(BaseNode):
     def __getitem__(self, index):
         log.debug("Node __getitem__ ({})".format(index))
 
-        return Node(self._node_mobj, self.attrs[0])
+        return Node(self._node_mobj, self.attrs[index])
 
     def __setitem__(self, index, value):
         log.debug("Node __setitem__ ({}, {})".format(index, value))
@@ -551,25 +548,115 @@ def _set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
             log.error(msg)
     '''
 
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# # UNRAVELLING INPUTS
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# def _get_unravelled_value_as_list(input_val):
-#     """
-#     Return a clean list of values or plugs
 
-#     Args:
-#         input_val (int, float, list, Node): input to be unravelled and returned as list
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# UNRAVELLING INPUTS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def _unravel_item_as_list(item):
+    """
+    Get unravelled item. Ensures that return value is a list
+    """
 
-#     Returns:
-#         list with values and (direct, ie all 1D-) plugs
-#     """
-#     log.debug("About to unravel >{0}< with {1}".format(input_val, type(input_val)))
+    unravelled_item = _unravel_item(item)
 
-#     unravelled_input = _get_unravelled_value(input_val)
-#     if not isinstance(unravelled_input, list):
-#         unravelled_input = [unravelled_input]
+    if not isinstance(unravelled_item, list):
+        unravelled_item = [unravelled_item]
 
-#     log.info("Input >{0}< --> unravelled to >{1}<".format(input_val, unravelled_input))
+    return unravelled_item
 
-#     return unravelled_input
+
+def _unravel_item(item):
+    """
+    Specifically supported types for item:
+    - Collection
+    - Node
+    - Attrs
+    - list, tuple
+    - basestring
+    - numbers
+    - metadata variables
+    """
+
+    log.debug("_unravel_item ({})".format(item))
+
+    if isinstance(item, Collection):
+        return _unravel_collection(item)
+
+    elif isinstance(item, Node):
+        return _unravel_node_instance(item)
+
+    elif isinstance(item, Attrs):
+        return _unravel_attrs_instance(item)
+
+    elif isinstance(item, (list, tuple)):
+        return _unravel_list(item)
+
+    elif isinstance(item, basestring):
+        return _unravel_str(item)
+
+    elif isinstance(item, numbers.Real):
+        return item
+
+    elif hasattr(item, 'metadata'):
+        # The check for metadata variables should be better than this...
+        return item
+
+    else:
+        log.error(
+            "_unravel_item can't unravel {} of type {}".format(item, type(item))
+        )
+
+
+def _unravel_collection(collection_instance):
+    log.debug("_unravel_collection ({})".format(collection_instance))
+
+    # A Collection is basically just a list, so redirect to _unravel_list
+    return _unravel_list(collection_instance.elements)
+
+
+def _unravel_node_instance(node_instance):
+    log.debug("_unravel_node_instance ({})".format(node_instance))
+
+    if len(node_instance.attrs) == 0:
+        return_value = node_instance.node
+    elif len(node_instance.attrs) == 1:
+        return_value = "{}.{}".format(node_instance.node, node_instance.attrs_list[0])
+    else:
+        return_value = [
+            "{}.{}".format(node_instance.node, attr) for attr in node_instance.attrs_list
+        ]
+
+    return return_value
+
+
+def _unravel_attrs_instance(attrs_instance):
+    log.debug("_unravel_attrs_instance ({})".format(attrs_instance))
+
+    # An Attrs instance can be easily made into a Node-instance.
+    # That way only the Node unravelling must be handled.
+    unravelled_node = _unravel_node_instance(
+        Node(attrs_instance.node, attrs_instance)
+    )
+    return unravelled_node
+
+
+def _unravel_list(list_instance):
+    log.debug("_unravel_list ({})".format(list_instance))
+
+    unravelled_list = []
+    for item in list_instance:
+        unravelled_item = _unravel_item(item)
+
+        unravelled_list.append(unravelled_item)
+
+    return unravelled_list
+
+
+def _unravel_str(str_instance):
+    log.debug("_unravel_str ({})".format(str_instance))
+
+    # Since a string most likely indicates a maya node or attribute:
+    # Make it a Node and unravel it
+    node_instance = Node(str_instance)
+
+    return _unravel_node_instance(node_instance)
