@@ -180,6 +180,29 @@ class LookupTableMetaClass(object):
                 ],
                 "output": ["outputMatrix"],
             },
+            "inverse_matrix": {
+                "node": "inverseMatrix",
+                "inputs": [
+                    ["inputMatrix"],
+                ],
+                "output": ["outputMatrix"],
+            },
+            "transpose_matrix": {
+                "node": "transposeMatrix",
+                "inputs": [
+                    ["inputMatrix"],
+                ],
+                "output": ["outputMatrix"],
+            },
+            "point_matrix_mult": {
+                "node": "pointMatrixMult",
+                "inputs": [
+                    ["inPointX", "inPointY", "inPointZ"],
+                    ["inMatrix"],
+                    ["vectorMultiply"],
+                ],
+                "output": ["outputX", "outputY", "outputZ"],
+            },
             "choice": {
                 "node": "choice",
                 "inputs": [

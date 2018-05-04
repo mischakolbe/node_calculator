@@ -12,6 +12,11 @@ Node or Attrs instance:
 node -> returns str of Maya node
 attrs -> returns Attrs-instance
 attrs_list -> returns list of attributes in Attrs
+
+
+TODO: decompose_matrix currently doesn't return full list of attributes, because
+        return new(new_node, outputs[:max_dim])
+      caps the outputs to "max_dim", which is 1 due to the single matrix input
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -395,6 +400,70 @@ class OperatorMetaClass(object):
         )
 
         return compose_matrix_node
+
+    @staticmethod
+    def inverse_matrix(in_matrix):
+        """
+        Create inverseMatrix-node to invert the given matrix
+
+        Args:
+            in_matrix (Node, str): Plug or value for in_matrix
+
+        Returns:
+            Node: Instance with inverseMatrix-node and output-attribute(s)
+
+        Example:
+            >>> Op.inverse_matrix(Node("pCube.worldMatrix"))
+        """
+
+        return _create_and_connect_node('inverse_matrix', in_matrix)
+
+    @staticmethod
+    def transpose_matrix(in_matrix):
+        """
+        Create transposeMatrix-node to transpose the given matrix
+
+        Args:
+            in_matrix (Node, str): Plug or value for in_matrix
+
+        Returns:
+            Node: Instance with transposeMatrix-node and output-attribute(s)
+
+        Example:
+            >>> Op.transpose_matrix(Node("pCube.worldMatrix"))
+        """
+
+        return _create_and_connect_node('transpose_matrix', in_matrix)
+
+    @staticmethod
+    def point_matrix_mult(in_vector, in_matrix, vector_multiply=False):
+        """
+        Create pointMatrixMult-node to transpose the given matrix
+
+        Args:
+            in_vector (Node, str, int, float, list): Plug or value for in_vector
+            in_matrix (Node, str): Plug or value for in_matrix
+            vector_multiply (Node, str, int, bool): Plug or value for vector_multiply
+
+        Returns:
+            Node: Instance with pointMatrixMult-node and output-attribute(s)
+
+        Example:
+            Op.point_matrix_mult(
+                Node("pSphere.t"),
+                Node("pCube.worldMatrix"),
+                vector_multiply=True
+            )
+        """
+
+        created_node = _create_and_connect_node(
+            'point_matrix_mult',
+            in_vector,
+            in_matrix,
+            vector_multiply
+        )
+
+        return created_node
 
     @staticmethod
     def choice(*inputs, **kwargs):
@@ -1467,10 +1536,11 @@ def _create_and_connect_node(operation, *args):
     # Support for single-dimension-outputs in the NODE_LOOKUP_TABLE. For example:
     # distanceBetween returns 1D attr, no matter what dimension the inputs were
     outputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["output"]
+
     if len(outputs) == 1:
-        return Node(new_node, outputs)
+        return new(new_node, outputs)
     else:
-        return Node(new_node, outputs[:max_dim])
+        return new(new_node, outputs[:max_dim])
 
 
 def _create_node_name(operation, *args):
