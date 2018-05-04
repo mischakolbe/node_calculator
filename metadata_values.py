@@ -13,18 +13,16 @@ Example:
         a.metadata = "metadata"
         # >>> AttributeError: 'int' object has no attribute 'metadata'
 
-TODO: Metadata and Tracer work already pretty nicely together. But if user
-does basic math operations with a metadata_value the metadata won't update correctly!
-Need to find a way how to trace user calculations. Does it simply forget that it was a traced val?
-The additional operations could be added as a separate metadata:  "+ 1" and the noca could
-concatenate the variable-name and these additional operations when they get plugged in somewhere:
-val1 -> val1 + 1
-Question then is: How to deal with parentheses and such things...
 """
+
+# Python modules
+import re
 
 # Local imports
 from . import logger
 reload(logger)
+from . import lookup_tables
+reload(lookup_tables)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,112 +82,158 @@ def create_metadata_val_class(class_type):
             """
             Regular addition operator.
             """
+            metadata = _concatenate_metadata("add", self, other)
             return_value = self._value + other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __radd__(self, other):
             """
             Reflected addition operator.
             Fall-back method in case regular addition is not defined & fails.
             """
+            metadata = _concatenate_metadata("add", other, self)
             return_value = other + self._value
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __sub__(self, other):
             """
             Regular subtraction operator.
             """
+            metadata = _concatenate_metadata("sub", self, other)
             return_value = self._value - other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __rsub__(self, other):
             """
             Reflected subtraction operator.
             Fall-back method in case regular subtraction is not defined & fails.
             """
+            metadata = _concatenate_metadata("sub", other, self)
             return_value = other - self._value
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __mul__(self, other):
             """
             Regular multiplication operator.
             """
+            metadata = _concatenate_metadata("mul", self, other)
             return_value = self._value * other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __rmul__(self, other):
             """
             Reflected multiplication operator.
             Fall-back method in case regular multiplication is not defined & fails.
             """
+            metadata = _concatenate_metadata("mul", other, self)
             return_value = other * self._value
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __div__(self, other):
             """
             Regular division operator.
             """
+            metadata = _concatenate_metadata("div", self, other)
             return_value = self._value / other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __rdiv__(self, other):
             """
             Reflected division operator.
             Fall-back method in case regular division is not defined & fails.
             """
+            metadata = _concatenate_metadata("div", other, self)
             return_value = other / self._value
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __pow__(self, other):
             """
             Regular power operator.
             """
+            metadata = _concatenate_metadata("pow", self, other)
             return_value = self._value ** other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __eq__(self, other):
             """
             Equality operator: ==
             """
+            metadata = _concatenate_metadata("eq", self, other)
             return_value = self._value == other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __ne__(self, other):
             """
             Inequality operator: !=
             """
+            metadata = _concatenate_metadata("ne", self, other)
             return_value = self._value != other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __gt__(self, other):
             """
             Greater than operator: >
             """
+            metadata = _concatenate_metadata("gt", self, other)
             return_value = self._value > other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __ge__(self, other):
             """
             Greater equal operator: >=
             """
+            metadata = _concatenate_metadata("ge", self, other)
             return_value = self._value >= other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __lt__(self, other):
             """
             Less than operator: <
             """
+            metadata = _concatenate_metadata("lt", self, other)
             return_value = self._value < other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
         def __le__(self, other):
             """
             Less equal operator: <=
             """
+            metadata = _concatenate_metadata("le", self, other)
             return_value = self._value <= other
-            return val(return_value, metadata=self.metadata, created_by_user=False)
+            return val(return_value, metadata=metadata, created_by_user=False)
 
     return MetadataValueClass
+
+
+def _concatenate_metadata(operator, input_a, input_b):
+    log.debug("_concatenate_metadata ({}, {}, {})".format(operator, input_a, input_b))
+    operator_data = lookup_tables.METADATA_CONCATENATION_TABLE[operator]
+    operator_symbol = operator_data.get("symbol")
+    is_associative = operator_data.get("associative", False)
+
+    # Replace input_a by its metadata, if input_a has such an attribute
+    if hasattr(input_a, "metadata"):
+        input_a = input_a.metadata
+
+    # Replace input_b by its metadata, if input_b has such an attribute
+    if hasattr(input_b, "metadata"):
+        input_b = input_b.metadata
+
+    # Any non-associative operation potentially needs parenthesis
+    if not is_associative:
+        # Match inputs that don't only consist of alphanums, spaces and dots
+        associative_pattern = re.compile(r"[a-zA-Z0-9\s.]")
+
+        # Add parenthesis to inputs that contain any characters not in pattern
+        if associative_pattern.sub('', str(input_a)):
+            input_a = "({})".format(input_a)
+        if associative_pattern.sub('', str(input_b)):
+            input_b = "({})".format(input_b)
+
+    # Concatenate the return metadata
+    return_metadata = "{} {} {}".format(input_a, operator_symbol, input_b)
+
+    return return_metadata
 
 
 def val(value, metadata=None, created_by_user=True):
@@ -250,6 +294,8 @@ def val(value, metadata=None, created_by_user=True):
 
     # Create a new instance of the specified type with the given value and metadata
     return_value = MetadataValue(value)
+    if metadata is None:
+        metadata = value
     return_value.metadata = metadata
     return_value.created_by_user = created_by_user
 

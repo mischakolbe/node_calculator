@@ -44,6 +44,46 @@ ATTR_LOOKUP_TABLE = {
     },
 }
 
+
+# All metadata concatenation strings
+METADATA_CONCATENATION_TABLE = {
+    "add": {
+        "symbol": "+",
+        "associative": True,
+    },
+    "sub": {
+        "symbol": "-",
+    },
+    "mul": {
+        "symbol": "*",
+    },
+    "div": {
+        "symbol": "/",
+    },
+    "pow": {
+        "symbol": "**",
+    },
+    "eq": {
+        "symbol": "=",
+    },
+    "ne": {
+        "symbol": "!=",
+    },
+    "gt": {
+        "symbol": ">",
+    },
+    "ge": {
+        "symbol": ">=",
+    },
+    "lt": {
+        "symbol": "<",
+    },
+    "le": {
+        "symbol": "<=",
+    },
+}
+
+
 # Dict of all available operations: used node-type, inputs, outputs, etc.
 NODE_LOOKUP_TABLE = {}
 
