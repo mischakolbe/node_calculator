@@ -2,11 +2,11 @@
 Create a node-network by entering a math-formula.
 
 
-a1 = noca.new("A")
-a2 = noca.new("A", ["tx"])
-a3 = noca.new("A", ["tx", "ty"])
-b = noca.new(2)
-c = noca.new(["A", "B"])
+a1 = noca.link("A")
+a2 = noca.link("A", ["tx"])
+a3 = noca.link("A", ["tx", "ty"])
+b = noca.link(2)
+c = noca.link(["A", "B"])
 
 Node or Attrs instance:
 node -> returns str of Maya node
@@ -15,8 +15,10 @@ attrs_list -> returns list of attributes in Attrs
 
 
 TODO: decompose_matrix currently doesn't return full list of attributes, because
-        return new(new_node, outputs[:max_dim])
+        return link(new_node, outputs[:max_dim])
       caps the outputs to "max_dim", which is 1 due to the single matrix input
+
+
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,9 +64,9 @@ except NameError:
     basestring = str
 
 
-def new(item, attrs=None, prevent_unravelling=False):
+def link(item, attrs=None, prevent_unravelling=False):
     """
-    Create a new node_calculator instance automatically, based on given args
+    link the given item to a new node_calculator instance automatically, based on given args
     """
 
     # Redirect plain values right away to a metadata_value
@@ -79,6 +81,30 @@ def new(item, attrs=None, prevent_unravelling=False):
 
     log.info("new: Redirecting to Node({})".format(item))
     return Node(item, attrs, prevent_unravelling)
+
+
+def locator(name="locator", parent=None, **kwargs):
+    """ Convenience function to create a locator as a noca-node """
+    node = cmds.spaceLocator(name=name, **kwargs)[0]
+    noca_node = link(node)
+
+    if parent:
+        cmds.parent(node, parent)
+
+    return noca_node
+
+
+def create_node(type, name="noca_node", **kwargs):
+    """ Convenience function to create a new node of type as a noca-node """
+    node = cmds.createNode(type, name=name, **kwargs)
+    noca_node = link(node)
+
+    return noca_node
+
+
+def transform(name="transform", **kwargs):
+    """ Convenience function to create a transform as a noca-node """
+    return create_node("transform", name=name, **kwargs)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1199,7 +1225,7 @@ class Collection(Atom):
         collection_elements = []
         for arg in args:
             if isinstance(arg, (basestring, numbers.Real)):
-                collection_elements.append(new(arg))
+                collection_elements.append(link(arg))
             elif isinstance(arg, (Node, Attrs, )) or "MetadataValue" in str(type(arg)):
                 collection_elements.append(arg)
             else:
@@ -1538,9 +1564,9 @@ def _create_and_connect_node(operation, *args):
     outputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["output"]
 
     if len(outputs) == 1:
-        return new(new_node, outputs)
+        return link(new_node, outputs)
     else:
-        return new(new_node, outputs[:max_dim])
+        return link(new_node, outputs[:max_dim])
 
 
 def _create_node_name(operation, *args):
