@@ -769,12 +769,17 @@ class Atom(object):
 # BaseNode
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class BaseNode(Atom):
+    """
+    Maybe this should be metaclass, if add_XXX attribute methods are set up via closure...
+    """
 
     def __init__(self, prevent_unravelling=False):
         self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
 
         self.__dict__["prevent_unravelling"] = prevent_unravelling
+
+        self._add_all_add_attr_methods()
 
     def __len__(self):
         log.info("BaseNode __len__ ({})".format(self))
@@ -787,6 +792,7 @@ class BaseNode(Atom):
 
         To make cmds.setAttr(a2.attrs, 1) work:
         - Specifically returning a unicode/str in attrs-@property of Node class works.
+
         - Commenting out __getitem__ method in Attrs class works, too but throws this error:
             # Error: Problem calling __apiobject__ method of passed object #
             # Error: attribute of type 'Attrs' is not callable #
@@ -845,53 +851,58 @@ class BaseNode(Atom):
 
             return None
 
-    def add_bool(self, name, **kwargs):
+    def _add_all_add_attr_methods(self):
         """
-        Create a boolean-attribute for the given attribute
+        Add all possible attribute types for addAttr-command via closure
 
-        Args:
-            name (str): Name for the new attribute to be created
-            kwargs (dict): User specified attributes to be set for the new attribute
-
-        Returns:
-            The Node-instance with the node and new attribute
-
-        Example:
-            >>> Node("pCube1").add_bool(value=True)
+        Example: add_float("floatAttribute") OR add_short("integerAttribute")
         """
-        return self._add_traced_attr("bool", name, **kwargs)
 
-    def add_int(self, name, **kwargs):
+        for attr_type, attr_data in lookup_tables.ATTR_TYPES.iteritems():
+            # enum must be handled individually because of enumNames-flag
+            if attr_type == "enum":
+                continue
+
+            data_type = attr_data["data_type"]
+            func = self._define_add_attr_method(attr_type, data_type)
+            self.__dict__["add_{}".format(attr_type)] = func
+
+    def _define_add_attr_method(self, attr_type, default_data_type):
         """
-        Create an integer-attribute for the given attribute
-
-        Args:
-            name (str): Name for the new attribute to be created
-            kwargs (dict): User specified attributes to be set for the new attribute
-
-        Returns:
-            The Node-instance with the node and new attribute
-
-        Example:
-            >>> Node("pCube1").add_int(value=123)
         """
-        return self._add_traced_attr("int", name, **kwargs)
 
-    def add_float(self, name, **kwargs):
-        """
-        Create a float-attribute for the given attribute
+        def func(name, **kwargs):
+            """
+            Create an attribute with given name and kwargs
 
-        Args:
-            name (str): Name for the new attribute to be created
-            kwargs (dict): User specified attributes to be set for the new attribute
+            Args:
+                name (str): Name for the new attribute to be created
+                kwargs (dict): User specified attributes to be set for the new attribute
 
-        Returns:
-            The Node-instance with the node and new attribute
+            Returns:
+                The Node-instance with the node and new attribute
 
-        Example:
-            >>> Node("pCube1").add_float(value=3.21)
-        """
-        return self._add_traced_attr("float", name, **kwargs)
+            Example:
+                >>> Node("pCube1").add_bool(value=True)
+            """
+
+            data_type = default_data_type
+            # Since I opted for attributeType for all types that allowed
+            # dataType and attributeType: Only a dataType keyword has relevance.
+            if kwargs.get("dataType", None):
+                data_type = "dataType"
+                del kwargs["dataType"]
+            # Remove attributeType keywords; attributeType is the default and
+            # the actual type of the new attribute is defined by the name of the
+            # method called: add_float, add_bool, ...
+            if kwargs.get("attributeType", None):
+                del kwargs["attributeType"]
+
+            kwargs[data_type] = attr_type
+
+            return self._add_traced_attr(name, **kwargs)
+
+        return func
 
     def add_enum(self, name, enum_name="", cases=None, **kwargs):
         """
@@ -909,12 +920,15 @@ class BaseNode(Atom):
         Example:
             >>> Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
         """
-        if cases is not None:
-            enum_name = cases
-        if isinstance(enum_name, (list, tuple)):
-            enum_name = ":".join(enum_name)
+        if "enumName" not in kwargs.keys():
+            if cases is not None:
+                enum_name = cases
+            if isinstance(enum_name, (list, tuple)):
+                enum_name = ":".join(enum_name)
 
-        return self._add_traced_attr("enum", name, enumName=enum_name, **kwargs)
+            kwargs["enumName"] = enum_name
+
+        return self._add_traced_attr(name, **kwargs)
 
     def add_separator(
             self,
@@ -937,14 +951,14 @@ class BaseNode(Atom):
 
         return self.add_enum(unique_long_name, enum_name=enum_name, cases=cases, niceName=name)
 
-    def _add_traced_attr(self, attr_type, attr_name, **kwargs):
+    def _add_traced_attr(self, attr_name, **kwargs):
         """
         Create an attribute of type attr_type for the given node/attr-combination of self.
 
         Args:
-            attr_type (str): Attribute type. Must be specified in the ATTR_LOOKUP_TABLE!
+            attr_name (str): Name of new attribute.
             kwargs (dict): Any user specified flags & their values.
-                           Gets combined with values in ATTR_LOOKUP_TABLE!
+                           Gets combined with values in DEFAULT_ATTR_FLAGS!
             XXX
 
         Returns:
@@ -959,9 +973,8 @@ class BaseNode(Atom):
             log.warn("Attribute {} already existed!".format(attr))
             return self.__getattr__(attr_name)
 
-        # Make a copy of the default values for the given attrType
-        attr_variables = lookup_tables.ATTR_LOOKUP_TABLE["base_attr"].copy()
-        attr_variables.update(lookup_tables.ATTR_LOOKUP_TABLE[attr_type])
+        # Make a copy of the default addAttr command flags
+        attr_variables = lookup_tables.DEFAULT_ATTR_FLAGS.copy()
         log.debug("Copied default attr_variables: {}".format(attr_variables))
 
         # Add the attr variable into the dictionary
@@ -1086,12 +1099,10 @@ class Attrs(BaseNode):
             value (Node, str, int, float): desired value for the given index
         """
         log.info("Attrs __getitem__ ({})".format(index))
-
         return Attrs(self._holder_node, self.attrs_list[index])
 
     def __setitem__(self, index, value):
         log.info("Attrs __setitem__ ({}, {})".format(index, value))
-
         if isinstance(value, numbers.Real):
             log.error(
                 "Can't set Attrs item to number {}. Use a Value instance for this!".format(value)
@@ -1192,7 +1203,6 @@ class Node(BaseNode):
 
     def __setitem__(self, index, value):
         log.info("Node __setitem__ ({}, {})".format(index, value))
-
         _unravel_and_set_or_connect_a_to_b(self[index], value)
 
     @property
