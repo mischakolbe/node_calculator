@@ -6,7 +6,7 @@ Example:
     ::
 
         # WORKS:
-        a = val(1, "metadata")
+        a = value(1, "metadata")
 
         # DOES NOT WORK:
         a = 1
@@ -84,7 +84,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("add", self, other)
             return_value = self._value + other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __radd__(self, other):
             """
@@ -93,7 +93,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("add", other, self)
             return_value = other + self._value
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __sub__(self, other):
             """
@@ -101,7 +101,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("sub", self, other)
             return_value = self._value - other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __rsub__(self, other):
             """
@@ -110,7 +110,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("sub", other, self)
             return_value = other - self._value
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __mul__(self, other):
             """
@@ -118,7 +118,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("mul", self, other)
             return_value = self._value * other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __rmul__(self, other):
             """
@@ -127,7 +127,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("mul", other, self)
             return_value = other * self._value
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __div__(self, other):
             """
@@ -135,7 +135,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("div", self, other)
             return_value = self._value / other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __rdiv__(self, other):
             """
@@ -144,7 +144,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("div", other, self)
             return_value = other / self._value
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __pow__(self, other):
             """
@@ -152,7 +152,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("pow", self, other)
             return_value = self._value ** other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __eq__(self, other):
             """
@@ -160,7 +160,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("eq", self, other)
             return_value = self._value == other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __ne__(self, other):
             """
@@ -168,7 +168,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("ne", self, other)
             return_value = self._value != other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __gt__(self, other):
             """
@@ -176,7 +176,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("gt", self, other)
             return_value = self._value > other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __ge__(self, other):
             """
@@ -184,7 +184,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("ge", self, other)
             return_value = self._value >= other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __lt__(self, other):
             """
@@ -192,7 +192,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("lt", self, other)
             return_value = self._value < other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
         def __le__(self, other):
             """
@@ -200,7 +200,7 @@ def create_metadata_val_class(class_type):
             """
             metadata = _concatenate_metadata("le", self, other)
             return_value = self._value <= other
-            return val(return_value, metadata=metadata, created_by_user=False)
+            return value(return_value, metadata=metadata, created_by_user=False)
 
     return MetadataValueClass
 
@@ -236,12 +236,12 @@ def _concatenate_metadata(operator, input_a, input_b):
     return return_metadata
 
 
-def val(value, metadata=None, created_by_user=True):
+def value(value, metadata=None, created_by_user=True):
     """
     Args:
         value (bool, int, float, list, dict, ...): Value of any data type
         metadata (bool, int, float, list, ...): Any data that should be attached to this value
-        created_by_user (bool): Whether this val was created by the user or via script
+        created_by_user (bool): Whether this value was created by the user or via script
 
     Returns:
         New instance of MetadataValue whose baseclass matches the base-type of the given value
@@ -249,7 +249,7 @@ def val(value, metadata=None, created_by_user=True):
     Example:
         ::
 
-            a = val(1, "some metadata")
+            a = value(1, "some metadata")
             print(a)
             # >>> 1
             print(a.metadata)
@@ -260,7 +260,7 @@ def val(value, metadata=None, created_by_user=True):
             print(a.maya_node)
             # >>> pCube1
 
-            b = val([1, 2, 3], "some other metadata")
+            b = value([1, 2, 3], "some other metadata")
             print(b)
             # >>> [1, 2, 3]
             print(b.metadata)

@@ -37,8 +37,8 @@ from . import lookup_tables
 reload(lookup_tables)
 import om_util
 reload(om_util)
-import metadata_values
-reload(metadata_values)
+import metadata_value
+reload(metadata_value)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,7 +72,7 @@ def link(item, attrs=None, prevent_unravelling=False):
     # Redirect plain values right away to a metadata_value
     if isinstance(item, numbers.Real):
         log.info("new: Redirecting to Value({})".format(item))
-        return metadata_values.val(item)
+        return metadata_value.value(item)
 
     # Redirect lists or tuples right away to a Collection
     if isinstance(item, (list, tuple)):
@@ -1271,6 +1271,9 @@ class Collection(Atom):
 
         self.elements[index] = value
 
+    def __len__(self):
+        return len(self.elements)
+
 
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     """
@@ -1763,7 +1766,7 @@ def _traced_get_attr(attr):
     if Atom.trace_commands:
         value_name = Atom._get_next_value_name()
 
-        return_value = metadata_values.val(return_value, metadata=value_name)
+        return_value = metadata_value.value(return_value, metadata=value_name)
 
         Atom.traced_values.append(return_value)
 
