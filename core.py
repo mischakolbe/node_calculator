@@ -785,6 +785,21 @@ class BaseNode(Atom):
         log.info("BaseNode __len__ ({})".format(self))
         return len(self.attrs_list)
 
+    def get_shapes(self, full=False):
+        """ full=True returns full dag path """
+
+        # TODO: Replace this get_mobj_of_node when self._node_mobj is reliable!
+        node_mobj = om_util.get_mobj_of_node(self.node)
+
+        shape_mobjs = om_util.get_shape_mobjs_of_mobj(node_mobj)
+
+        if full:
+            shapes = [om_util.get_long_name_of_mobj(mobj, full=True) for mobj in shape_mobjs]
+        else:
+            shapes = [om_util.get_name_of_mobj(mobj) for mobj in shape_mobjs]
+
+        return shapes
+
     def as_str(self):
         """
         Using the __unicode__ method in Attrs class somehow doesn't work well

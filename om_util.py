@@ -2,6 +2,7 @@
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
+import copy
 
 # Third party imports
 import maya.api.OpenMaya as om
@@ -27,10 +28,20 @@ def get_name_of_mobj(mobj):
     return node_name
 
 
-def get_shape_mobj(mobj):
-    shape_mdag_path = get_mdag_path_of_mobj(mobj).extendToShape()
-    shape_mobj = get_mobj_from_mdag_path(shape_mdag_path)
-    return shape_mobj
+def get_shape_mobjs_of_mobj(mobj):
+    num_shapes = get_mdag_path_of_mobj(mobj).numberOfShapesDirectlyBelow()
+
+    return_shape_mobjs = []
+    for index in range(num_shapes):
+        # Do NOT take this get_mdag_path_of_mobj out of the loop!
+        # The ".extendToShape" afterwards acts upon the resulting mdagPath!
+        mdag_path_of_mobj = get_mdag_path_of_mobj(mobj)
+        shape_mdag_path = mdag_path_of_mobj.extendToShape(shapeNum=index)
+        shape_mobj = get_mobj_from_mdag_path(shape_mdag_path)
+
+        return_shape_mobjs.append(shape_mobj)
+
+    return return_shape_mobjs
 
 
 def get_mdag_path_of_mobj(mobj):
