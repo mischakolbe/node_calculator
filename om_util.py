@@ -158,3 +158,230 @@ def select_mobjs(mobjs):
         select_list.append(get_long_name_of_mobj(mobj))
     cmds.select(select_list)
     return select_list
+
+
+
+
+
+
+
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+
+
+
+
+
+
+
+
+
+
+
+def testDef(attr="input3D[1].input3Dx"):
+
+    node_mobj = get_mobj_of_node("B")
+    print node_mobj
+
+    node_mfn_dep_node = om.MFnDependencyNode(node_mobj)
+    print node_mfn_dep_node
+    has_attr = node_mfn_dep_node.hasAttribute(attr)
+    print has_attr
+
+
+
+    if has_attr:
+        print "~~~~~~"
+        mplug = node_mfn_dep_node.findPlug(attr, False)  # attr, wantNetworkedPlug
+        print mplug, type(mplug)
+
+        is_array = mplug.isArray
+        print "is_array:", is_array
+        if is_array:
+            # input3D[0] -> input3D[0].input3Dx
+            num_elements = mplug.evaluateNumElements()
+            for element_index in range(num_elements):
+                mplug_element = mplug.elementByPhysicalIndex(element_index)
+                print mplug_element # input1D[0]
+                is_compound = mplug_element.isCompound
+                print "is_compound:", is_compound
+                if is_compound:
+                    num_children = mplug_element.numChildren()
+                    for child_index in range(num_children):
+
+                        print mplug_element.child(child_index) # input3D[0].input3Dx
+
+        is_element = mplug.isElement
+        print "is_element:", is_element
+        if is_element:
+            # input3D[0].input3Dx -> input3D[0]
+            print mplug.logicalIndex()
+
+        is_compound = mplug.isCompound
+        print "is_compound:", is_compound
+        if is_compound:
+            # t -> tx, ty, tz
+            num_children = mplug.numChildren()
+            for child_index in range(num_children):
+
+                print mplug.child(child_index)
+        is_child = mplug.isChild
+        print "is_child:", is_child
+        if is_child:
+            # tx -> t
+            mplug_parent = mplug.parent()
+            print mplug_parent
+
+
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+# #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+
+
+def is_valid_mplug(mplug):
+
+    if not isinstance(mplug, om.MPlug):
+        cmds.error("Expected an MPlug, got {} of type {}".format(mplug, type(mplug)))
+        return False
+    return True
+
+
+def find_parent_plug(mplug):
+    # tx -> t
+
+    if not is_valid_mplug(mplug):
+        return False
+
+    mplug_parent = None
+
+    if mplug.isChild:
+        mplug_parent = mplug.parent()
+
+    return mplug_parent
+
+
+def find_child_plugs(mplug):
+    # t -> tx, ty, tz
+
+    if not is_valid_mplug(mplug):
+        return False
+
+    child_plugs = []
+
+    if mplug.isCompound:
+        num_children = mplug.numChildren()
+        for child_index in range(num_children):
+            child_plugs.append(mplug.child(child_index))
+
+    return child_plugs
+
+
+def get_mplug_of_mobj(mobj, attr):
+    node_mfn_dep_node = om.MFnDependencyNode(mobj)
+
+    if node_mfn_dep_node.hasAttribute(attr):
+        return node_mfn_dep_node.findPlug(attr, False)  # attr, wantNetworkedPlug
+    else:
+        return None
+
+
+def find_elements_of_array_plug(mplug):
+    # input3D -> input3D[0].input3Dx, input3D[0].input3Dy, ...
+    if not is_valid_mplug(mplug):
+        return False
+
+    array_elements = []
+
+    if mplug.isArray:
+        num_elements = mplug.evaluateNumElements()
+        for element_index in range(num_elements):
+            mplug_element = mplug.elementByPhysicalIndex(element_index)
+            array_elements.append(mplug_element)
+
+    return array_elements
+
+
+def find_array_plug_of_element(mplug):
+    # input3D[0].input3Dx -> input3D[0]
+    if not is_valid_mplug(mplug):
+        return False
+
+    array_plug = None
+
+    if mplug.isElement:
+        array_plug = mplug.logicalIndex()
+
+    return array_plug
+
+
+def get_parent_plug_of_node(node, attr):
+    node_mobj = get_mobj_of_node(node)
+    mplug = get_mplug_of_mobj(node_mobj, attr)
+
+    return find_parent_plug(mplug)
+
+
+def get_child_plugs_of_node(node, attr):
+    node_mobj = get_mobj_of_node(node)
+    mplug = get_mplug_of_mobj(node_mobj, attr)
+
+    return find_child_plugs(mplug)
+
+
+def get_array_plugs_of_node(node, attr):
+    node_mobj = get_mobj_of_node(node)
+    mplug = get_mplug_of_mobj(node_mobj, attr)
+
+    return find_child_plugs(mplug)
+
+
+def get_element_plugs_of_node(node, attr):
+    node_mobj = get_mobj_of_node(node)
+    mplug = get_mplug_of_mobj(node_mobj, attr)
+
+    return find_elements_of_array_plug(mplug)
+
+
+def check_attr(node, attr):
+    # Get mplug-name: item.name()
+
+    parent_plug = get_parent_plug_of_node(node, attr)
+    if parent_plug:
+        print "parent_plug:", parent_plug.name()
+
+    child_plugs = get_child_plugs_of_node(node, attr)
+    if child_plugs:
+        print "child_plugs:", [x.name() for x in child_plugs]
+
+    # array_plug = find_array_plug_of_element(node, attr)
+    # if array_plug:
+    #     print "array_plug:", [x.name() for x in array_plugs]
+
+    element_plugs = get_element_plugs_of_node(node, attr)
+    if element_plugs:
+        print "element_plugs:", [x.name() for x in element_plugs]
+
+
+check_attr(node="A", attr="t")
+
+
+def find_mplug_of_attr(node, attr):
+    """
+    This should find the correct mplug for any attr input:
+
+    t
+    translate
+    tx
+    translateX
+    input1D
+    input1D[0]
+    input3D
+    input3D[0]
+    input3D[1]
+    input3D[0].input3Dx
+    input3D[1].input3Dy
+    """
+    pass
