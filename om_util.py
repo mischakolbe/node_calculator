@@ -2,6 +2,7 @@
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
+import re
 
 # Third party imports
 import maya.api.OpenMaya as om
@@ -180,65 +181,79 @@ def select_mobjs(mobjs):
 
 
 
-def testDef(attr="input3D[1].input3Dx"):
+# def testDef(attr="input3D[1].input3Dx"):
 
-    node_mobj = get_mobj_of_node("B")
-    print node_mobj
+#     node_mobj = get_mobj_of_node("B")
+#     print node_mobj
 
-    node_mfn_dep_node = om.MFnDependencyNode(node_mobj)
-    print node_mfn_dep_node
-    has_attr = node_mfn_dep_node.hasAttribute(attr)
-    print has_attr
+#     node_mfn_dep_node = om.MFnDependencyNode(node_mobj)
+#     print node_mfn_dep_node
+#     has_attr = node_mfn_dep_node.hasAttribute(attr)
+#     print has_attr
 
 
 
-    if has_attr:
-        print "~~~~~~"
-        mplug = node_mfn_dep_node.findPlug(attr, False)  # attr, wantNetworkedPlug
-        print mplug, type(mplug)
+#     if has_attr:
+#         print "~~~~~~"
+#         mplug = node_mfn_dep_node.findPlug(attr, False)  # attr, wantNetworkedPlug
+#         print mplug, type(mplug)
 
-        is_array = mplug.isArray
-        print "is_array:", is_array
-        if is_array:
-            # input3D[0] -> input3D[0].input3Dx
-            num_elements = mplug.evaluateNumElements()
-            for element_index in range(num_elements):
-                mplug_element = mplug.elementByPhysicalIndex(element_index)
-                print mplug_element # input1D[0]
-                is_compound = mplug_element.isCompound
-                print "is_compound:", is_compound
-                if is_compound:
-                    num_children = mplug_element.numChildren()
-                    for child_index in range(num_children):
+#         is_array = mplug.isArray
+#         print "is_array:", is_array
+#         if is_array:
+#             # input3D[0] -> input3D[0].input3Dx
+#             num_elements = mplug.evaluateNumElements()
+#             for element_index in range(num_elements):
+#                 mplug_element = mplug.elementByPhysicalIndex(element_index)
+#                 print mplug_element # input1D[0]
+#                 is_compound = mplug_element.isCompound
+#                 print "is_compound:", is_compound
+#                 if is_compound:
+#                     num_children = mplug_element.numChildren()
+#                     for child_index in range(num_children):
 
-                        print mplug_element.child(child_index) # input3D[0].input3Dx
+#                         print mplug_element.child(child_index) # input3D[0].input3Dx
 
-        is_element = mplug.isElement
-        print "is_element:", is_element
-        if is_element:
-            # input3D[0].input3Dx -> input3D[0]
-            print mplug.logicalIndex()
+#         is_element = mplug.isElement
+#         print "is_element:", is_element
+#         if is_element:
+#             # input3D[0].input3Dx -> input3D[0]
+#             print mplug.logicalIndex()
 
-        is_compound = mplug.isCompound
-        print "is_compound:", is_compound
-        if is_compound:
-            # t -> tx, ty, tz
-            num_children = mplug.numChildren()
-            for child_index in range(num_children):
+#         is_compound = mplug.isCompound
+#         print "is_compound:", is_compound
+#         if is_compound:
+#             # t -> tx, ty, tz
+#             num_children = mplug.numChildren()
+#             for child_index in range(num_children):
 
-                print mplug.child(child_index)
-        is_child = mplug.isChild
-        print "is_child:", is_child
-        if is_child:
-            # tx -> t
-            mplug_parent = mplug.parent()
-            print mplug_parent
+#                 print mplug.child(child_index)
+#         is_child = mplug.isChild
+#         print "is_child:", is_child
+#         if is_child:
+#             # tx -> t
+#             mplug_parent = mplug.parent()
+#             print mplug_parent
 
 
 # #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
 # #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
 # #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
 # #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #  ## #  #
+
+"""
+Array plug:
+input3D
+
+Array plug elements
+input3D[0, 1, 2, ...]
+
+Parent plug
+t
+
+Child plug
+tx, ty, tz
+"""
 
 
 def is_valid_mplug(mplug):
@@ -304,6 +319,19 @@ def find_elements_of_array_plug(mplug):
     return array_elements
 
 
+def find_array_plug_by_index(mplug, index):
+    # input3D -> input3D[0]
+    if not is_valid_mplug(mplug):
+        return False
+
+    if mplug.isArray:
+        num_elements = mplug.evaluateNumElements()
+        if num_elements > index:
+            return mplug.elementByPhysicalIndex(index)
+
+    print("Shit, this should have returned something!")
+
+
 def find_array_plug_of_element(mplug):
     # input3D[0].input3Dx -> input3D[0]
     if not is_valid_mplug(mplug):
@@ -365,7 +393,7 @@ def check_attr(node, attr):
         print "element_plugs:", [x.name() for x in element_plugs]
 
 
-check_attr(node="A", attr="t")
+
 
 
 def find_mplug_of_attr(node, attr):
@@ -384,4 +412,19 @@ def find_mplug_of_attr(node, attr):
     input3D[0].input3Dx
     input3D[1].input3Dy
     """
-    pass
+    mplug = None
+
+    # Each dot in the string stands for another attribute-part
+    attr_parts = attr.split(".")
+
+    for attr_part in attr_parts:
+        print "~~~~~"
+        # If a number inside brackets is found: Find the array-plug index
+        matches = re.search(r"\[(\d+)\]", attr_part)
+        index = matches.group(1) if matches else None
+        print attr_part, index
+
+        if index is None:
+            mplug = find_mplug_of_attr(node, attr_part)
+        else:
+            mplug = find_array_plug_by_index(mplug, index)
