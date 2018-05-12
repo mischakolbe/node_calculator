@@ -1,23 +1,64 @@
-"""
-Create a node-network by entering a math-formula.
+"""Create a node-network by entering a math-formula.
+
+:created: 03/04/2018
+:author: Mischa Kolbe <mischakolbe@gmail.com>
+:credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly, Adam Vanner, Niels Kleinheinz
+:version: 2.0.0
 
 
-a1 = noca.link("A")
-a2 = noca.link("A", ["tx"])
-a3 = noca.link("A", ["tx", "ty"])
-b = noca.link(2)
-c = noca.link(["A", "B"])
+Supported operations:
+    .. code-block:: python
 
-Node or Attrs instance:
-node -> returns str of Maya node
-attrs -> returns Attrs-instance
-attrs_list -> returns list of attributes in Attrs
+        # basic math
+        +, -, *, /, **
+
+        # condition
+        Op.condition(condition, if_part=False, else_part=True)
+
+
+Note:
+    min/max operations temporary unavailable, due to broken dnMinMax-node:
+        .. code-block:: python
+
+            # min
+            Op.min(*attrs)  # Any number of inputs possible
+
+
+Example:
+    ::
+
+        import node_calculator as noca
+
+        a = noca.link("pCube1")
+        b = noca.link("pCube2")
+        c = noca.link("pCube3")
+
+        with noca.Tracer(pprint_trace=True):
+            e = b.customAttr.as_float(value=c.tx)
+            a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
+
+        a1 = noca.link("A")
+        a2 = noca.link("A", ["tx"])
+        a3 = noca.link("A", ["tx", "ty"])
+        b = noca.link(2)
+        c = noca.link(["A", "B"])
+
+        Node or Attrs instance:
+        node -> returns str of Maya node
+        attrs -> returns Attrs-instance
+        attrs_list -> returns list of attributes in Attrs
 
 
 TODO: decompose_matrix currently doesn't return full list of attributes, because
         return link(new_node, outputs[:max_dim])
       caps the outputs to "max_dim", which is 1 due to the single matrix input
-
+TODO: use the .attrs keyword to get list of attrs (what attrs_list is doing now)
+    Then: If an attr from a Node is requested: Return another Attrs-instance.
+    The .attrs functionality that returns the Attrs-instance should become obsolete
+    and maybe an attrs_instance keyword could be introduced in case the Attrs instance
+    must be accessed.
+TODO: Add method to BaseNode that lets the user switch prevent_unravelling Flag.
+    For example: set_elemental(), unravel_me(), is_unravellable(True/False),...?
 
 """
 
@@ -29,23 +70,23 @@ import numbers
 
 # Third party imports
 from maya import cmds
+import maya.api.OpenMaya as om
 
 # Local imports
 from . import logger
-reload(logger)
 from . import lookup_tables
+from . import om_util
+from . import metadata_value
+reload(logger)
 reload(lookup_tables)
-import om_util
 reload(om_util)
-import metadata_value
 reload(metadata_value)
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CONSTANTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-STANDARD_SEPARATOR_NICENAME = "_"*8
-STANDARD_SEPARATOR_VALUE = "_"*8
+STANDARD_SEPARATOR_NICENAME = "_" * 8
+STANDARD_SEPARATOR_VALUE = "_" * 8
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SETUP LOGGER
@@ -66,7 +107,25 @@ except NameError:
 
 def link(item, attrs=None, prevent_unravelling=False):
     """
-    link the given item to a new node_calculator instance automatically, based on given args
+    Link given item to a new instance of appropriate type, based on given args
+
+    Args:
+        item (bool, int, float, str, list, tuple): Maya Node, value, list of nodes, etc.
+        attrs (str, list, tuple): String or list of strings that are an attribute on this node
+        prevent_unravelling (bool): Whether or not this instance should be unravelled if possible
+
+    Note:
+        XYZ
+
+    Returns:
+        Node OR Collection OR metadataValue: Instance with given args
+
+    Example:
+        ::
+
+            noca.link("pCube.tx") -> Node instance with pCube1 as node and tx in its Attrs instance
+            noca.link([1, "pCube"]) -> Collection instance with value 1 and noca-Node with pCube1
+            noca.link(1) -> IntMetadataValue instance with value 1
     """
 
     # Redirect plain values right away to a metadata_value
@@ -83,28 +142,71 @@ def link(item, attrs=None, prevent_unravelling=False):
     return Node(item, attrs, prevent_unravelling)
 
 
-def locator(name="locator", parent=None, **kwargs):
-    """ Convenience function to create a locator as a noca-node """
-    node = cmds.spaceLocator(name=name, **kwargs)[0]
+def transform(name=None, **kwargs):
+    """ Convenience function to create a transform as a noca-Node
+
+    Args:
+        name (str): Name of transform instance that will be created
+        kwargs (): keyword arguments that are passed to create_node function
+
+    Note:
+        Refer to create_node function for more details.
+
+    Returns:
+        Node: Node instance that is linked to the newly created transform
+
+    Example:
+        ::
+            a = noca.transform("myTransform")
+            a.t = [1, 2, 3]
+    """
+    return create_node(node_type="transform", name=name, **kwargs)
+
+
+def locator(name=None, **kwargs):
+    """ Convenience function to create a locator as a noca-Node
+
+    Args:
+        name (str): Name of locator instance that will be created
+        kwargs (): keyword arguments that are passed to create_node function
+
+    Note:
+        Refer to create_node function for more details.
+
+    Returns:
+        Node: Node instance that is linked to the newly created locator
+
+    Example:
+        ::
+            a = noca.locator("myLoc")
+            a.t = [1, 2, 3]
+    """
+    return create_node(node_type="spaceLocator", name=name, **kwargs)
+
+
+def create_node(node_type, name=None, **kwargs):
+    """ Convenience function to create a new node of given type as a noca-Node
+
+    Args:
+        node_type (str): Type of Maya node to be created
+        name (str): Name for new Maya-node
+        kwargs (): arguments that are passed to Maya createNode function
+
+    Note:
+        Refer to create_node function for more details.
+
+    Returns:
+        Node: Node instance that is linked to the newly created transform
+
+    Example:
+        ::
+            a = noca.transform("myTransform")
+            a.t = [1, 2, 3]
+    """
+    node = _traced_create_node(node_type, name=name, **kwargs)
     noca_node = link(node)
 
-    if parent:
-        cmds.parent(node, parent)
-
     return noca_node
-
-
-def create_node(type, name="noca_node", **kwargs):
-    """ Convenience function to create a new node of type as a noca-node """
-    node = cmds.createNode(type, name=name, **kwargs)
-    noca_node = link(node)
-
-    return noca_node
-
-
-def transform(name="transform", **kwargs):
-    """ Convenience function to create a transform as a noca-node """
-    return create_node("transform", name=name, **kwargs)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,7 +218,7 @@ class OperatorMetaClass(object):
 
     A meta-class was used, because many methods of this class are created on the fly
     in the __init__ method. First I simply instantiated the class, but a metaclass
-    is more elegant (thanks, @sbi!).
+    is more elegant and ensures singleton class (thanks, @sbi!).
     """
 
     def __init__(self, name, bases, body):
@@ -534,14 +636,60 @@ class Atom(object):
     Therefore all connections and operations on a Node can live in here.
     """
 
-    # Stack that keeps track of the created nodes. Used for Container-class
-    created_nodes_stack = []
+    # Variable whether Tracer is active or not
+    _is_tracing = False
     # Stack that keeps track of all executed maya-commands. Used for Tracer-class
-    executed_commands_stack = []
-    trace_commands = False
-    traced_nodes = None
-    traced_variables = None
-    traced_values = None
+    _executed_commands_stack = []
+    # Maya nodes the NodeCalculator keeps track of, if Tracer is active
+    _traced_nodes = None
+    # values the NodeCalculator keeps track of, if Tracer is active
+    _traced_values = None
+
+    @classmethod
+    def _initialize_trace_variables(cls):
+        cls._flush_command_stack()
+        cls._traced_nodes = []
+        cls._traced_values = []
+
+    @classmethod
+    def _add_to_command_stack(cls, command):
+        """
+        Add a command to the class-variable executed_commands_stack
+
+        command can be list of commands or just a string.
+        """
+        if isinstance(command, (list, tuple)):
+            cls._executed_commands_stack.extend(command)
+        else:
+            cls._executed_commands_stack.append(command)
+
+    @classmethod
+    def _flush_command_stack(cls):
+        """
+        Reset the class-variable executed_commands_stack to an empty list
+        """
+        cls._executed_commands_stack = []
+
+    @classmethod
+    def _get_next_value_name(cls):
+        value_name = "val{}".format(len(cls._traced_values) + 1)
+        return value_name
+
+    @classmethod
+    def _get_tracer_variable_for_node(cls, node):
+        """
+        Returns given node, if it can't be found in _traced_nodes!
+        """
+        for i, traced_node_mobj in cls._traced_nodes:
+            if traced_node_mobj.node == node:
+                return traced_node_mobj.tracer_variable
+
+        return None
+
+    @classmethod
+    def _get_next_variable_name(cls):
+        variable_name = "var{}".format(len(cls._traced_nodes) + 1)
+        return variable_name
 
     def __init__(self):
         super(Atom, self).__init__()
@@ -714,39 +862,6 @@ class Atom(object):
         log.info("Atom __le__ ({}, {})".format(self, other))
 
         return self._compare(other, "le")
-
-    @classmethod
-    def _add_to_node_stack(cls, node):
-        """
-        Add a node to the class-variable created_nodes_stack
-        """
-        cls.created_nodes_stack.append(node)
-
-    @classmethod
-    def _flush_node_stack(cls):
-        """
-        Reset the class-variable created_nodes_stack to an empty list
-        """
-        cls.created_nodes_stack = []
-
-    @classmethod
-    def _add_to_command_stack(cls, command):
-        """
-        Add a command to the class-variable executed_commands_stack
-        """
-        cls.executed_commands_stack.append(command)
-
-    @classmethod
-    def _flush_command_stack(cls):
-        """
-        Reset the class-variable executed_commands_stack to an empty list
-        """
-        cls.executed_commands_stack = []
-
-    @classmethod
-    def _get_next_value_name(cls):
-        value_name = "val{}".format(len(cls.traced_values)+1)
-        return value_name
 
     def _compare(self, other, operator):
         """
@@ -1098,7 +1213,7 @@ class Attrs(BaseNode):
         if len(self.attrs_list) != 1:
             log.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
 
-        return Attrs(self._holder_node, self.attrs_list[0] + "." + name)
+        return Node(self._holder_node, self.attrs_list[0] + "." + name)
 
     def __setattr__(self, name, value):
         log.info("Attrs __setattr__ ({})".format(name, value))
@@ -1114,7 +1229,7 @@ class Attrs(BaseNode):
             value (Node, str, int, float): desired value for the given index
         """
         log.info("Attrs __getitem__ ({})".format(index))
-        return Attrs(self._holder_node, self.attrs_list[index])
+        return Node(self._holder_node, self.attrs_list[index])
 
     def __setitem__(self, index, value):
         log.info("Attrs __setitem__ ({}, {})".format(index, value))
@@ -1204,7 +1319,7 @@ class Node(BaseNode):
         if name == "attrs":
             return self.attrs
 
-        return Attrs(self, name)
+        return Node(self, name)
 
     def __setattr__(self, name, value):
         log.info("Node __setattr__ ({})".format(name, value))
@@ -1546,10 +1661,8 @@ def _create_and_connect_node(operation, *args):
 
     # Unravel all given arguments and create a new node according to given operation
     unravelled_args_list = [_unravel_item_as_list(x) for x in args]
-    new_node = _traced_create_node(operation, unravelled_args_list)
+    new_node = _create_operation_node(operation, unravelled_args_list)
 
-    # Add to created_nodes_stack Node-classAttr. Necessary for container creation!
-    Atom._add_to_node_stack(new_node)
     # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
     node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
@@ -1653,32 +1766,66 @@ def _create_node_name(operation, *args):
     return name
 
 
-def _traced_create_node(operation, involved_attributes):
+def _create_operation_node(operation, involved_attributes):
     """
     Maya-createNode that adds the executed command to the command_stack if Tracer is active
     Creates a named node of appropriate type for the necessary operation
     """
     node_type = lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]
     node_name = _create_node_name(operation, involved_attributes)
-    new_node = cmds.ls(cmds.createNode(node_type, name=node_name), long=True)[0]
+    new_node = _traced_create_node(node_type, name=node_name)
 
-    if Atom.trace_commands:
-        current_variable = Atom.traced_variables
-        if not current_variable:
-            current_variable = "var1"
+    return new_node
+
+
+def _traced_create_node(node_type, **kwargs):
+    # Make sure a sensible name is in the kwargs
+    kwargs["name"] = kwargs.get("name", node_type)
+
+    # The spaceLocator command does not support a parent flag. Pop it from kwargs
+    parent = kwargs.pop("parent", None)
+
+    if node_type == "spaceLocator":
+        new_node = cmds.spaceLocator(**kwargs)[0]
+    else:
+        new_node = cmds.ls(cmds.createNode(node_type, **kwargs), long=True)[0]
+
+    # Parent after node creation since spaceLocator does not support parent-flag
+    if parent:
+        if isinstance(parent, Node):
+            parent = parent.node
+        cmds.parent(new_node, parent)
+
+    # Add new node to traced nodes, if Tracer is active
+    if Atom.is_tracing:
+        node_variable = Atom._get_next_variable_name()
+
+        # Creating a spaceLocator is a special case (no type or parent-flag)
+        if node_type == "spaceLocator":
+            joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+            command = [
+                "{var} = cmds.spaceLocator({kwargs})[0]".format(
+                    var=node_variable,
+                    kwargs=joined_kwargs
+                )
+            ]
+            if parent:
+                command.append("cmds.parent({}, {})".format(new_node, parent))
         else:
-            current_variable = "var{}".format(
-                int(current_variable[-1].split("var")[-1])+1
+            # Add the parent back into the kwargs, if given. A bit nasty, I know...
+            if parent:
+                kwargs["parent"] = parent
+            joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+            command = "{var} = cmds.createNode('{op}', {kwargs})".format(
+                var=node_variable,
+                op=node_type,
+                kwargs=joined_kwargs
             )
-        Atom._add_to_command_stack(
-            "{var} = cmds.createNode('{op}', name='{name}')".format(
-                var=current_variable,
-                op=lookup_tables.NODE_LOOKUP_TABLE[operation]["node"],
-                name=new_node
-            )
-        )
-        Atom.traced_variables.append(current_variable)
-        Atom.traced_nodes.append(new_node)
+        Atom._add_to_command_stack(command)
+
+        # Add the newly created node to the tracer. Use the mobj for non-ambiguity
+        tracer_mobj = TracerMObject(new_node, node_variable)
+        Atom._traced_nodes.append(tracer_mobj)
 
     return new_node
 
@@ -1690,14 +1837,11 @@ def _traced_add_attr(node, **kwargs):
     cmds.addAttr(node, **kwargs)
 
     # If commands are traced...
-    if Atom.trace_commands:
+    if Atom.is_tracing:
 
-        if node in Atom.traced_nodes:
-            # ...check if node is already part of the traced nodes: Use its variable instead
-            node = Atom.traced_variables[Atom.traced_nodes.index(node)]
-        else:
-            # ...otherwise add quotes around it
-            node = "'{}'".format(node)
+        # If node is already part of the traced nodes: Use its variable instead
+        node_variable = Atom._get_tracer_variable_for_node(node)
+        node = node_variable if node_variable else "'{}'".format(node)
 
         # Join any given kwargs so they can be passed on to the addAttr-command
         joined_kwargs = _join_kwargs_for_cmds(**kwargs)
@@ -1718,14 +1862,15 @@ def _traced_set_attr(attr, value=None, **kwargs):
         cmds.setAttr(attr, value, edit=True, **kwargs)
 
     # If commands are traced...
-    if Atom.trace_commands:
+    if Atom.is_tracing:
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
-        if node in Atom.traced_nodes:
+        node_variable = Atom._get_tracer_variable_for_node(node)
+        if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
             attr = "{} + '.{}'".format(
-                Atom.traced_variables[Atom.traced_nodes.index(node)],
+                node_variable,
                 ".".join(attr.split(".")[1:])
             )
         else:
@@ -1778,7 +1923,7 @@ def _traced_get_attr(attr):
     else:
         return_value = attr
 
-    if Atom.trace_commands:
+    if Atom.is_tracing:
         value_name = Atom._get_next_value_name()
 
         return_value = metadata_value.value(return_value, metadata=value_name)
@@ -1787,10 +1932,11 @@ def _traced_get_attr(attr):
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
-        if node in Node.traced_nodes:
+        node_variable = Atom._get_tracer_variable_for_node(node)
+        if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
             attr = "{} + '.{}'".format(
-                Node.traced_variables[Node.traced_nodes.index(node)],
+                node_variable,
                 ".".join(attr.split(".")[1:])
             )
         else:
@@ -1837,7 +1983,7 @@ def _traced_connect_attr(attr_a, attr_b):
     cmds.connectAttr(attr_a, attr_b, force=True)
 
     # If commands are traced...
-    if Atom.trace_commands:
+    if Atom.is_tracing:
 
         # Format both attributes correctly
         formatted_attrs = []
@@ -1845,9 +1991,9 @@ def _traced_connect_attr(attr_a, attr_b):
 
             # Look for the node of the current attribute...
             node = attr.split(".")[0]
-            # ...if it is already part of the traced nodes: Use its variable instead...
-            if node in Atom.traced_nodes:
-                node_variable = Atom.traced_variables[Node.traced_nodes.index(node)]
+            node_variable = Atom._get_tracer_variable_for_node(node)
+            if node_variable:
+                # ...if it is already part of the traced nodes: Use its variable instead...
                 formatted_attr = "{} + '.{}'".format(node_variable, ".".join(attr.split(".")[1:]))
             # ...otherwise make sure it's stored as a string
             else:
@@ -2031,12 +2177,9 @@ class Tracer(object):
         Flushes executed_commands_stack (Node-classAttribute) and starts tracing
         """
         # Do not add to stack if unwanted
-        Atom.trace_commands = bool(self.trace)
+        Atom.is_tracing = bool(self.trace)
 
-        Atom._flush_command_stack()
-        Atom.traced_nodes = []
-        Atom.traced_variables = []
-        Atom.traced_values = []
+        Atom._initialize_trace_variables()
 
         return Atom.executed_commands_stack
 
@@ -2058,4 +2201,22 @@ class Tracer(object):
                 for item in Atom.executed_commands_stack:
                     print(item)
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        Atom.trace_commands = False
+        Atom.is_tracing = False
+
+
+class TracerMObject(object):
+    """
+    This is a bit ugly, but I need to attach metadata (tracer_variable) to MObject instance
+    """
+    def __init__(self, node, tracer_variable):
+        super(TracerMObject, self).__init__()
+        self.mobj = om_util.get_mobj_of_node(node)
+        self._tracer_variable = tracer_variable
+
+    @property
+    def node(self):
+        return om_util.get_name_of_mobj(self.mobj)
+
+    @property
+    def tracer_variable(self):
+        return self._tracer_variable
