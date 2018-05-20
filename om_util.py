@@ -428,3 +428,54 @@ def find_mplug_of_attr(node, attr):
             mplug = find_mplug_of_attr(node, attr_part)
         else:
             mplug = find_array_plug_by_index(mplug, index)
+
+
+
+
+
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
+# FIND ELEMENTS OF GIVEN PLUG IN STRING FORM TO THEN PROCESS WITH MATTR FUNCTIONS!
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
+
+
+import re
+
+
+plug_a = "bobobo|lala|pCube1.translate[0].translateX"
+plug_b = "pCube1.rotateX"
+
+# Matching pipe could potentially be left out, since it would strip the namespace off automatically.
+# Make sure the brackets are throwaway characters
+# Are these attributes always in this pattern? Never children of children, etc.?
+pattern = r"(\w+\|*\w+).(\w+)(\[\d+\]?)[.]?([\w]*)"
+
+
+re_result_a = re.findall(pattern, plug_a) # should be match, but how to unpack?
+re_result_b = re.findall(pattern, plug_b)
+
+for item in re_result_a:
+    print item
+
+print "@@@@@@@@@"
+
+for item in re_result_b:
+    print item
+
+
+node, parent_attr, array_index, child_attr = re_result_a
+
+print "The node of this plug is", node
+print "The parent attribute of this plug is", parent_attr
+
+if array_index:
+    print "This plug has the index", array_index
+    # Check with isArray
+    # Get array plug
+
+if child_attr:
+    print "This plug has the childAttr", child_attr
+    # Check with hasChildren
+    # Get child plugs
