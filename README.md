@@ -81,6 +81,8 @@ a.t = noca.Op.condition(2 - b.ty > 3, b.t, [0, 3, 0])
 
 ### Tested with:
 * Maya 2016
+* Maya 2016, Ext. 2
+* Maya 2017
 
 ### Think this is useful? Share the love and buy me a hot chocolate :)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
