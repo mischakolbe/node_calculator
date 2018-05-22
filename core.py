@@ -654,7 +654,7 @@ class Atom(object):
     @classmethod
     def _add_to_command_stack(cls, command):
         """
-        Add a command to the class-variable executed_commands_stack
+        Add a command to the class-variable _executed_commands_stack
 
         command can be list of commands or just a string.
         """
@@ -666,7 +666,7 @@ class Atom(object):
     @classmethod
     def _flush_command_stack(cls):
         """
-        Reset the class-variable executed_commands_stack to an empty list
+        Reset the class-variable _executed_commands_stack to an empty list
         """
         cls._executed_commands_stack = []
 
@@ -680,7 +680,7 @@ class Atom(object):
         """
         Returns given node, if it can't be found in _traced_nodes!
         """
-        for i, traced_node_mobj in cls._traced_nodes:
+        for traced_node_mobj in cls._traced_nodes:
             if traced_node_mobj.node == node:
                 return traced_node_mobj.tracer_variable
 
@@ -1533,7 +1533,7 @@ def _check_for_parent_attribute(plug_list):
             return None
         node = attr.split(".")[0]
         attr = ".".join(attr.split(".")[1:])
-        parent_attr = cmds.attributeQuery(
+        parent_attr = cmds.attributeQuery( # REPLACE THIS WITH om_util.get_mplug_of_attr & get_parent_plug
             attr,
             node=node,
             listParent=True,
@@ -1569,7 +1569,7 @@ def _check_for_parent_attribute(plug_list):
         cmds.attributeQuery(x, node=potential_node, longName=True)
         for x in checked_attributes
     ]
-    all_child_attributes = cmds.attributeQuery(
+    all_child_attributes = cmds.attributeQuery( # REPLACE THIS WITH om_util.get_mplug_of_attr & get_child_plugs
         potential_parent_attr,
         node=potential_node,
         listChildren=True,
@@ -1797,7 +1797,7 @@ def _traced_create_node(node_type, **kwargs):
         cmds.parent(new_node, parent)
 
     # Add new node to traced nodes, if Tracer is active
-    if Atom.is_tracing:
+    if Atom._is_tracing:
         node_variable = Atom._get_next_variable_name()
 
         # Creating a spaceLocator is a special case (no type or parent-flag)
@@ -1837,7 +1837,7 @@ def _traced_add_attr(node, **kwargs):
     cmds.addAttr(node, **kwargs)
 
     # If commands are traced...
-    if Atom.is_tracing:
+    if Atom._is_tracing:
 
         # If node is already part of the traced nodes: Use its variable instead
         node_variable = Atom._get_tracer_variable_for_node(node)
@@ -1862,7 +1862,7 @@ def _traced_set_attr(attr, value=None, **kwargs):
         cmds.setAttr(attr, value, edit=True, **kwargs)
 
     # If commands are traced...
-    if Atom.is_tracing:
+    if Atom._is_tracing:
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
@@ -1923,12 +1923,12 @@ def _traced_get_attr(attr):
     else:
         return_value = attr
 
-    if Atom.is_tracing:
+    if Atom._is_tracing:
         value_name = Atom._get_next_value_name()
 
         return_value = metadata_value.value(return_value, metadata=value_name)
 
-        Atom.traced_values.append(return_value)
+        Atom._traced_values.append(return_value)
 
         # ...look for the node of the given attribute...
         node = attr.split(".")[0]
@@ -1983,7 +1983,7 @@ def _traced_connect_attr(attr_a, attr_b):
     cmds.connectAttr(attr_a, attr_b, force=True)
 
     # If commands are traced...
-    if Atom.is_tracing:
+    if Atom._is_tracing:
 
         # Format both attributes correctly
         formatted_attrs = []
@@ -2140,7 +2140,7 @@ def _unravel_plug(node, attr):
     """
     log.info("_unravel_plug ({}, {})".format(node, attr))
 
-    attr_children = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True)
+    attr_children = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True) # REPLACE THIS WITH om_util.get_mplug_of_attr & get_child_plugs
 
     if isinstance(attr_children, list):
         return_value = ["{}.{}".format(node, attr_child) for attr_child in attr_children]
@@ -2174,14 +2174,14 @@ class Tracer(object):
     def __enter__(self):
         """
         with-statement; entering-method
-        Flushes executed_commands_stack (Node-classAttribute) and starts tracing
+        Flushes _executed_commands_stack (Node-classAttribute) and starts tracing
         """
         # Do not add to stack if unwanted
-        Atom.is_tracing = bool(self.trace)
+        Atom._is_tracing = bool(self.trace)
 
         Atom._initialize_trace_variables()
 
-        return Atom.executed_commands_stack
+        return Atom._executed_commands_stack
 
     def __exit__(self, exc_type, value, traceback):
         """
@@ -2194,14 +2194,14 @@ class Tracer(object):
         else:
             # Print executed commands as list
             if self.print_trace:
-                print("node_calculator command-stack:", Atom.executed_commands_stack)
+                print("node_calculator command-stack:", Atom._executed_commands_stack)
             # Print executed commands on separate lines
             if self.pprint_trace:
                 print("~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~")
-                for item in Atom.executed_commands_stack:
+                for item in Atom._executed_commands_stack:
                     print(item)
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        Atom.is_tracing = False
+        Atom._is_tracing = False
 
 
 class TracerMObject(object):
