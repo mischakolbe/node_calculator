@@ -264,7 +264,7 @@ def is_valid_mplug(mplug):
     return True
 
 
-def find_parent_plug(mplug):
+def get_parent_plug(mplug):
     # tx -> t
 
     if not is_valid_mplug(mplug):
@@ -278,7 +278,22 @@ def find_parent_plug(mplug):
     return mplug_parent
 
 
-def find_child_plugs(mplug):
+def get_child_plug(mplug, child):
+    # t -> tx
+
+    if not is_valid_mplug(mplug):
+        return False
+
+    child_plugs = get_child_plugs(mplug)
+
+    for child_plug in child_plugs:
+        if str(child_plug).endswith("." + child):
+            return child_plug
+
+    return None
+
+
+def get_child_plugs(mplug):
     # t -> tx, ty, tz
 
     if not is_valid_mplug(mplug):
@@ -303,7 +318,7 @@ def get_mplug_of_mobj(mobj, attr):
         return None
 
 
-def find_elements_of_array_plug(mplug):
+def get_elements_of_array_plug(mplug):
     # input3D -> input3D[0].input3Dx, input3D[0].input3Dy, ...
     if not is_valid_mplug(mplug):
         return False
@@ -319,7 +334,7 @@ def find_elements_of_array_plug(mplug):
     return array_elements
 
 
-def find_array_plug_by_index(mplug, index):
+def get_array_plug_by_index(mplug, index):
     # input3D -> input3D[0]
     if not is_valid_mplug(mplug):
         return False
@@ -332,7 +347,7 @@ def find_array_plug_by_index(mplug, index):
     print("Shit, this should have returned something!")
 
 
-def find_array_plug_of_element(mplug):
+def get_array_plug_of_element(mplug):
     # input3D[0].input3Dx -> input3D[0]
     if not is_valid_mplug(mplug):
         return False
@@ -349,133 +364,116 @@ def get_parent_plug_of_node(node, attr):
     node_mobj = get_mobj_of_node(node)
     mplug = get_mplug_of_mobj(node_mobj, attr)
 
-    return find_parent_plug(mplug)
+    return get_parent_plug(mplug)
 
 
-def get_child_plugs_of_node(node, attr):
+def get_child_plug_of_node(node, attr):
     node_mobj = get_mobj_of_node(node)
     mplug = get_mplug_of_mobj(node_mobj, attr)
 
-    return find_child_plugs(mplug)
+
+    return get_child_plugs(mplug)
 
 
 def get_array_plugs_of_node(node, attr):
     node_mobj = get_mobj_of_node(node)
     mplug = get_mplug_of_mobj(node_mobj, attr)
 
-    return find_child_plugs(mplug)
+    return get_child_plugs(mplug)
 
 
 def get_element_plugs_of_node(node, attr):
     node_mobj = get_mobj_of_node(node)
     mplug = get_mplug_of_mobj(node_mobj, attr)
 
-    return find_elements_of_array_plug(mplug)
+    return get_elements_of_array_plug(mplug)
 
 
-def check_attr(node, attr):
-    # Get mplug-name: item.name()
-
-    parent_plug = get_parent_plug_of_node(node, attr)
-    if parent_plug:
-        print "parent_plug:", parent_plug.name()
-
-    child_plugs = get_child_plugs_of_node(node, attr)
-    if child_plugs:
-        print "child_plugs:", [x.name() for x in child_plugs]
-
-    # array_plug = find_array_plug_of_element(node, attr)
-    # if array_plug:
-    #     print "array_plug:", [x.name() for x in array_plugs]
-
-    element_plugs = get_element_plugs_of_node(node, attr)
-    if element_plugs:
-        print "element_plugs:", [x.name() for x in element_plugs]
-
-
-
-
-
-def find_mplug_of_attr(node, attr):
+def get_mplug_of_attr(node, attr):
     """
     This should find the correct mplug for any attr input:
 
-    t
-    translate
-    tx
-    translateX
-    input1D
-    input1D[0]
-    input3D
-    input3D[0]
-    input3D[1]
-    input3D[0].input3Dx
-    input3D[1].input3Dy
     """
-    mplug = None
+    mobj = get_mobj_of_node(node)
 
-    # Each dot in the string stands for another attribute-part
-    attr_parts = attr.split(".")
+    parent_attr, array_index, child_attr = split_attr_string_into_components(attr)
+    mplug = get_mplug_of_mobj(mobj, parent_attr)
 
-    for attr_part in attr_parts:
-        print "~~~~~"
-        # If a number inside brackets is found: Find the array-plug index
-        matches = re.search(r"\[(\d+)\]", attr_part)
-        index = matches.group(1) if matches else None
-        print attr_part, index
+    if array_index is not None:
+        if not mplug.isArray:
+            log.error("mplug for {}.{} is supposed to have an index, but is not an array attr!".format(node, attr))
+        mplug = get_array_plug_by_index(mplug, array_index)
 
-        if index is None:
-            mplug = find_mplug_of_attr(node, attr_part)
-        else:
-            mplug = find_array_plug_by_index(mplug, index)
+    if child_attr:
+        if not mplug.numChildren():
+            log.error("mplug for {}.{} is supposed to have children, but is not a parent attr!".format(node, attr))
+        mplug = get_child_plug(mplug, child_attr)
 
-
+    return mplug
 
 
+def split_attr_string_into_components(attr):
+
+    attr_pattern = re.compile(r"(\w+)(\[\d+\])?\.?(\w+)?")
+
+    matches = attr_pattern.findall(attr)
+
+    if not matches:
+        log.error("Attr {} could not be broken down into components!".format(attr))
+
+    if len(matches) > 1:
+        log.error("Attr {} yielded multiple results. Should be singular result!".format(attr))
+
+    parent_attr, array_index, child_attr = matches[0]
+
+    if array_index:
+        array_index_pattern = re.compile('(\d+)')
+        array_index = int(array_index_pattern.findall(array_index)[0])
+    else:
+        array_index = None
+
+    return (parent_attr, array_index, child_attr)
 
 
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
-# FIND ELEMENTS OF GIVEN PLUG IN STRING FORM TO THEN PROCESS WITH MATTR FUNCTIONS!
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@L
+def split_plug_string_into_components(plug):
+    """ UNUSED!!! """
+    plug_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)\.(\w+)(\[\d+\])?\.?(\w+)?")
+
+    matches = plug_pattern.findall(plug)
+
+    if not matches:
+        log.error("Plug {} could not be broken down into components!".format(plug))
+
+    if len(matches) > 1:
+        log.error("Plug {} yielded multiple results. Should be singular result!".format(plug))
+
+    namespace, dag_path, node, parent_attr, array_index, child_attr = matches[0]
+
+    if namespace:
+        namespace = namespace.split(":")[0]
+
+    if array_index:
+        array_index_pattern = re.compile('(\d+)')
+        array_index = array_index_pattern.findall(array_index)[0]
+
+    return (namespace, dag_path, node, parent_attr, array_index, child_attr)
 
 
-import re
+def split_node_string_into_components(node):
+    """ UNUSED!!! """
+    node_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)")
 
+    matches = node_pattern.findall(node)
 
-plug_a = "bobobo|lala|pCube1.translate[0].translateX"
-plug_b = "pCube1.rotateX"
+    if not matches:
+        log.error("Node {} could not be broken down into components!".format(node))
 
-# Matching pipe could potentially be left out, since it would strip the namespace off automatically.
-# Make sure the brackets are throwaway characters
-# Are these attributes always in this pattern? Never children of children, etc.?
-pattern = r"(\w+\|*\w+).(\w+)(\[\d+\]?)[.]?([\w]*)"
+    if len(matches) > 1:
+        log.error("Node {} yielded multiple results. Should be singular result!".format(node))
 
+    namespace, dag_path, node = matches[0]
 
-re_result_a = re.findall(pattern, plug_a) # should be match, but how to unpack?
-re_result_b = re.findall(pattern, plug_b)
+    if namespace:
+        namespace = namespace.split(":")[0]
 
-for item in re_result_a:
-    print item
-
-print "@@@@@@@@@"
-
-for item in re_result_b:
-    print item
-
-
-node, parent_attr, array_index, child_attr = re_result_a
-
-print "The node of this plug is", node
-print "The parent attribute of this plug is", parent_attr
-
-if array_index:
-    print "This plug has the index", array_index
-    # Check with isArray
-    # Get array plug
-
-if child_attr:
-    print "This plug has the childAttr", child_attr
-    # Check with hasChildren
-    # Get child plugs
+    return (namespace, dag_path, node)
