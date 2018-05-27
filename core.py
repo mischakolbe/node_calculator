@@ -70,7 +70,6 @@ import numbers
 
 # Third party imports
 from maya import cmds
-import maya.api.OpenMaya as om
 
 # Local imports
 from . import logger
@@ -2208,6 +2207,7 @@ class TracerMObject(object):
     """
     This is a bit ugly, but I need to attach metadata (tracer_variable) to MObject instance
     """
+
     def __init__(self, node, tracer_variable):
         super(TracerMObject, self).__init__()
         self.mobj = om_util.get_mobj_of_node(node)

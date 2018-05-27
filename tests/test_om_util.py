@@ -10,7 +10,6 @@ import unittest
 
 # Local imports
 from cmt.test import TestCase
-import node_calculator.core as noca
 from node_calculator import om_util
 
 

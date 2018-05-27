@@ -5,7 +5,7 @@
 import re
 
 # Third party imports
-import maya.api.OpenMaya as om
+from maya.api import OpenMaya
 from maya import cmds
 
 # Local imports
@@ -22,7 +22,7 @@ log = logger.log
 
 
 def get_name_of_mobj(mobj):
-    node_fn = om.MFnDependencyNode(mobj)
+    node_fn = OpenMaya.MFnDependencyNode(mobj)
     node_name = node_fn.name()
 
     return node_name
@@ -50,8 +50,8 @@ def get_shape_mobjs_of_mobj(mobj):
 
 def get_mdag_path_of_mobj(mobj):
     mdag_path = None
-    if mobj.hasFn(om.MFn.kDagNode):
-        mdag_path = om.MDagPath.getAPathTo(mobj)
+    if mobj.hasFn(OpenMaya.MFn.kDagNode):
+        mdag_path = OpenMaya.MDagPath.getAPathTo(mobj)
     return mdag_path
 
 
@@ -67,8 +67,8 @@ def get_long_name_of_mobj(mobj, full=False):
 
     full takes precedence - otherwise partial.
     """
-    if not isinstance(mobj, om.MObject):
-        log.error("Given mobj {} is not an instance of om.MObject".format(mobj))
+    if not isinstance(mobj, OpenMaya.MObject):
+        log.error("Given mobj {} is not an instance of OpenMaya.MObject".format(mobj))
 
     mdag_path = get_mdag_path_of_mobj(mobj)
     if mdag_path:
@@ -83,21 +83,40 @@ def get_long_name_of_mobj(mobj, full=False):
 
 
 def get_mobj_of_node(node):
-    if type(node) is om.MObject:
+    if type(node) is OpenMaya.MObject:
         return node
 
-    selectionList = om.MSelectionList()
+    selectionList = OpenMaya.MSelectionList()
     selectionList.add(node)
     mobj = selectionList.getDependNode(0)
 
     return mobj
 
 
+def get_node_type(node, api_type=False):
+    """Get node type, replaces cmds.nodeType()
+
+    Args:
+        node (str): node
+        api_type (bool): return api type
+
+    Returns:
+        str: Node type
+    """
+
+    dependency_node = OpenMaya.MSelectionList().add(node).getDependNode(0)
+
+    if api_type:
+        return dependency_node.apiTypeStr
+
+    return OpenMaya.MFnDependencyNode(dependency_node).typeName
+
+
 def get_all_mobjs_of_type(dependency_node_type):
     """
     dependency_node_type must be of "type" OpenMaya.MFn: OpenMaya.MFn.kDependencyNode etc.
     """
-    dep_node_iterator = om.MItDependencyNodes(dependency_node_type)
+    dep_node_iterator = OpenMaya.MItDependencyNodes(dependency_node_type)
     return_list = []
     while not dep_node_iterator.isDone():
         mobj = dep_node_iterator.thisNode()
@@ -108,7 +127,7 @@ def get_all_mobjs_of_type(dependency_node_type):
 
 
 def rename_mobj(mobj, name):
-    dag_modifier = om.MDagModifier()
+    dag_modifier = OpenMaya.MDagModifier()
     dag_modifier.renameNode(mobj, name)
     dag_modifier.doIt()
 
@@ -123,9 +142,9 @@ def set_mobj_attribute(mobj, attr, value):
 def selected_nodes_in_scene_as_mobjs():
     mobjs = []
 
-    selection_list = om.MGlobal.getActiveSelectionList()
+    selection_list = OpenMaya.MGlobal.getActiveSelectionList()
     if selection_list.length() > 0:
-        iterator = om.MItSelectionList(selection_list, om.MFn.kDagNode)
+        iterator = OpenMaya.MItSelectionList(selection_list, OpenMaya.MFn.kDagNode)
         while not iterator.isDone():
             mobj = iterator.getDependNode()
             mobjs.append(mobj)
@@ -148,10 +167,10 @@ def select_mobjs(mobjs):
     om-methods only selects the node, but it doesn't get selected in the outliner
     or viewport! Therefore using the cmds-version for now.
     """
-    # m_selection_list = om.MSelectionList()
+    # m_selection_list = OpenMaya.MSelectionList()
     # for mobj in mobjs:
     #     m_selection_list.add(mobj)
-    # om.MGlobal.setActiveSelectionList(m_selection_list, om.MGlobal.kReplaceList)
+    # OpenMaya.MGlobal.setActiveSelectionList(m_selection_list, OpenMaya.MGlobal.kReplaceList)
     # return m_selection_list
 
     select_list = []
@@ -180,7 +199,7 @@ tx, ty, tz
 
 def is_valid_mplug(mplug):
 
-    if not isinstance(mplug, om.MPlug):
+    if not isinstance(mplug, OpenMaya.MPlug):
         cmds.error("Expected an MPlug, got {} of type {}".format(mplug, type(mplug)))
         return False
     return True
@@ -232,7 +251,7 @@ def get_child_plugs(mplug):
 
 
 def get_mplug_of_mobj(mobj, attr):
-    node_mfn_dep_node = om.MFnDependencyNode(mobj)
+    node_mfn_dep_node = OpenMaya.MFnDependencyNode(mobj)
 
     if node_mfn_dep_node.hasAttribute(attr):
         return node_mfn_dep_node.findPlug(attr, False)  # attr, wantNetworkedPlug
@@ -266,7 +285,9 @@ def get_array_plug_by_index(mplug, index):
         if num_elements > index:
             return mplug.elementByPhysicalIndex(index)
 
-    print("Shit, this should have returned something!")
+    return None
+    # numElements()
+    # plug.getExistingArrayAttributeIndices()
 
 
 def get_array_plug_of_element(mplug):
@@ -328,6 +349,8 @@ def get_mplug_of_attr(node, attr):
             log.error("mplug for {}.{} is supposed to have an index, but is not an array attr!".format(node, attr))
         mplug = get_array_plug_by_index(mplug, array_index)
 
+
+
     if child_attr:
         if not mplug.numChildren():
             log.error("mplug for {}.{} is supposed to have children, but is not a parent attr!".format(node, attr))
@@ -337,7 +360,10 @@ def get_mplug_of_attr(node, attr):
 
 
 def split_attr_string_into_components(attr):
-
+    """
+    "parentAttr[arrayIndex].childAttr" ->
+    (parent_attr, array_index, child_attr)
+    """
     attr_pattern = re.compile(r"(\w+)(\[\d+\])?\.?(\w+)?")
 
     matches = attr_pattern.findall(attr)
@@ -360,7 +386,10 @@ def split_attr_string_into_components(attr):
 
 
 def split_plug_string_into_components(plug):
-    """ UNUSED!!! """
+    """
+    "namespace:some|dag|path|node.parentAttr[arrayIndex].childAttr" ->
+    (namespace, dag_path, node, parent_attr, array_index, child_attr)
+    """
     plug_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)\.(\w+)(\[\d+\])?\.?(\w+)?")
 
     matches = plug_pattern.findall(plug)
@@ -384,7 +413,10 @@ def split_plug_string_into_components(plug):
 
 
 def split_node_string_into_components(node):
-    """ UNUSED!!! """
+    """
+    "namespace:some|dag|path|node" ->
+    (namespace, dag_path, node)
+    """
     node_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)")
 
     matches = node_pattern.findall(node)
