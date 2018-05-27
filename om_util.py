@@ -275,8 +275,13 @@ def get_elements_of_array_plug(mplug):
     return array_elements
 
 
-def get_array_plug_by_index(mplug, index):
+def get_array_plug_by_physical_index(mplug, index):
+    """
+    The index can range from 0 to numElements() - 1.
+    This function is particularly useful for iteration through the element plugs of an array plug.
+    This function will NOT create a plug if it doesn't exist!
     # input3D -> input3D[0]
+    """
     if not is_valid_mplug(mplug):
         return None
 
@@ -286,59 +291,44 @@ def get_array_plug_by_index(mplug, index):
             return mplug.elementByPhysicalIndex(index)
 
     return None
-    # numElements()
-    # plug.getExistingArrayAttributeIndices()
 
 
-def get_array_plug_of_element(mplug):
-    # input3D[0].input3Dx -> input3D[0]
+def get_array_plug_by_logical_index(mplug, index):
+    """
+    The logical index is the sparse array index used in MEL scripts.
+    If a plug does not exist at the given Index, Maya will create a plug at that index.
+    # input3D -> input3D[0]
+    """
     if not is_valid_mplug(mplug):
         return None
 
-    array_plug = None
-
-    if mplug.isElement:
-        array_plug = mplug.logicalIndex()
-
-    return array_plug
+    if mplug.isArray:
+        return mplug.elementByLogicalIndex(index)
+    else:
+        log.error("{} is not an array plug!".format(mplug))
 
 
-# def get_parent_plug_of_node(node, attr):
-#     node_mobj = get_mobj_of_node(node)
-#     mplug = get_mplug_of_mobj(node_mobj, attr)
+# def get_array_plug_of_element(mplug):
+#     # input3D[0].input3Dx -> input3D[0]
+#     if not is_valid_mplug(mplug):
+#         return None
 
-#     return get_parent_plug(mplug)
+#     array_plug = None
 
+#     if mplug.isElement:
+#         array_plug = mplug.logicalIndex()
 
-# def get_child_plug_of_node(node, attr):
-#     node_mobj = get_mobj_of_node(node)
-#     mplug = get_mplug_of_mobj(node_mobj, attr)
-
-#     return get_child_plugs(mplug)
-
-
-# def get_array_plugs_of_node(node, attr):
-#     node_mobj = get_mobj_of_node(node)
-#     mplug = get_mplug_of_mobj(node_mobj, attr)
-
-#     return get_child_plugs(mplug)
+#     return array_plug
 
 
-# def get_element_plugs_of_node(node, attr):
-#     node_mobj = get_mobj_of_node(node)
-#     mplug = get_mplug_of_mobj(node_mobj, attr)
-
-#     return get_elements_of_array_plug(mplug)
-
-
-def get_mplug_of_attr(node, attr):
+def get_mplug_of_node_and_attr(node, attr):
     """
-    This should find the correct mplug for any attr input:
+    This should find the correct mplug for any node, attr input: "pCube1", "tx"
 
     """
     mobj = get_mobj_of_node(node)
 
-    parent_attr, array_index, child_attr = split_attr_string_into_components(attr)
+    parent_attr, array_index, child_attr = split_attr_string(attr)
     mplug = get_mplug_of_mobj(mobj, parent_attr)
 
     if not mplug:
@@ -347,9 +337,7 @@ def get_mplug_of_attr(node, attr):
     if array_index is not None:
         if not mplug.isArray:
             log.error("mplug for {}.{} is supposed to have an index, but is not an array attr!".format(node, attr))
-        mplug = get_array_plug_by_index(mplug, array_index)
-
-
+        mplug = get_array_plug_by_logical_index(mplug, array_index)
 
     if child_attr:
         if not mplug.numChildren():
@@ -359,7 +347,32 @@ def get_mplug_of_attr(node, attr):
     return mplug
 
 
-def split_attr_string_into_components(attr):
+def get_mplug_of_plug(plug):
+    """
+    This should find the correct mplug for any plug input: "pCube1.tx"
+
+    """
+    node, attr = plug.split(".", 1)
+    mplug = get_mplug_of_node_and_attr(node, attr)
+
+    return mplug
+
+
+def split_plug_string(plug):
+    """
+    "namespace:some|dag|path|node.parentAttr[arrayIndex].childAttr" ->
+    (namespace, dag_path, node, parent_attr, array_index, child_attr)
+    """
+
+    node, attr = plug.split(".", 1)
+
+    namespace, dag_path, node = split_node_string(node)
+    parent_attr, array_index, child_attr = split_attr_string(attr)
+
+    return (namespace, dag_path, node, parent_attr, array_index, child_attr)
+
+
+def split_attr_string(attr):
     """
     "parentAttr[arrayIndex].childAttr" ->
     (parent_attr, array_index, child_attr)
@@ -385,34 +398,7 @@ def split_attr_string_into_components(attr):
     return (parent_attr, array_index, child_attr)
 
 
-def split_plug_string_into_components(plug):
-    """
-    "namespace:some|dag|path|node.parentAttr[arrayIndex].childAttr" ->
-    (namespace, dag_path, node, parent_attr, array_index, child_attr)
-    """
-    plug_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)\.(\w+)(\[\d+\])?\.?(\w+)?")
-
-    matches = plug_pattern.findall(plug)
-
-    if not matches:
-        log.error("Plug {} could not be broken down into components!".format(plug))
-
-    if len(matches) > 1:
-        log.error("Plug {} yielded multiple results. Should be singular result!".format(plug))
-
-    namespace, dag_path, node, parent_attr, array_index, child_attr = matches[0]
-
-    if namespace:
-        namespace = namespace.split(":")[0]
-
-    if array_index:
-        array_index_pattern = re.compile('(\d+)')
-        array_index = array_index_pattern.findall(array_index)[0]
-
-    return (namespace, dag_path, node, parent_attr, array_index, child_attr)
-
-
-def split_node_string_into_components(node):
+def split_node_string(node):
     """
     "namespace:some|dag|path|node" ->
     (namespace, dag_path, node)

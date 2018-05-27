@@ -81,11 +81,14 @@ reload(lookup_tables)
 reload(om_util)
 reload(metadata_value)
 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CONSTANTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+NODE_NAME_PREFIX = "nc"  # Common prefix for all nodes created by nodeCalculator
 STANDARD_SEPARATOR_NICENAME = "_" * 8
 STANDARD_SEPARATOR_VALUE = "_" * 8
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SETUP LOGGER
@@ -1474,15 +1477,15 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     # Match input-dimensions: Both obj_X_matched_list have the same length
     # This takes care of 1D to XD setting/connecting
     if obj_a_dim != obj_b_dim:
+        obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
         log.info(
             "Matched obj_b_unravelled_list {} dimension to obj_a_dim {}!".format(
                 obj_b_unravelled_list,
                 obj_a_dim,
             )
         )
-        obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
 
-    obj_a_unravelled_list, obj_b_unravelled_list = _reduce_a_and_b_to_min_dimension(
+    obj_a_unravelled_list, obj_b_unravelled_list = _reduce_plug_pair_to_min_dimension(
         obj_a_unravelled_list,
         obj_b_unravelled_list
     )
@@ -1490,16 +1493,20 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     _set_or_connect_a_to_b(obj_a_unravelled_list, obj_b_unravelled_list, **kwargs)
 
 
-def _reduce_a_and_b_to_min_dimension(obj_a_list, obj_b_list):
-    log.info("_reduce_a_and_b_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
+def _reduce_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
+    log.info("_reduce_plug_pair_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
 
     # A 3D to 3D connection can be 1 connection if both have a parent-attribute!
-    reduced_obj_a_list = _check_for_parent_attribute(obj_a_list)
-    reduced_obj_b_list = _check_for_parent_attribute(obj_b_list)
+    parent_plug_a = _check_for_parent_attribute(obj_a_list)
+    parent_plug_b = _check_for_parent_attribute(obj_b_list)
+
     # Only reduce the connection if BOTH objects have a parent-attribute!
     # A 1D attr can not connect to a 3D attr!
-    if reduced_obj_a_list is not None and reduced_obj_b_list is not None:
-        return (reduced_obj_a_list, reduced_obj_b_list)
+    if parent_plug_a is not None and parent_plug_b is not None:
+        # Currently casting the mplugs returned by _check_for_parent_attribute to strings
+        # Then those must be list, therefore ([str()], [str()]) abomination
+        # TODO: Make this nicer (expect mplug everywhere?)
+        return ([str(parent_plug_a)], [str(parent_plug_b)])
     else:
         return (obj_a_list, obj_b_list)
 
@@ -1512,73 +1519,49 @@ def _check_for_parent_attribute(plug_list):
         attribute_list (list): List of attributes: ["node.attribute", ...]
 
     Returns:
-        list, None: If parent attribute was found it is returned in a list,
+        mplug, None: If parent attribute was found it is returned as an mplug,
                     otherwise returns None
     """
     # Make sure all attributes are unique, so [outputX, outputX, outputZ] doesn't match to output)
     log.info("_check_for_parent_attribute ({})".format(plug_list))
 
-    if len(set(plug_list)) != len(plug_list):
-        return None
-
     # Initialize variables for a potential parent node & attribute
-    potential_parent_attr = None
-    potential_node = None
-    checked_attributes = []
+    potential_parent_mplug = None
+    checked_mplugs = []
 
-    for attr in plug_list:
+    for plug in plug_list:
         # Any numeric value instantly breaks any chance for a parent_attr
-        if isinstance(attr, numbers.Real):
+        if isinstance(plug, numbers.Real):
             return None
-        node = attr.split(".")[0]
-        attr = ".".join(attr.split(".")[1:])
-        parent_attr = cmds.attributeQuery( # REPLACE THIS WITH om_util.get_mplug_of_attr & get_parent_plug
-            attr,
-            node=node,
-            listParent=True,
-            exists=True
-        )
 
-        # Any non-existent or faulty parent_attr (namely multi-attrs) breaks chance for parent_attr
-        if parent_attr is False or parent_attr is None:
+        mplug = om_util.get_mplug_of_plug(plug)
+        parent_mplug = om_util.get_parent_plug(mplug)
+
+        # Any non-existent or faulty parent_attr breaks chance for parent_attr
+        if not parent_mplug:
             return None
 
         # The first parent_attr becomes the potential_parent_attr...
-        if potential_parent_attr is None:
-            potential_parent_attr = parent_attr
+        if potential_parent_mplug is None:
+            potential_parent_mplug = parent_mplug
         # ...if any subsequent potential_parent_attr is different to the existing: exit
-        elif potential_parent_attr != parent_attr:
+        elif potential_parent_mplug != parent_mplug:
             return None
 
-        # The first node becomes the potential_node...
-        if potential_node is None:
-            potential_node = node
-        # ...if any subsequent potential_node is different to the existing: exit
-        elif potential_node != node:
-            return None
-
-        # If the attribute passed all previous tests: Add it to the list
-        checked_attributes.append(attr)
+        # If the plug passed all previous tests: Add it to the list
+        checked_mplugs.append(mplug)
 
     # The plug should not be reduced if the list of all checked attributes
     # does not match the full list of available children attributes!
     # Example A: [outputX] should not be reduced to [output], since Y & Z are missing!
     # Example B: [outputX, outputZ, outputY] isn't in the right order and should not be reduced!
-    all_checked_attributes = [
-        cmds.attributeQuery(x, node=potential_node, longName=True)
-        for x in checked_attributes
-    ]
-    all_child_attributes = cmds.attributeQuery( # REPLACE THIS WITH om_util.get_mplug_of_attr & get_child_plugs
-        potential_parent_attr,
-        node=potential_node,
-        listChildren=True,
-        longName=True
-    )
-    if all_checked_attributes != all_child_attributes:
-        return None
+    all_child_mplugs = om_util.get_child_plugs(potential_parent_mplug)
+    for checked_mplug, child_mplug in zip(checked_mplugs, all_child_mplugs):
+        if checked_mplug != child_mplug:
+            return None
 
     # If it got to this point: It must be a parent_attr
-    return [potential_node + "." + potential_parent_attr[0]]
+    return potential_parent_mplug
 
 
 def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
@@ -1620,6 +1603,16 @@ def _is_valid_maya_attr(path):
     return False
 
 
+# def _replace_plugs_with_mplugs_in_list(input_list):
+#     output_list = []
+#     for item in input_list:
+#         if _is_valid_maya_attr(item):
+#             output_list.append(om_util.get_mplug_of_plug(item))
+#         else:
+#             output_list.append(item)
+#     return output_list
+
+
 def _unravel_a_and_b(obj_a, obj_b):
     log.info("_unravel_a_and_b ({}, {})".format(obj_a, obj_b))
 
@@ -1627,6 +1620,11 @@ def _unravel_a_and_b(obj_a, obj_b):
     log.info("obj_a_unravelled_list {} from obj_a {}".format(obj_a_unravelled_list, obj_a))
     obj_b_unravelled_list = _unravel_item_as_list(obj_b)
     log.info("obj_b_unravelled_list {} from obj_b {}".format(obj_b_unravelled_list, obj_b))
+
+    # Transform lists into mplug-lists.
+    # TODO: Could be much nicer, if any found plug would already be mplug, then this would be obsolete!
+    # obj_a_unravelled_list = _replace_plugs_with_mplugs_in_list(obj_a_unravelled_list)
+    # obj_b_unravelled_list = _replace_plugs_with_mplugs_in_list(obj_b_unravelled_list)
 
     return (obj_a_unravelled_list, obj_b_unravelled_list)
 
@@ -1756,7 +1754,7 @@ def _create_node_name(operation, *args):
 
     # Combine all name-elements
     name = "_".join([
-        "nc",  # Common node_calculator-prefix
+        NODE_NAME_PREFIX,  # Common node_calculator-prefix
         operation.upper(),  # Operation type
         "_".join(node_name),  # Involved args
         lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
@@ -1849,32 +1847,29 @@ def _traced_add_attr(node, **kwargs):
         Atom._add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
 
 
-def _traced_set_attr(attr, value=None, **kwargs):
+def _traced_set_attr(plug, value=None, **kwargs):
     """
     Maya-setAttr that adds the executed command to the command_stack if Tracer is active
     """
 
-    # Set attr to value
+    # Set plug to value
     if value is None:
-        cmds.setAttr(attr, edit=True, **kwargs)
+        cmds.setAttr(plug, edit=True, **kwargs)
     else:
-        cmds.setAttr(attr, value, edit=True, **kwargs)
+        cmds.setAttr(plug, value, edit=True, **kwargs)
 
     # If commands are traced...
     if Atom._is_tracing:
 
         # ...look for the node of the given attribute...
-        node = attr.split(".")[0]
+        node, attr = plug.split(".", 1)
         node_variable = Atom._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
-            attr = "{} + '.{}'".format(
-                node_variable,
-                ".".join(attr.split(".")[1:])
-            )
+            plug = "{} + '.{}'".format(node_variable, attr)
         else:
             # ...otherwise add quotes around original attr
-            attr = "'{}'".format(attr)
+            plug = "'{}'".format(plug)
 
         # Join any given kwargs so they can be passed on to the setAttr-command
         joined_kwargs = _join_kwargs_for_cmds(**kwargs)
@@ -1887,23 +1882,23 @@ def _traced_set_attr(attr, value=None, **kwargs):
             if joined_kwargs:
                 # If both value and kwargs were given
                 Atom._add_to_command_stack(
-                    "cmds.setAttr({}, {}, edit=True, {})".format(attr, value, joined_kwargs)
+                    "cmds.setAttr({}, {}, edit=True, {})".format(plug, value, joined_kwargs)
                 )
             else:
                 # If only a value was given
-                Atom._add_to_command_stack("cmds.setAttr({}, {})".format(attr, value))
+                Atom._add_to_command_stack("cmds.setAttr({}, {})".format(plug, value))
         else:
             if joined_kwargs:
                 # If only kwargs were given
                 Atom._add_to_command_stack(
-                    "cmds.setAttr({}, edit=True, {})".format(attr, joined_kwargs)
+                    "cmds.setAttr({}, edit=True, {})".format(plug, joined_kwargs)
                 )
             else:
                 # If neither value or kwargs were given it was a redundant setAttr. Don't store!
                 pass
 
 
-def _traced_get_attr(attr):
+def _traced_get_attr(plug):
     """
     Maya-getAttr that adds the executed command to the command_stack if Tracer is active,
     Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
@@ -1912,15 +1907,15 @@ def _traced_get_attr(attr):
     # Variable to keep track of whether return value had to be unpacked or not
     list_of_tuples_returned = False
 
-    if _is_valid_maya_attr(attr):
-        return_value = cmds.getAttr(attr)
+    if _is_valid_maya_attr(plug):
+        return_value = cmds.getAttr(plug)
         # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
         if isinstance(return_value, list):
             if len(return_value) == 1 and isinstance(return_value[0], tuple):
                 list_of_tuples_returned = True
                 return_value = list(return_value[0])
     else:
-        return_value = attr
+        return_value = plug
 
     if Atom._is_tracing:
         value_name = Atom._get_next_value_name()
@@ -1930,23 +1925,20 @@ def _traced_get_attr(attr):
         Atom._traced_values.append(return_value)
 
         # ...look for the node of the given attribute...
-        node = attr.split(".")[0]
+        node, attr = plug.split(".", 1)
         node_variable = Atom._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
-            attr = "{} + '.{}'".format(
-                node_variable,
-                ".".join(attr.split(".")[1:])
-            )
+            plug = "{} + '.{}'".format(node_variable, attr)
         else:
-            # ...otherwise add quotes around original attr
-            attr = "'{}'".format(attr)
+            # ...otherwise add quotes around original plug
+            plug = "'{}'".format(plug)
 
         # Add the getAttr-command to the command stack
         if list_of_tuples_returned:
-            Atom._add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(value_name, attr))
+            Atom._add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(value_name, plug))
         else:
-            Atom._add_to_command_stack("{} = cmds.getAttr({})".format(value_name, attr))
+            Atom._add_to_command_stack("{} = cmds.getAttr({})".format(value_name, plug))
 
     return return_value
 
@@ -1974,29 +1966,29 @@ def _join_kwargs_for_cmds(**kwargs):
     return joined_kwargs
 
 
-def _traced_connect_attr(attr_a, attr_b):
+def _traced_connect_attr(plug_a, plug_b):
     """
     Maya-connectAttr that adds the executed command to the command_stack if Tracer is active
     """
-    # Connect attr_a to attr_b
-    cmds.connectAttr(attr_a, attr_b, force=True)
+    # Connect plug_a to plug_b
+    cmds.connectAttr(plug_a, plug_b, force=True)
 
     # If commands are traced...
     if Atom._is_tracing:
 
         # Format both attributes correctly
         formatted_attrs = []
-        for attr in [attr_a, attr_b]:
+        for plug in [plug_a, plug_b]:
 
             # Look for the node of the current attribute...
-            node = attr.split(".")[0]
+            node, attr = plug.split(".", 1)
             node_variable = Atom._get_tracer_variable_for_node(node)
             if node_variable:
                 # ...if it is already part of the traced nodes: Use its variable instead...
-                formatted_attr = "{} + '.{}'".format(node_variable, ".".join(attr.split(".")[1:]))
+                formatted_attr = "{} + '.{}'".format(node_variable, attr)
             # ...otherwise make sure it's stored as a string
             else:
-                formatted_attr = "'{}'".format(attr)
+                formatted_attr = "'{}'".format(plug)
             formatted_attrs.append(formatted_attr)
 
         # Add the connectAttr-command to the command stack
@@ -2139,12 +2131,16 @@ def _unravel_plug(node, attr):
     """
     log.info("_unravel_plug ({}, {})".format(node, attr))
 
-    attr_children = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True) # REPLACE THIS WITH om_util.get_mplug_of_attr & get_child_plugs
+    mplug = om_util.get_mplug_of_attr(node, attr)
 
-    if isinstance(attr_children, list):
-        return_value = ["{}.{}".format(node, attr_child) for attr_child in attr_children]
+    child_plugs = om_util.get_child_plugs(mplug)
+
+    # attr_children = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True) # REPLACE THIS WITH om_util.get_mplug_of_attr & get_child_plugs
+
+    if child_plugs:
+        return_value = [str(child_plug) for child_plug in child_plugs]
     else:
-        return_value = "{}.{}".format(node, attr)
+        return_value = str(mplug)
 
     return return_value
 
