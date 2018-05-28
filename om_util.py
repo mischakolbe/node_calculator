@@ -352,6 +352,9 @@ def get_mplug_of_plug(plug):
     This should find the correct mplug for any plug input: "pCube1.tx"
 
     """
+    if isinstance(plug, OpenMaya.MPlug):
+        return plug
+
     node, attr = plug.split(".", 1)
     mplug = get_mplug_of_node_and_attr(node, attr)
 

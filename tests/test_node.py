@@ -24,3 +24,8 @@ class TestNodeClass(TestCase):
     def test_xyz(self):
         """ Test XYZ """
         pass
+
+
+# print a.node
+# print a.attrs_list
+# print a.as_list()

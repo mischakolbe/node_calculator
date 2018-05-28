@@ -241,6 +241,14 @@ class LookupTableMetaClass(object):
             NODE_LOOKUP_TABLE is a dict that holds the data for each available operation:
             the necessary node-type, its inputs, outputs, etc.
             This unified data enables to abstract node creation, connection, etc.
+
+            possible flags:
+            - node: Type of Maya node necessary
+            - inputs: input attributes (list of lists)
+            - output: output attributes (list)
+            - is_multi_index: does node take any number of input attributes (array attr)
+            - operation: set operation-attr for different modes of a node
+            - output_is_predetermined: should output attrs ALWAYS be given in full?
         """
         global NODE_LOOKUP_TABLE
         global DN_MATH_OPERATORS
@@ -301,7 +309,7 @@ class LookupTableMetaClass(object):
                         "input3D[{multi_index}].input3Dz"
                     ],
                 ],
-                "multi_index": True,
+                "is_multi_index": True,
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": 3,
             },
@@ -320,7 +328,7 @@ class LookupTableMetaClass(object):
                         "matrixIn[{multi_index}]"
                     ],
                 ],
-                "multi_index": True,
+                "is_multi_index": True,
                 "output": ["matrixSum"],
             },
             "decompose_matrix": {
@@ -334,6 +342,7 @@ class LookupTableMetaClass(object):
                     "outputScaleX", "outputScaleY", "outputScaleZ",
                     "outputShearX", "outputShearY", "outputShearZ",
                 ],
+                "output_is_predetermined": True,
             },
             "compose_matrix": {
                 "node": "composeMatrix",
@@ -377,7 +386,7 @@ class LookupTableMetaClass(object):
                         "input[{multi_index}]",
                     ],
                 ],
-                "multi_index": True,
+                "is_multi_index": True,
                 "output": ["output"],
             },
             "normalize_vector": {
@@ -419,7 +428,7 @@ class LookupTableMetaClass(object):
                         "input3D[{multi_index}].input3Dz"
                     ],
                 ],
-                "multi_index": True,
+                "is_multi_index": True,
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": i + 1,
             }
@@ -460,7 +469,7 @@ class LookupTableMetaClass(object):
                         "input3D[{multi_index}].input3D2"
                     ],
                 ],
-                "multi_index": True,
+                "is_multi_index": True,
                 "output": ["output3D0", "output3D1", "output3D2"],
                 "operation": i,
             }

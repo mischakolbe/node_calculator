@@ -48,16 +48,6 @@ Example:
         attrs -> returns Attrs-instance
         attrs_list -> returns list of attributes in Attrs
 
-
-TODO: decompose_matrix currently doesn't return full list of attributes, because
-        return link(new_node, outputs[:max_dim])
-      caps the outputs to "max_dim", which is 1 due to the single matrix input
-      MAYBE: Add a flag in LOOKUP TABLE that allows to set "prevent_truncating" or so.
-      If it's True: Just return the full output-list all the time.
-
-TODO: Add method to BaseNode that lets the user switch prevent_unravelling Flag.
-    For example: set_elemental(), unravel_me(), is_unravellable(True/False),...?
-
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,9 +55,11 @@ TODO: Add method to BaseNode that lets the user switch prevent_unravelling Flag.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
 import numbers
+import itertools
 
 # Third party imports
 from maya import cmds
+from maya.api import OpenMaya
 
 # Local imports
 from . import logger
@@ -916,7 +908,7 @@ class BaseNode(Atom):
         self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
 
-        self.__dict__["prevent_unravelling"] = prevent_unravelling
+        self.__dict__["_prevent_unravelling"] = prevent_unravelling
 
         self._add_all_add_attr_methods()
 
@@ -978,6 +970,14 @@ class BaseNode(Atom):
             log.warn("No attribute exists on {}! Returned None".format(self))
 
             return None
+
+    @property
+    def prevent_unravelling(self):
+        return self._prevent_unravelling
+
+    def set_prevent_unravelling(self, state):
+        """ Allows the user to change prevent unravelling once Node is created """
+        self.__dict__["_prevent_unravelling"] = state
 
     def _add_all_add_attr_methods(self):
         """
@@ -1391,7 +1391,15 @@ class Collection(Atom):
         """
         log.debug("Collection __repr__ ({})".format(self.elements))
 
-        return "{}".format(self.elements)
+        return str(self.elements)
+
+    def __unicode__(self):
+        """
+        For example for running highlighted Node-instance
+        """
+        log.debug("Collection __repr__ ({})".format(self.elements))
+
+        return str(self.elements)
 
     def __getitem__(self, index):
         log.info("Collection __getitem__ ({})".format(index))
@@ -1405,6 +1413,19 @@ class Collection(Atom):
 
     def __len__(self):
         return len(self.elements)
+
+    @property
+    def nodes(self):
+        """
+        Easy access to sparse list of all nodes within Collection.
+        Useful for example for cmds.hide(my_collection.nodes)
+        """
+        return_list = []
+        for item in self.elements:
+            if isinstance(item, (Node, Attrs)):
+                return_list.append(item.node)
+
+        return list(set(return_list))
 
 
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
@@ -1425,7 +1446,8 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     """
     log.info("_unravel_and_set_or_connect_a_to_b ({}, {})".format(obj_a, obj_b))
 
-    obj_a_unravelled_list, obj_b_unravelled_list = _unravel_a_and_b(obj_a, obj_b)
+    obj_a_unravelled_list = _unravel_item_as_list(obj_a)
+    obj_b_unravelled_list = _unravel_item_as_list(obj_b)
 
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
@@ -1503,10 +1525,7 @@ def _reduce_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
     # Only reduce the connection if BOTH objects have a parent-attribute!
     # A 1D attr can not connect to a 3D attr!
     if parent_plug_a is not None and parent_plug_b is not None:
-        # Currently casting the mplugs returned by _check_for_parent_attribute to strings
-        # Then those must be list, therefore ([str()], [str()]) abomination
-        # TODO: Make this nicer (expect mplug everywhere?)
-        return ([str(parent_plug_a)], [str(parent_plug_b)])
+        return ([parent_plug_a], [parent_plug_b])
     else:
         return (obj_a_list, obj_b_list)
 
@@ -1556,8 +1575,10 @@ def _check_for_parent_attribute(plug_list):
     # Example A: [outputX] should not be reduced to [output], since Y & Z are missing!
     # Example B: [outputX, outputZ, outputY] isn't in the right order and should not be reduced!
     all_child_mplugs = om_util.get_child_plugs(potential_parent_mplug)
-    for checked_mplug, child_mplug in zip(checked_mplugs, all_child_mplugs):
-        if checked_mplug != child_mplug:
+
+    for checked_mplug, child_mplug in itertools.izip_longest(checked_mplugs, all_child_mplugs):
+        empty_plug_detected = checked_mplug is None or child_mplug is None
+        if empty_plug_detected or checked_mplug != child_mplug:
             return None
 
     # If it got to this point: It must be a parent_attr
@@ -1573,18 +1594,18 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
             log.error("obj_a_item seems not to be a Maya attr: {}!".format(obj_a_item))
 
         # If obj_b_item is a simple number...
-        if isinstance(obj_b_item, numbers.Real) or isinstance(obj_b_item, metadata_value.MetadataValue):
+        if isinstance(obj_b_item, numbers.Real):
             # # ...set 1-D obj_a_item to 1-D obj_b_item-value.
             _traced_set_attr(obj_a_item, obj_b_item, **kwargs)
 
         # If obj_b_item is a valid attribute in the Maya scene...
-        elif _is_valid_maya_attr(obj_b_item):
+        elif isinstance(obj_b_item, OpenMaya.MPlug) or _is_valid_maya_attr(obj_b_item):
             #  ...connect it.
             _traced_connect_attr(obj_b_item, obj_a_item)
 
         # If obj_b_item didn't match anything; obj_b_item-type is not recognized/supported.
         else:
-            msg = "Cannot set obj_b_item: {1} because of unknown type: {0}".format(
+            msg = "Cannot set obj_b_item: {} because of unknown type: {}".format(
                 obj_b_item,
                 type(obj_b_item),
             )
@@ -1592,41 +1613,15 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
             return False
 
 
-def _is_valid_maya_attr(path):
-    """ Check if given attr-path is of an existing Maya attribute """
-    log.info("_is_valid_maya_attr ({})".format(path))
+def _is_valid_maya_attr(plug):
+    """ Check if given plug is of an existing Maya attribute """
+    log.info("_is_valid_maya_attr ({})".format(plug))
 
-    if isinstance(path, basestring) and "." in path:
-        node, attr = path.split(".", 1)
+    if isinstance(plug, basestring) and "." in plug:
+        node, attr = plug.split(".", 1)
         return cmds.attributeQuery(attr, node=node, exists=True)
 
     return False
-
-
-# def _replace_plugs_with_mplugs_in_list(input_list):
-#     output_list = []
-#     for item in input_list:
-#         if _is_valid_maya_attr(item):
-#             output_list.append(om_util.get_mplug_of_plug(item))
-#         else:
-#             output_list.append(item)
-#     return output_list
-
-
-def _unravel_a_and_b(obj_a, obj_b):
-    log.info("_unravel_a_and_b ({}, {})".format(obj_a, obj_b))
-
-    obj_a_unravelled_list = _unravel_item_as_list(obj_a)
-    log.info("obj_a_unravelled_list {} from obj_a {}".format(obj_a_unravelled_list, obj_a))
-    obj_b_unravelled_list = _unravel_item_as_list(obj_b)
-    log.info("obj_b_unravelled_list {} from obj_b {}".format(obj_b_unravelled_list, obj_b))
-
-    # Transform lists into mplug-lists.
-    # TODO: Could be much nicer, if any found plug would already be mplug, then this would be obsolete!
-    # obj_a_unravelled_list = _replace_plugs_with_mplugs_in_list(obj_a_unravelled_list)
-    # obj_b_unravelled_list = _replace_plugs_with_mplugs_in_list(obj_b_unravelled_list)
-
-    return (obj_a_unravelled_list, obj_b_unravelled_list)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1646,7 +1641,7 @@ def _create_and_connect_node(operation, *args):
     # If a multi_index-attribute is given; create list with it of same length than args
     log.info("Creating a new {}-operationNode with args: {}".format(operation, args))
     new_node_inputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"]
-    if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
+    if lookup_tables.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
         new_node_inputs = len(args) * lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"][:]
 
     # Check dimension-match: args vs. NODE_LOOKUP_TABLE-inputs:
@@ -1658,7 +1653,7 @@ def _create_and_connect_node(operation, *args):
 
     # Unravel all given arguments and create a new node according to given operation
     unravelled_args_list = [_unravel_item_as_list(x) for x in args]
-    new_node = _create_operation_node(operation, unravelled_args_list)
+    new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
     # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
     node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
@@ -1673,7 +1668,7 @@ def _create_and_connect_node(operation, *args):
 
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
-        if lookup_tables.NODE_LOOKUP_TABLE[operation].get("multi_index", False):
+        if lookup_tables.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
         # Support for single-dimension-inputs in the NODE_LOOKUP_TABLE. For example:
@@ -1700,10 +1695,15 @@ def _create_and_connect_node(operation, *args):
     # Support for single-dimension-outputs in the NODE_LOOKUP_TABLE. For example:
     # distanceBetween returns 1D attr, no matter what dimension the inputs were
     outputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["output"]
+    output_is_predetermined = lookup_tables.NODE_LOOKUP_TABLE[operation].get(
+        "output_is_predetermined", False
+    )
 
-    if len(outputs) == 1:
+    if len(outputs) == 1 or output_is_predetermined:
+        # If the outputs are of length 1 anyways or should not be altered: Return directly
         return link(new_node, outputs)
     else:
+        # Truncate the number of outputs according to how many attributes were processed
         return link(new_node, outputs[:max_dim])
 
 
@@ -1713,7 +1713,8 @@ def _create_node_name(operation, *args):
     """
     if isinstance(args, tuple) and len(args) == 1:
         args = args[0]
-    node_name = []
+
+    involved_args = []
     for arg in args:
         # Unwrap list of lists, if it's only one element
         if isinstance(arg, list) and len(arg) == 1:
@@ -1721,49 +1722,41 @@ def _create_node_name(operation, *args):
 
         if isinstance(arg, Node):
             # Try to find short, descriptive name, otherwise use "Node"
-            if isinstance(arg.attrs, basestring):
-                node_name.append(arg.attrs)
-            elif isinstance(arg.attrs, numbers.Real):
-                node_name.append(str(arg.attrs))
-            elif isinstance(arg.attrs, list) and len(arg.attrs) == 1:
-                node_name.append(str(arg.attrs[0]))
+            if arg.attrs:
+                involved_args.extend(arg.as_list)
             else:
-                node_name.append("Node")
+                involved_args.append(arg.node)
 
-        elif isinstance(arg, list):
+        elif isinstance(arg, (tuple, list)):
             # If it's a list of 1 element; use that element, otherwise use "list"
             if len(arg) == 1:
-                node_name.append(str(arg[0]))
+                involved_args.append(str(arg[0]))
             else:
-                node_name.append("list")
+                involved_args.append("list")
 
         elif isinstance(arg, numbers.Real):
             # Round floats, otherwise use number directly
             if isinstance(arg, float):
-                node_name.append(str(int(arg)) + "f")
+                involved_args.append(str(int(arg)) + "f")
             else:
-                node_name.append(str(arg))
-
-        elif isinstance(arg, str):
-            # Return the attrs-part of a passed on string (presumably "node.attrs")
-            node_name.append(arg.split(".")[-1])
+                involved_args.append(str(arg))
 
         else:
             # Unknown arg-type
-            node_name.append("UNK" + str(arg))
+            involved_args.append("UNK" + str(arg))
 
     # Combine all name-elements
     name = "_".join([
         NODE_NAME_PREFIX,  # Common node_calculator-prefix
         operation.upper(),  # Operation type
-        "_".join(node_name),  # Involved args
+        "_".join(involved_args),  # Involved args
         lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
     ])
 
     return name
 
 
-def _create_operation_node(operation, involved_attributes):
+def _create_traced_operation_node(operation, involved_attributes):
     """
     Maya-createNode that adds the executed command to the command_stack if Tracer is active
     Creates a named node of appropriate type for the necessary operation
@@ -1862,7 +1855,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
     if Atom._is_tracing:
 
         # ...look for the node of the given attribute...
-        node, attr = plug.split(".", 1)
+        node, attr = str(plug).split(".", 1)
         node_variable = Atom._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
@@ -1925,7 +1918,7 @@ def _traced_get_attr(plug):
         Atom._traced_values.append(return_value)
 
         # ...look for the node of the given attribute...
-        node, attr = plug.split(".", 1)
+        node, attr = str(plug).split(".", 1)
         node_variable = Atom._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
@@ -1981,7 +1974,7 @@ def _traced_connect_attr(plug_a, plug_b):
         for plug in [plug_a, plug_b]:
 
             # Look for the node of the current attribute...
-            node, attr = plug.split(".", 1)
+            node, attr = str(plug).split(".", 1)
             node_variable = Atom._get_tracer_variable_for_node(node)
             if node_variable:
                 # ...if it is already part of the traced nodes: Use its variable instead...
@@ -2042,7 +2035,7 @@ def _unravel_item(item):
     elif isinstance(item, basestring):
         return _unravel_str(item)
 
-    elif isinstance(item, numbers.Real) or isinstance(item, metadata_value.MetadataValue):
+    elif isinstance(item, numbers.Real):
         return item
 
     else:
@@ -2107,10 +2100,16 @@ def _unravel_str(str_instance):
     log.info("_unravel_str ({})".format(str_instance))
 
     # Since a string most likely indicates a maya node or attribute:
-    # Make it a Node and unravel it
-    node_instance = Node(str_instance)
-
-    return _unravel_node_instance(node_instance)
+    # Try to split it and unravel plug
+    split_elements = str_instance.split(".", 1)
+    if len(split_elements) != 2:
+        cmds.error(
+            "The given string {} does not seem to be a Maya attribute!".format(
+                str_instance
+            )
+        )
+    node, attr = split_elements
+    return _unravel_plug(node, attr)
 
 
 def _unravel_plug(node, attr):
@@ -2126,14 +2125,12 @@ def _unravel_plug(node, attr):
     """
     log.info("_unravel_plug ({}, {})".format(node, attr))
 
-    mplug = om_util.get_mplug_of_node_and_attr(node, attr)
+    return_value = om_util.get_mplug_of_node_and_attr(node, attr)
 
-    child_plugs = om_util.get_child_plugs(mplug)
-
+    # Check if the found mplug has child attributes
+    child_plugs = om_util.get_child_plugs(return_value)
     if child_plugs:
-        return_value = [str(child_plug) for child_plug in child_plugs]
-    else:
-        return_value = str(mplug)
+        return_value = [child_plug for child_plug in child_plugs]
 
     return return_value
 
