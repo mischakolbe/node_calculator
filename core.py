@@ -54,11 +54,7 @@ TODO: decompose_matrix currently doesn't return full list of attributes, because
       caps the outputs to "max_dim", which is 1 due to the single matrix input
       MAYBE: Add a flag in LOOKUP TABLE that allows to set "prevent_truncating" or so.
       If it's True: Just return the full output-list all the time.
-TODO: use the .attrs keyword to get list of attrs (what attrs_list is doing now)
-    Then: If an attr from a Node is requested: Return another Attrs-instance.
-    The .attrs functionality that returns the Attrs-instance should become obsolete
-    and maybe an attrs_instance keyword could be introduced in case the Attrs instance
-    must be accessed.
+
 TODO: Add method to BaseNode that lets the user switch prevent_unravelling Flag.
     For example: set_elemental(), unravel_me(), is_unravellable(True/False),...?
 
@@ -931,10 +927,7 @@ class BaseNode(Atom):
     def get_shapes(self, full=False):
         """ full=True returns full dag path """
 
-        # TODO: Replace this get_mobj_of_node when self._node_mobj is reliable!
-        node_mobj = om_util.get_mobj_of_node(self.node)
-
-        shape_mobjs = om_util.get_shape_mobjs_of_mobj(node_mobj)
+        shape_mobjs = om_util.get_shape_mobjs_of_mobj(self._node_mobj)
 
         if full:
             shapes = [om_util.get_long_name_of_mobj(mobj, full=True) for mobj in shape_mobjs]
@@ -942,29 +935,6 @@ class BaseNode(Atom):
             shapes = [om_util.get_name_of_mobj(mobj) for mobj in shape_mobjs]
 
         return shapes
-
-    def as_str(self):
-        """
-        Using the __unicode__ method in Attrs class somehow doesn't work well
-        with the __getitem__ method together. Still don't know why...
-
-        To make cmds.setAttr(a2.attrs, 1) work:
-        - Specifically returning a unicode/str in attrs-@property of Node class works.
-
-        - Commenting out __getitem__ method in Attrs class works, too but throws this error:
-            # Error: Problem calling __apiobject__ method of passed object #
-            # Error: attribute of type 'Attrs' is not callable #
-        """
-        if len(self.attrs) == 0:
-            return_str = self.node
-        elif len(self.attrs) == 1:
-            return_str = "{}.{}".format(self.node, self.attrs_list[0])
-        else:
-            return_str = " ".join([
-                "{}.{}".format(self.node, attr) for attr in self.attrs_list
-            ])
-
-        return return_str
 
     def as_list(self):
         """
@@ -979,8 +949,6 @@ class BaseNode(Atom):
         """
         if len(self.attrs) == 0:
             return_list = [self.node]
-        elif len(self.attrs) == 1:
-            return_list = ["{}.{}".format(self.node, self.attrs_list[0])]
         else:
             return_list = [
                 "{}.{}".format(self.node, attr) for attr in self.attrs_list
@@ -1201,6 +1169,10 @@ class Attrs(BaseNode):
     @property
     def attrs_list(self):
         return self._held_attrs_list
+
+    @property
+    def _node_mobj(self):
+        return self._holder_node._node_mobj
 
     @property
     def prevent_unravelling(self):
