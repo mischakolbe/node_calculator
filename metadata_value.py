@@ -41,6 +41,14 @@ for key, value in a.iteritems():
         del globals()[key]
 
 
+class MetadataValue(object):
+    """
+    Only exists for inheritance check: isinstance(XYZ, MetadataValue)
+    IntMetadataValue, FloatMetadataValue, etc. makes them hard to distinguish
+    """
+    pass
+
+
 def create_metadata_val_class(class_type):
     """
     Closure to create classes for any type
@@ -56,7 +64,7 @@ def create_metadata_val_class(class_type):
     if class_type is bool:
         class_type = int
 
-    class MetadataValueClass(class_type):
+    class MetadataValueClass(class_type, MetadataValue):
         def __init__(self, *args, **kwargs):
             """ Leave the init method unchanged """
             class_type.__init__(self, *args, **kwargs)

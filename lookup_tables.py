@@ -305,6 +305,14 @@ class LookupTableMetaClass(object):
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": 3,
             },
+            "angle_between": {
+                "node": "angleBetween",
+                "inputs": [
+                    ["vector1X", "vector1Y", "vector1Z"],
+                    ["vector2X", "vector2Y", "vector2Z"],
+                ],
+                "output": ["angle"],
+            },
             "mult_matrix": {
                 "node": "multMatrix",
                 "inputs": [

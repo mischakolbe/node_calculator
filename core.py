@@ -52,6 +52,8 @@ Example:
 TODO: decompose_matrix currently doesn't return full list of attributes, because
         return link(new_node, outputs[:max_dim])
       caps the outputs to "max_dim", which is 1 due to the single matrix input
+      MAYBE: Add a flag in LOOKUP TABLE that allows to set "prevent_truncating" or so.
+      If it's True: Just return the full output-list all the time.
 TODO: use the .attrs keyword to get list of attrs (what attrs_list is doing now)
     Then: If an attr from a Node is requested: Return another Attrs-instance.
     The .attrs functionality that returns the Attrs-instance should become obsolete
@@ -442,6 +444,30 @@ class OperatorMetaClass(object):
             >>> Op.average(Node("pCube.t"), [1, 2, 3])
         """
         return _create_and_connect_node('average', *attrs)
+
+    @staticmethod
+    def angle_between(vector_a, vector_b=[1, 0, 0]):
+        """
+        Create angleBetween-node to find the angle between 2 vectors
+
+        Args:
+            vector_a (Node, int, float, list): Vector a to consider for angle
+            vector_b (Node, int, float, list): Vector b to consider for angle
+
+        Returns:
+            Node: Instance with angleBetween-node and output-attribute(s)
+
+        Example:
+            Op.angle_between(
+                Op.point_matrix_mult(
+                    [1, 0, 0],
+                    link("pCube1").worldMatrix,
+                    vector_multiply=True
+                ),
+                [1, 0, 0]
+            )
+        """
+        return _create_and_connect_node('angle_between', vector_a, vector_b)
 
     @staticmethod
     def mult_matrix(*attrs):
@@ -934,7 +960,9 @@ class BaseNode(Atom):
         elif len(self.attrs) == 1:
             return_str = "{}.{}".format(self.node, self.attrs_list[0])
         else:
-            return_str = "{}, {}".format(self.node, self.attrs_list)
+            return_str = " ".join([
+                "{}.{}".format(self.node, attr) for attr in self.attrs_list
+            ])
 
         return return_str
 
@@ -1573,7 +1601,7 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
             log.error("obj_a_item seems not to be a Maya attr: {}!".format(obj_a_item))
 
         # If obj_b_item is a simple number...
-        if isinstance(obj_b_item, numbers.Real) or _is_metadata_value(obj_b_item):
+        if isinstance(obj_b_item, numbers.Real) or isinstance(obj_b_item, metadata_value.MetadataValue):
             # # ...set 1-D obj_a_item to 1-D obj_b_item-value.
             _traced_set_attr(obj_a_item, obj_b_item, **kwargs)
 
@@ -1876,7 +1904,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
 
         # Add the setAttr-command to the command stack
         if value is not None:
-            if _is_metadata_value(value):
+            if isinstance(value, metadata_value.MetadataValue):
                 value = value.metadata
 
             if joined_kwargs:
@@ -2013,11 +2041,6 @@ def _unravel_item_as_list(item):
     return unravelled_item
 
 
-def _is_metadata_value(value):
-    # The check for metadata variables should be better than this...
-    return hasattr(value, 'metadata')
-
-
 def _unravel_item(item):
     """
     Specifically supported types for item:
@@ -2047,7 +2070,7 @@ def _unravel_item(item):
     elif isinstance(item, basestring):
         return _unravel_str(item)
 
-    elif isinstance(item, numbers.Real) or _is_metadata_value(item):
+    elif isinstance(item, numbers.Real) or isinstance(item, metadata_value.MetadataValue):
         return item
 
     else:
@@ -2131,11 +2154,9 @@ def _unravel_plug(node, attr):
     """
     log.info("_unravel_plug ({}, {})".format(node, attr))
 
-    mplug = om_util.get_mplug_of_attr(node, attr)
+    mplug = om_util.get_mplug_of_node_and_attr(node, attr)
 
     child_plugs = om_util.get_child_plugs(mplug)
-
-    # attr_children = cmds.attributeQuery(attr, node=node, listChildren=True, exists=True) # REPLACE THIS WITH om_util.get_mplug_of_attr & get_child_plugs
 
     if child_plugs:
         return_value = [str(child_plug) for child_plug in child_plugs]
