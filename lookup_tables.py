@@ -210,7 +210,7 @@ NODE_LOOKUP_TABLE = {}
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # OPERATORS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class LookupTableMetaClass(object):
+class NodeLookupTableMetaClass(object):
     """
     Base class for node_calculator operators: Everything that goes beyond basic operators (+-*/)
 
@@ -486,6 +486,6 @@ class LookupTableMetaClass(object):
             }
 
 
-class LookupTable(object):
-    """ Create NODE_LOOKUP_TABLE from LookupTableMetaClass """
-    __metaclass__ = LookupTableMetaClass
+class NodeLookupTable(object):
+    """ Create NODE_LOOKUP_TABLE from NodeLookupTableMetaClass """
+    __metaclass__ = NodeLookupTableMetaClass

@@ -28,4 +28,4 @@ class TestNodeClass(TestCase):
 
 # print a.node
 # print a.attrs_list
-# print a.as_list()
+# print a.as_list()  # THESE MUST BE POSSIBLE FROM ATTR AS WELL!

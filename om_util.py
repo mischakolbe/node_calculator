@@ -1,3 +1,24 @@
+"""
+Array plug:
+input3D
+
+Array plug elements
+input3D[0, 1, 2, ...]
+
+Parent plug
+t
+
+Child plug
+tx, ty, tz
+"""
+
+
+"""
+CHANGED:
+get_mdag_path -> get_mdag_path
+get_shape_mobjs_of_mobj -> get_shape_mobjs
+"""
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,36 +49,51 @@ def get_name_of_mobj(mobj):
     return node_name
 
 
-def get_shape_mobjs_of_mobj(mobj):
+def get_shape_mobjs(mobj):
+    if not isinstance(mobj, OpenMaya.MObject):
+        mobj = get_mobj(mobj)
+
     return_shape_mobjs = []
 
-    mdag_path_of_mobj = get_mdag_path_of_mobj(mobj)
+    mdag_path_of_mobj = get_mdag_path(mobj)
 
     if mdag_path_of_mobj:
         num_shapes = mdag_path_of_mobj.numberOfShapesDirectlyBelow()
 
         for index in range(num_shapes):
-            # Do NOT take this get_mdag_path_of_mobj out of the loop!
+            # Do NOT take this get_mdag_path out of the loop!
             # The ".extendToShape" afterwards acts upon the resulting mdagPath!
-            mdag_path_of_mobj = get_mdag_path_of_mobj(mobj)
+            mdag_path_of_mobj = get_mdag_path(mobj)
             shape_mdag_path = mdag_path_of_mobj.extendToShape(shapeNum=index)
-            shape_mobj = get_mobj_from_mdag_path(shape_mdag_path)
+            shape_mobj = get_mobj(shape_mdag_path)
 
             return_shape_mobjs.append(shape_mobj)
 
     return return_shape_mobjs
 
 
-def get_mdag_path_of_mobj(mobj):
+def get_mdag_path(mobj):
+    if not isinstance(mobj, OpenMaya.MObject):
+        mobj = get_mobj(mobj)
+
     mdag_path = None
     if mobj.hasFn(OpenMaya.MFn.kDagNode):
         mdag_path = OpenMaya.MDagPath.getAPathTo(mobj)
     return mdag_path
 
 
-def get_mobj_from_mdag_path(mdag):
-    mobj = mdag.node()
-    return mobj
+def is_instanced(node):
+    """Check if node is Maya-instance
+
+    Args:
+        node (str): node
+
+    Returns:
+        bool: isInstance
+    """
+    mdag_path = get_mdag_path(node)
+    is_instanced = mdag_path.isInstanced()
+    return is_instanced
 
 
 def get_long_name_of_mobj(mobj, full=False):
@@ -70,7 +106,7 @@ def get_long_name_of_mobj(mobj, full=False):
     if not isinstance(mobj, OpenMaya.MObject):
         log.error("Given mobj {} is not an instance of OpenMaya.MObject".format(mobj))
 
-    mdag_path = get_mdag_path_of_mobj(mobj)
+    mdag_path = get_mdag_path(mobj)
     if mdag_path:
         if full:
             dag_path = mdag_path.fullPathName()
@@ -82,9 +118,12 @@ def get_long_name_of_mobj(mobj, full=False):
     return dag_path
 
 
-def get_mobj_of_node(node):
-    if type(node) is OpenMaya.MObject:
+def get_mobj(node):
+    if isinstance(node, OpenMaya.MObject):
         return node
+
+    if isinstance(node, OpenMaya.MDagPath):
+        return node.node()
 
     selectionList = OpenMaya.MSelectionList()
     selectionList.add(node)
@@ -103,8 +142,7 @@ def get_node_type(node, api_type=False):
     Returns:
         str: Node type
     """
-
-    dependency_node = OpenMaya.MSelectionList().add(node).getDependNode(0)
+    mobj = get_mobj(node)
 
     if api_type:
         return dependency_node.apiTypeStr
@@ -180,23 +218,6 @@ def select_mobjs(mobjs):
     return select_list
 
 
-
-
-"""
-Array plug:
-input3D
-
-Array plug elements
-input3D[0, 1, 2, ...]
-
-Parent plug
-t
-
-Child plug
-tx, ty, tz
-"""
-
-
 def is_valid_mplug(mplug):
 
     if not isinstance(mplug, OpenMaya.MPlug):
@@ -219,13 +240,13 @@ def get_parent_plug(mplug):
     return mplug_parent
 
 
-def get_child_plug(mplug, child):
+def get_child_mplug(mplug, child):
     # t -> tx
 
     if not is_valid_mplug(mplug):
         return None
 
-    child_plugs = get_child_plugs(mplug)
+    child_plugs = get_child_mplugs(mplug)
 
     for child_plug in child_plugs:
         if str(child_plug).endswith("." + child):
@@ -234,7 +255,7 @@ def get_child_plug(mplug, child):
     return None
 
 
-def get_child_plugs(mplug):
+def get_child_mplugs(mplug):
     # t -> [tx, ty, tz]
 
     if not is_valid_mplug(mplug):
@@ -259,7 +280,7 @@ def get_mplug_of_mobj(mobj, attr):
         return None
 
 
-def get_elements_of_array_plug(mplug):
+def get_array_plug_elements(mplug):
     # input3D -> input3D[0], input3D[1], ...
     if not is_valid_mplug(mplug):
         return None
@@ -308,25 +329,12 @@ def get_array_plug_by_logical_index(mplug, index):
         log.error("{} is not an array plug!".format(mplug))
 
 
-# def get_array_plug_of_element(mplug):
-#     # input3D[0].input3Dx -> input3D[0]
-#     if not is_valid_mplug(mplug):
-#         return None
-
-#     array_plug = None
-
-#     if mplug.isElement:
-#         array_plug = mplug.logicalIndex()
-
-#     return array_plug
-
-
 def get_mplug_of_node_and_attr(node, attr):
     """
     This should find the correct mplug for any node, attr input: "pCube1", "tx"
 
     """
-    mobj = get_mobj_of_node(node)
+    mobj = get_mobj(node)
 
     parent_attr, array_index, child_attr = split_attr_string(attr)
     mplug = get_mplug_of_mobj(mobj, parent_attr)
@@ -342,7 +350,7 @@ def get_mplug_of_node_and_attr(node, attr):
     if child_attr:
         if not mplug.numChildren():
             log.error("mplug for {}.{} is supposed to have children, but is not a parent attr!".format(node, attr))
-        mplug = get_child_plug(mplug, child_attr)
+        mplug = get_child_mplug(mplug, child_attr)
 
     return mplug
 
@@ -422,3 +430,47 @@ def split_node_string(node):
         namespace = namespace.split(":")[0]
 
     return (namespace, dag_path, node)
+
+
+def get_mfn_dag_node(node):
+    mobj = get_mobj(node)
+    mfn_dag_node = OpenMaya.MFnDagNode(mobj)
+
+    return mfn_dag_node
+
+
+def get_parents(node):
+    """Get node's parents
+
+    Args:
+        node (str): node
+
+    Returns:
+        list: parents
+    """
+    parents = []
+    current_parent = get_parent(node)
+
+    # get parent hierarchy recursively because parentCount seems to be broken
+    # Change when parentCount is fixed, since a group "world" would break it!
+    while current_parent != "world":
+        parents.append(current_parent)
+        current_parent = get_parent(current_parent)
+
+    return parents
+
+
+def get_parent(node):
+    """Get node's parent
+
+    Args:
+        node (str): node
+
+    Returns:
+        str: parent
+    """
+    mfn_dag_node = get_mfn_dag_node(node)
+
+    parent = get_name_of_mobj(mfn_dag_node.parent(0))
+    return parent
+

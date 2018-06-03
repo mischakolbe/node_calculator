@@ -48,6 +48,9 @@ Example:
         attrs -> returns Attrs-instance
         attrs_list -> returns list of attributes in Attrs
 
+
+TODO: Implement GLOBAL_CONSOLIDATE_PLUGS and GLOBAL_UNRAVEL_PLUGS: Both should
+    be settable on an instance-basis, but globally as well!
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,6 +81,8 @@ reload(metadata_value)
 NODE_NAME_PREFIX = "nc"  # Common prefix for all nodes created by nodeCalculator
 STANDARD_SEPARATOR_NICENAME = "_" * 8
 STANDARD_SEPARATOR_VALUE = "_" * 8
+GLOBAL_CONSOLIDATE_PLUGS = True
+GLOBAL_UNRAVEL_PLUGS = True
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -199,6 +204,16 @@ def create_node(node_type, name=None, **kwargs):
     noca_node = link(node)
 
     return noca_node
+
+
+def set_global_consolidate(state):
+    global GLOBAL_CONSOLIDATE_PLUGS
+    GLOBAL_CONSOLIDATE_PLUGS = state
+
+
+def set_global_unravel(state):
+    global GLOBAL_CONSOLIDATE_PLUGS
+    GLOBAL_CONSOLIDATE_PLUGS = state
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -919,7 +934,7 @@ class BaseNode(Atom):
     def get_shapes(self, full=False):
         """ full=True returns full dag path """
 
-        shape_mobjs = om_util.get_shape_mobjs_of_mobj(self._node_mobj)
+        shape_mobjs = om_util.get_shape_mobjs(self._node_mobj)
 
         if full:
             shapes = [om_util.get_long_name_of_mobj(mobj, full=True) for mobj in shape_mobjs]
@@ -1279,7 +1294,7 @@ class Node(BaseNode):
         if isinstance(node, Node):
             node_mobj = node._node_mobj
         else:
-            node_mobj = om_util.get_mobj_of_node(node)
+            node_mobj = om_util.get_mobj(node)
 
         # Using __dict__, because the setattr & getattr methods are overridden!
         self.__dict__["_node_mobj"] = node_mobj
@@ -1507,16 +1522,18 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
             )
         )
 
-    obj_a_unravelled_list, obj_b_unravelled_list = _reduce_plug_pair_to_min_dimension(
-        obj_a_unravelled_list,
-        obj_b_unravelled_list
-    )
+    if GLOBAL_CONSOLIDATE_PLUGS:
+        consolidated_plugs = _consolidate_plug_pair_to_min_dimension(
+            obj_a_unravelled_list,
+            obj_b_unravelled_list
+        )
+        obj_a_unravelled_list, obj_b_unravelled_list = consolidated_plugs
 
     _set_or_connect_a_to_b(obj_a_unravelled_list, obj_b_unravelled_list, **kwargs)
 
 
-def _reduce_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
-    log.info("_reduce_plug_pair_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
+def _consolidate_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
+    log.info("_consolidate_plug_pair_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
 
     # A 3D to 3D connection can be 1 connection if both have a parent-attribute!
     parent_plug_a = _check_for_parent_attribute(obj_a_list)
@@ -1574,7 +1591,7 @@ def _check_for_parent_attribute(plug_list):
     # does not match the full list of available children attributes!
     # Example A: [outputX] should not be reduced to [output], since Y & Z are missing!
     # Example B: [outputX, outputZ, outputY] isn't in the right order and should not be reduced!
-    all_child_mplugs = om_util.get_child_plugs(potential_parent_mplug)
+    all_child_mplugs = om_util.get_child_mplugs(potential_parent_mplug)
 
     for checked_mplug, child_mplug in itertools.izip_longest(checked_mplugs, all_child_mplugs):
         empty_plug_detected = checked_mplug is None or child_mplug is None
@@ -2128,7 +2145,7 @@ def _unravel_plug(node, attr):
     return_value = om_util.get_mplug_of_node_and_attr(node, attr)
 
     # Check if the found mplug has child attributes
-    child_plugs = om_util.get_child_plugs(return_value)
+    child_plugs = om_util.get_child_mplugs(return_value)
     if child_plugs:
         return_value = [child_plug for child_plug in child_plugs]
 
@@ -2150,11 +2167,12 @@ class Tracer(object):
             print(s)
     """
 
-    def __init__(self, trace=True, print_trace=False, pprint_trace=False):
+    def __init__(self, trace=True, print_trace=False, pprint_trace=False, cheers_love=False):
         # Allow either note or notes as keywords
         self.trace = trace
         self.print_trace = print_trace
         self.pprint_trace = pprint_trace
+        self.cheers_love = cheers_love
 
     def __enter__(self):
         """
@@ -2181,7 +2199,13 @@ class Tracer(object):
             if self.print_trace:
                 print("node_calculator command-stack:", Atom._executed_commands_stack)
             # Print executed commands on separate lines
-            if self.pprint_trace:
+            if self.cheers_love:
+                # A bit of nerd-fun...
+                print("~~~~~~~~~~~~~~~~ The cavalry's here: ~~~~~~~~~~~~~~~~")
+                for item in Atom._executed_commands_stack:
+                    print(item)
+                print("~~~~~~ The world could always use more heroes! ~~~~~~")
+            elif self.pprint_trace:
                 print("~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~")
                 for item in Atom._executed_commands_stack:
                     print(item)
@@ -2196,7 +2220,7 @@ class TracerMObject(object):
 
     def __init__(self, node, tracer_variable):
         super(TracerMObject, self).__init__()
-        self.mobj = om_util.get_mobj_of_node(node)
+        self.mobj = om_util.get_mobj(node)
         self._tracer_variable = tracer_variable
 
     @property

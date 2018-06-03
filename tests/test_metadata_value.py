@@ -2,6 +2,17 @@
 Unit tests for noca.metadata_value
 """
 
+
+# print isinstance(g, noca.metadata_value.IntMetadataValue)
+# print isinstance(g, noca.metadata_value.MetadataValue)
+# import numbers
+# print isinstance(g, numbers.Real)
+
+
+
+
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
