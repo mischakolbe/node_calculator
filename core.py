@@ -48,9 +48,6 @@ Example:
         attrs -> returns Attrs-instance
         attrs_list -> returns list of attributes in Attrs
 
-
-TODO: Implement GLOBAL_CONSOLIDATE_PLUGS and GLOBAL_UNRAVEL_PLUGS: Both should
-    be settable on an instance-basis, but globally as well!
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,17 +76,17 @@ reload(metadata_value)
 # CONSTANTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 NODE_NAME_PREFIX = "nc"  # Common prefix for all nodes created by nodeCalculator
-STANDARD_SEPARATOR_NICENAME = "_" * 8
-STANDARD_SEPARATOR_VALUE = "_" * 8
-GLOBAL_CONSOLIDATE_PLUGS = True
-GLOBAL_UNRAVEL_PLUGS = True
+STANDARD_SEPARATOR_NICENAME = "________"
+STANDARD_SEPARATOR_VALUE = "________"
+GLOBAL_AUTO_CONSOLIDATE = True
+GLOBAL_AUTO_UNRAVEL = True
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SETUP LOGGER
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 logger.clear_handlers()
-logger.setup_stream_handler(level=logger.logging.INFO)
+logger.setup_stream_handler(level=logger.logging.WARN)
 log = logger.log
 
 
@@ -102,14 +99,15 @@ except NameError:
     basestring = str
 
 
-def link(item, attrs=None, prevent_unravelling=False):
+def link(item, attrs=None, auto_unravel=True, auto_consolidate=True):
     """
     Link given item to a new instance of appropriate type, based on given args
 
     Args:
         item (bool, int, float, str, list, tuple): Maya Node, value, list of nodes, etc.
         attrs (str, list, tuple): String or list of strings that are an attribute on this node
-        prevent_unravelling (bool): Whether or not this instance should be unravelled if possible
+        auto_unravel (bool): Whether or not this instance should be unravelled if possible
+        auto_consolidate (bool): Whether or not this instance should be consolidated if possible
 
     Note:
         XYZ
@@ -127,16 +125,16 @@ def link(item, attrs=None, prevent_unravelling=False):
 
     # Redirect plain values right away to a metadata_value
     if isinstance(item, numbers.Real):
-        log.info("new: Redirecting to Value({})".format(item))
+        log.info("link: Redirecting to Value({})".format(item))
         return metadata_value.value(item)
 
     # Redirect lists or tuples right away to a Collection
     if isinstance(item, (list, tuple)):
-        log.info("new: Redirecting to Collection({})".format(item))
+        log.info("link: Redirecting to Collection({})".format(item))
         return Collection(item)
 
-    log.info("new: Redirecting to Node({})".format(item))
-    return Node(item, attrs, prevent_unravelling)
+    log.info("link: Redirecting to Node({})".format(item))
+    return Node(item, attrs, auto_unravel, auto_consolidate)
 
 
 def transform(name=None, **kwargs):
@@ -206,14 +204,14 @@ def create_node(node_type, name=None, **kwargs):
     return noca_node
 
 
-def set_global_consolidate(state):
-    global GLOBAL_CONSOLIDATE_PLUGS
-    GLOBAL_CONSOLIDATE_PLUGS = state
+def set_auto_consolidate(state):
+    global GLOBAL_AUTO_CONSOLIDATE
+    GLOBAL_AUTO_CONSOLIDATE = state
 
 
-def set_global_unravel(state):
-    global GLOBAL_CONSOLIDATE_PLUGS
-    GLOBAL_CONSOLIDATE_PLUGS = state
+def set_auto_unravel(state):
+    global GLOBAL_AUTO_UNRAVEL
+    GLOBAL_AUTO_UNRAVEL = state
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -919,11 +917,12 @@ class BaseNode(Atom):
     Maybe this should be metaclass, if add_XXX attribute methods are set up via closure...
     """
 
-    def __init__(self, prevent_unravelling=False):
+    def __init__(self, auto_unravel=True, auto_consolidate=True):
         self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
 
-        self.__dict__["_prevent_unravelling"] = prevent_unravelling
+        self.__dict__["_auto_unravel"] = auto_unravel
+        self.__dict__["_auto_consolidate"] = auto_consolidate
 
         self._add_all_add_attr_methods()
 
@@ -987,12 +986,20 @@ class BaseNode(Atom):
             return None
 
     @property
-    def prevent_unravelling(self):
-        return self._prevent_unravelling
+    def auto_unravel(self):
+        return self._auto_unravel
 
-    def set_prevent_unravelling(self, state):
+    @property
+    def auto_consolidate(self):
+        return self._auto_consolidate
+
+    def set_auto_unravel(self, state):
         """ Allows the user to change prevent unravelling once Node is created """
-        self.__dict__["_prevent_unravelling"] = state
+        self.__dict__["_auto_unravel"] = state
+
+    def set_auto_consolidate(self, state):
+        """ Allows the user to change prevent consolidating once Node is created """
+        self.__dict__["_auto_consolidate"] = state
 
     def _add_all_add_attr_methods(self):
         """
@@ -1190,14 +1197,18 @@ class Attrs(BaseNode):
         return self._holder_node._node_mobj
 
     @property
-    def prevent_unravelling(self):
-        return self._holder_node.prevent_unravelling
+    def auto_unravel(self):
+        return self._holder_node.auto_unravel
+
+    @property
+    def auto_consolidate(self):
+        return self._holder_node.auto_consolidate
 
     def __str__(self):
         """
         For example for print(Node-instance)
         """
-        log.debug("Attrs __str__ ({}, {})".format(self.node, self.attrs_list))
+        # log.debug("Attrs __str__ ({}, {})".format(self.node, self.attrs_list))
 
         return "Attrs({})".format(self.attrs_list, self.node)
 
@@ -1205,7 +1216,7 @@ class Attrs(BaseNode):
         """
         For example for running highlighted Node-instance
         """
-        log.debug("Attrs __repr__ ({}, {})".format(self.node, self.attrs_list))
+        # log.debug("Attrs __repr__ ({}, {})".format(self.node, self.attrs_list))
 
         return "Attrs({})".format(self.attrs_list)
 
@@ -1213,7 +1224,7 @@ class Attrs(BaseNode):
         """
         For example for cmds.setAttr(Node-instance)
         """
-        log.debug("Attrs __unicode__ ({}, {})".format(self.node, self.attrs_list))
+        # log.debug("Attrs __unicode__ ({}, {})".format(self.node, self.attrs_list))
 
         if len(self.attrs_list) == 0:
             return_value = self.node
@@ -1230,7 +1241,14 @@ class Attrs(BaseNode):
         if len(self.attrs_list) != 1:
             log.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
 
-        return Node(self._holder_node, self.attrs_list[0] + "." + name)
+        return_value = Node(
+            self._holder_node,
+            attrs=self.attrs_list[0] + "." + name,
+            auto_unravel=self.auto_unravel,
+            auto_consolidate=self.auto_consolidate
+        )
+
+        return return_value
 
     def __setattr__(self, name, value):
         log.info("Attrs __setattr__ ({})".format(name, value))
@@ -1246,7 +1264,15 @@ class Attrs(BaseNode):
             value (Node, str, int, float): desired value for the given index
         """
         log.info("Attrs __getitem__ ({})".format(index))
-        return Node(self._holder_node, self.attrs_list[index])
+
+        return_value = Node(
+            self._holder_node,
+            attrs=self.attrs_list[index],
+            auto_unravel=self.auto_unravel,
+            auto_consolidate=self.auto_consolidate
+        )
+
+        return return_value
 
     def __setitem__(self, index, value):
         log.info("Attrs __setitem__ ({}, {})".format(index, value))
@@ -1265,8 +1291,8 @@ class Node(BaseNode):
     """
     """
 
-    def __init__(self, node, attrs=None, prevent_unravelling=False):
-        log.info("Node __init__ ({}, {}, {})".format(node, attrs, prevent_unravelling))
+    def __init__(self, node, attrs=None, auto_unravel=True, auto_consolidate=True):
+        log.info("Node __init__ ({}, {}, {}, {})".format(node, attrs, auto_unravel, auto_consolidate))
 
         # Plain values should be Value-instance!
         if isinstance(node, numbers.Real):
@@ -1280,12 +1306,14 @@ class Node(BaseNode):
             Collection(node)
             return None
 
-        super(Node, self).__init__(prevent_unravelling)
+        super(Node, self).__init__(auto_unravel, auto_consolidate)
 
         # Handle case where no attrs were given
         if attrs is None:
+            if isinstance(node, BaseNode):
+                attrs = node.attrs
             # Initialization with "object.attrs" string
-            if "." in node:
+            elif "." in node:
                 node, attrs = node.split(".", 1)
             else:
                 attrs = []
@@ -1307,7 +1335,7 @@ class Node(BaseNode):
         """
         For example for print(Node-instance)
         """
-        log.debug("Node __str__ ({}, {})".format(self.node, self.attrs))
+        # log.debug("Node __str__ ({}, {})".format(self.node, self.attrs))
 
         return "Node(node: {}, attrs: {})".format(self.node, self.attrs)
 
@@ -1315,7 +1343,7 @@ class Node(BaseNode):
         """
         For example for running highlighted Node-instance
         """
-        log.debug("Node __repr__ ({}, {})".format(self.node, self.attrs))
+        # log.debug("Node __repr__ ({}, {})".format(self.node, self.attrs))
 
         return "Node({}, {})".format(self.node, self.attrs)
 
@@ -1323,7 +1351,7 @@ class Node(BaseNode):
         """
         For example for cmds.setAttr(Node-instance)
         """
-        log.debug("Node __unicode__ ({}, {})".format(self.node, self.attrs))
+        # log.debug("Node __unicode__ ({}, {})".format(self.node, self.attrs))
 
         return_value = self.node
 
@@ -1336,7 +1364,14 @@ class Node(BaseNode):
         if name == "attrs":
             return self.attrs
 
-        return Node(self, name)
+        return_value = Node(
+            self,
+            name,
+            auto_unravel=self.auto_unravel,
+            auto_consolidate=self.auto_consolidate
+        )
+
+        return return_value
 
     def __setattr__(self, name, value):
         log.info("Node __setattr__ ({})".format(name, value))
@@ -1346,7 +1381,14 @@ class Node(BaseNode):
     def __getitem__(self, index):
         log.info("Node __getitem__ ({})".format(index))
 
-        return Node(self._node_mobj, self.attrs[index], prevent_unravelling=self.prevent_unravelling)
+        return_value = Node(
+            self._node_mobj,
+            self.attrs[index],
+            auto_unravel=self.auto_unravel,
+            auto_consolidate=self.auto_consolidate
+        )
+
+        return return_value
 
     def __setitem__(self, index, value):
         log.info("Node __setitem__ ({}, {})".format(index, value))
@@ -1396,7 +1438,7 @@ class Collection(Atom):
         """
         For example for print(Node-instance)
         """
-        log.debug("Collection __str__ ({})".format(self.elements))
+        # log.debug("Collection __str__ ({})".format(self.elements))
 
         return "Collection({})".format(self.elements)
 
@@ -1404,7 +1446,7 @@ class Collection(Atom):
         """
         For example for running highlighted Node-instance
         """
-        log.debug("Collection __repr__ ({})".format(self.elements))
+        # log.debug("Collection __repr__ ({})".format(self.elements))
 
         return str(self.elements)
 
@@ -1412,7 +1454,7 @@ class Collection(Atom):
         """
         For example for running highlighted Node-instance
         """
-        log.debug("Collection __repr__ ({})".format(self.elements))
+        # log.debug("Collection __repr__ ({})".format(self.elements))
 
         return str(self.elements)
 
@@ -1461,14 +1503,30 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     """
     log.info("_unravel_and_set_or_connect_a_to_b ({}, {})".format(obj_a, obj_b))
 
+    # If both inputs are Nodes and either has auto_unravel off: Turn it off for both
+    if isinstance(obj_a, BaseNode) and isinstance(obj_b, BaseNode):
+        if not obj_a.auto_unravel:
+            if obj_b.auto_unravel:
+                obj_b = Node(
+                    obj_b.node,
+                    obj_b.attrs,
+                    auto_unravel=False,
+                    auto_consolidate=obj_b.auto_consolidate
+                )
+
+        elif not obj_b.auto_unravel:
+            obj_a = Node(
+                obj_a.node,
+                obj_a.attrs,
+                auto_unravel=False,
+                auto_consolidate=obj_a.auto_consolidate
+            )
+
     obj_a_unravelled_list = _unravel_item_as_list(obj_a)
     obj_b_unravelled_list = _unravel_item_as_list(obj_b)
 
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
-
-    # TODO: Must take care of situation where prevent_unravelling is set to True!
-    # Currently that leaves a multi-dim attr like .t as "1D" whereas it should count as "3D"!
 
     if obj_a_dim == 1 and obj_b_dim != 1:
         # A multidimensional connection into a 1D attribute does not make sense!
@@ -1522,7 +1580,8 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
             )
         )
 
-    if GLOBAL_CONSOLIDATE_PLUGS:
+    auto_consolidate_allowed = _is_consolidation_allowed([obj_a, obj_b])
+    if GLOBAL_AUTO_CONSOLIDATE and auto_consolidate_allowed:
         consolidated_plugs = _consolidate_plug_pair_to_min_dimension(
             obj_a_unravelled_list,
             obj_b_unravelled_list
@@ -1530,6 +1589,22 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         obj_a_unravelled_list, obj_b_unravelled_list = consolidated_plugs
 
     _set_or_connect_a_to_b(obj_a_unravelled_list, obj_b_unravelled_list, **kwargs)
+
+
+def _is_consolidation_allowed(inputs):
+    """
+    Check given inputs for any BaseNode-instance that is not set to auto consolidate
+    """
+    log.debug("_is_consolidation_allowed ({})".format(inputs))
+    if not isinstance(inputs, (tuple, list)):
+        inputs = [inputs]
+
+    for item in inputs:
+        if isinstance(item, BaseNode):
+            if not item.auto_consolidate:
+                return False
+
+    return True
 
 
 def _consolidate_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
@@ -2074,10 +2149,13 @@ def _unravel_node_instance(node_instance):
     if len(node_instance.attrs_list) == 0:
         return_value = node_instance.node
     elif len(node_instance.attrs_list) == 1:
-        if node_instance.prevent_unravelling:
-            return_value = "{}.{}".format(node_instance.node, node_instance.attrs_list[0])
-        else:
+        if GLOBAL_AUTO_UNRAVEL and node_instance.auto_unravel:
             return_value = _unravel_plug(node_instance.node, node_instance.attrs_list[0])
+        else:
+            return_value = om_util.get_mplug_of_node_and_attr(
+                node_instance.node,
+                node_instance.attrs_list[0]
+            )
     else:
         return_value = [
             "{}.{}".format(node_instance.node, attr) for attr in node_instance.attrs_list
@@ -2095,7 +2173,7 @@ def _unravel_attrs_instance(attrs_instance):
         Node(
             attrs_instance.node,
             attrs_instance,
-            prevent_unravelling=attrs_instance.prevent_unravelling
+            auto_unravel=attrs_instance.auto_unravel
         )
     )
     return unravelled_node

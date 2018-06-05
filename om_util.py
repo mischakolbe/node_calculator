@@ -13,12 +13,6 @@ tx, ty, tz
 """
 
 
-"""
-CHANGED:
-get_mdag_path -> get_mdag_path
-get_shape_mobjs_of_mobj -> get_shape_mobjs
-"""
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -473,4 +467,3 @@ def get_parent(node):
 
     parent = get_name_of_mobj(mfn_dag_node.parent(0))
     return parent
-
