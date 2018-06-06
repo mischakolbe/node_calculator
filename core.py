@@ -48,6 +48,11 @@ Example:
         attrs -> returns Attrs-instance
         attrs_list -> returns list of attributes in Attrs
 
+
+TODO: Fix node name issue
+TODO: Maybe make MetadataValues a subClass of Atom?
+TODO: Go through all old code and check function by function if it's present
+        And copy/adjust docstrings from same/similar functions!
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -942,7 +947,7 @@ class BaseNode(Atom):
 
         return shapes
 
-    def as_list(self):
+    def plugs(self):
         """
         Using the __unicode__ method in Attrs class somehow doesn't work well
         with the __getitem__ method together. Still don't know why...
@@ -954,7 +959,7 @@ class BaseNode(Atom):
             # Error: attribute of type 'Attrs' is not callable #
         """
         if len(self.attrs) == 0:
-            return_list = [self.node]
+            return_list = []
         else:
             return_list = [
                 "{}.{}".format(self.node, attr) for attr in self.attrs_list
@@ -984,6 +989,19 @@ class BaseNode(Atom):
             log.warn("No attribute exists on {}! Returned None".format(self))
 
             return None
+
+    def set(self, value):
+        """
+        Helper function to allow easy setting of a Node-attributes.
+        Equivalent to a setAttr.
+
+        Args:
+            value (Node, str, int, float, list, tuple): Connect attributes to this
+                object or set attributes to this value/array
+        """
+        log.debug("BaseNode set ({})".format(value))
+
+        _unravel_and_set_or_connect_a_to_b(self, value)
 
     @property
     def auto_unravel(self):
@@ -1210,7 +1228,7 @@ class Attrs(BaseNode):
         """
         # log.debug("Attrs __str__ ({}, {})".format(self.node, self.attrs_list))
 
-        return "Attrs({})".format(self.attrs_list, self.node)
+        return "Attrs({})".format(self.attrs_list)
 
     def __repr__(self):
         """
@@ -1364,9 +1382,14 @@ class Node(BaseNode):
         if name == "attrs":
             return self.attrs
 
+        if self.attrs_list:
+            attrs = self.attrs_list[0] + "." + name
+        else:
+            attrs = name
+
         return_value = Node(
             self,
-            name,
+            attrs=attrs,
             auto_unravel=self.auto_unravel,
             auto_consolidate=self.auto_consolidate
         )
@@ -1483,6 +1506,17 @@ class Collection(Atom):
                 return_list.append(item.node)
 
         return list(set(return_list))
+
+    def get(self):
+
+        return_list = []
+        for item in self.elements:
+            if isinstance(item, BaseNode):
+                return_list.append(item.get())
+            if isinstance(item, numbers.Real):
+                return_list.append(item)
+
+        return return_list
 
 
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):

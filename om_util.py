@@ -139,9 +139,9 @@ def get_node_type(node, api_type=False):
     mobj = get_mobj(node)
 
     if api_type:
-        return dependency_node.apiTypeStr
+        return mobj.apiTypeStr
 
-    return OpenMaya.MFnDependencyNode(dependency_node).typeName
+    return OpenMaya.MFnDependencyNode(mobj).typeName
 
 
 def get_all_mobjs_of_type(dependency_node_type):
