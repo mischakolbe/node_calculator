@@ -49,10 +49,10 @@ Example:
         attrs_list -> returns list of attributes in Attrs
 
 
-TODO: Fix node name issue
 TODO: Maybe make MetadataValues a subClass of Atom?
 TODO: Go through all old code and check function by function if it's present
         And copy/adjust docstrings from same/similar functions!
+TODO: Rename link to init(?)
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1846,7 +1846,12 @@ def _create_node_name(operation, *args):
         if isinstance(arg, list) and len(arg) == 1:
             arg = arg[0]
 
-        if isinstance(arg, Node):
+        if isinstance(arg, OpenMaya.MPlug):
+            # Get the name of MPlugs, use last attribute of plug
+            plug_name = str(arg).split(".")[-1]
+            involved_args.append(plug_name)
+
+        elif isinstance(arg, BaseNode):
             # Try to find short, descriptive name, otherwise use "Node"
             if arg.attrs:
                 involved_args.extend(arg.as_list)

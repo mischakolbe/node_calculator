@@ -3,20 +3,11 @@ Unit tests for noca.metadata_value
 """
 
 
-# print isinstance(g, noca.metadata_value.IntMetadataValue)
-# print isinstance(g, noca.metadata_value.MetadataValue)
-# import numbers
-# print isinstance(g, numbers.Real)
-
-
-
-
-
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
+import numbers
 
 # Local imports
 from cmt.test import TestCase
@@ -126,3 +117,21 @@ class TestMetadataValue(TestCase):
 
         self.assertIs(meta_val_a.basetype, value_type)
         self.assertIs(meta_val_b.basetype, value_type)
+
+    def test_inheritance(self):
+        """
+        A metadataValue should inherit various parent classes. An int should be:
+        - subclass of int
+        - subclass of numbers.Real
+        - subclass of MetadataValue
+        - instance of IntMetadataValue
+        """
+        value = TEST_VALUES[1]
+        value_type = type(value)
+
+        meta_val_a = noca.metadata_value.value(value, "metadata_a")
+
+        self.assertTrue(isinstance(meta_val_a, value_type))
+        self.assertTrue(isinstance(meta_val_a, numbers.Real))
+        self.assertTrue(isinstance(meta_val_a, noca.metadata_value.MetadataValue))
+        self.assertTrue(isinstance(meta_val_a, noca.metadata_value.IntMetadataValue))
