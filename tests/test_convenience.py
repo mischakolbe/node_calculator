@@ -16,19 +16,19 @@ import node_calculator.core as noca
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# GLOBALS
+# TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class TestLink(TestCase):
+class TestNode(TestCase):
 
     def test_node_creation(self):
         """ Test node creation via noca-convenience function """
         transform = cmds.group(empty=True, name="testGroup")
-        node = noca.link(transform)
+        node = noca.Node(transform)
 
         # Make sure instance of correct type was created
-        self.assertIsInstance(node, noca.Node)
+        self.assertIsInstance(node, noca.NcNode)
 
         # Make sure no attributes were added to this node instance
         self.assertEqual(len(node.attrs), 0)
@@ -37,10 +37,10 @@ class TestLink(TestCase):
         """ Test node creation via noca-convenience function """
         transform = cmds.group(empty=True, name="testGroup")
         attributes = ["tx", "tz"]
-        node = noca.link(transform, attributes)
+        node = noca.Node(transform, attributes)
 
         # Make sure instance of correct type was created
-        self.assertIsInstance(node.attrs, noca.Attrs)
+        self.assertIsInstance(node.attrs, noca.NcAttrs)
 
         # Make sure attributes were added to this node instance
         self.assertEqual(len(node.attrs), len(attributes))
@@ -48,7 +48,7 @@ class TestLink(TestCase):
     def test_metadata_variable_creation(self):
         """ Test metadata variable creation via noca-convenience function """
         value = 1.1
-        node = noca.link(value)
+        node = noca.Node(value)
 
         # Make sure instance of correct type was created
         self.assertIsInstance(node, noca.metadata_value.FloatMetadataValue)
@@ -64,24 +64,24 @@ class TestLink(TestCase):
         value_a = 1.1
         value_b = 5
 
-        node = noca.link(
+        node = noca.Node(
             [
-                noca.link(transform_a, attributes),
+                noca.Node(transform_a, attributes),
                 transform_b,
-                noca.link(value_a),
+                noca.Node(value_a),
                 value_b
             ]
         )
 
         # Make sure instance of correct type was created
-        self.assertIsInstance(node, noca.Collection)
+        self.assertIsInstance(node, noca.NcCollection)
 
         # Make sure Collection with right amount of elements was created
         self.assertEqual(len(node), 4)
 
         # Make sure elements of Collection are of correct type
-        self.assertIsInstance(node[0], noca.Node)
-        self.assertIsInstance(node[1], noca.Node)
+        self.assertIsInstance(node[0], noca.NcNode)
+        self.assertIsInstance(node[1], noca.NcNode)
         self.assertIsInstance(node[2], noca.metadata_value.FloatMetadataValue)
         self.assertIsInstance(node[3], int)
 

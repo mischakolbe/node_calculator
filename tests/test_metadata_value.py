@@ -2,12 +2,13 @@
 Unit tests for noca.metadata_value
 """
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
 import numbers
+
+# Third party imports
 
 # Local imports
 from cmt.test import TestCase
@@ -28,6 +29,11 @@ TEST_VALUES = [
     [1, 2, 3],  # List
     {"one": 1, "two": 2}  # Dictionary
 ]
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# TESTS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 def _test_type(value):
@@ -77,14 +83,6 @@ class TestMetadataValueMeta(type):
             # Add basic tests
             type_test_name = "test_{}".format(type_nice_name)
             _dict[type_test_name] = _test_type(value)
-
-            # # Add singleton test
-            # type_singleton_test_name = "test_{}_singleton".format(type_nice_name)
-            # _dict[type_singleton_test_name] = _test_type_singleton(value)
-
-            # # Add test to make sure MetadataValue of MetadataValue uses correct basetype
-            # type_subclass_test_name = "test_{}_subclass".format(type_nice_name)
-            # _dict[type_subclass_test_name] = _test_subclass_proof(value)
 
         return type.__new__(_mcs, _name, _bases, _dict)
 

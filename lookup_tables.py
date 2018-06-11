@@ -4,16 +4,16 @@
 
 # Available operations in dnMathOps-node (Order important; corresponds with node-index)
 DN_MATH_OPERATORS = [
-    "sin", "cos", "tan",
-    "asin", "acos", "atan",
-    "sqrt", "exp",
-    "ln", "log2", "log10",
-    "pow",
-    "normalise",
-    "hypot",
-    "atan2",
-    "modulus",
-    "abs",
+    # "sin", "cos", "tan",
+    # "asin", "acos", "atan",
+    # "sqrt", "exp",
+    # "ln", "log2", "log10",
+    # "pow",
+    # "normalise",
+    # "hypot",
+    # "atan2",
+    # "modulus",
+    # "abs",
 ]
 
 # Available operations in dnMinMax-node (Order important; corresponds with node-index)

@@ -8,13 +8,15 @@ Unit tests for noca.Node
 # Python imports
 import unittest
 
+# Third party imports
+
 # Local imports
 from cmt.test import TestCase
 import node_calculator.core as noca
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# GLOBALS
+# TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
