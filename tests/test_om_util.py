@@ -8,6 +8,8 @@ Unit tests for noca.om_util
 # Python imports
 import unittest
 
+# Third party imports
+
 # Local imports
 from cmt.test import TestCase
 from node_calculator import om_util
@@ -36,6 +38,11 @@ test_plug_strings = {
 }
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# TESTS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 class TestTracerClass(TestCase):
 
     def test_split_plug_string(self):
@@ -43,11 +50,13 @@ class TestTracerClass(TestCase):
 
         for test_plug_string, desired_components in test_plug_strings.iteritems():
             components = om_util.split_plug_string(test_plug_string)
-
             self.assertEqual(components, desired_components)
 
-            # split_attr_string(attr) # (parent_attr, array_index, child_attr)
-            # split_node_string(node) # (namespace, dag_path, node)
+            node_string, attr_string = test_plug_string.split(".", 1)
+            node_components = om_util.split_node_string(node_string)
+            self.assertEqual(node_components, desired_components[:3])
+            attr_components = om_util.split_attr_string(attr_string)
+            self.assertEqual(attr_components, desired_components[3:])
 
     # def test_mobj(self):
     #     """ Test mobj creation & retrieving """
