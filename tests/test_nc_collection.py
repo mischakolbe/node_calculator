@@ -1,5 +1,5 @@
 """
-Unit tests for noca.Attrs
+Unit tests for noca.NcCollection
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,7 +20,7 @@ import node_calculator.core as noca
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class TestAttrsClass(TestCase):
+class TestCollectionClass(TestCase):
 
     @unittest.skip("Not implemented yet")
     def test_xyz(self):
