@@ -204,6 +204,8 @@ def select_mobjs(mobjs):
     #     m_selection_list.add(mobj)
     # OpenMaya.MGlobal.setActiveSelectionList(m_selection_list, OpenMaya.MGlobal.kReplaceList)
     # return m_selection_list
+    if isinstance(mobjs, OpenMaya.MObject):
+        mobjs = [mobjs]
 
     select_list = []
     for mobj in mobjs:
@@ -220,7 +222,7 @@ def is_valid_mplug(mplug):
     return True
 
 
-def get_parent_plug(mplug):
+def get_parent_mplug(mplug):
     # tx -> t
 
     if not is_valid_mplug(mplug):
@@ -274,7 +276,7 @@ def get_mplug_of_mobj(mobj, attr):
         return None
 
 
-def get_array_plug_elements(mplug):
+def get_array_mplug_elements(mplug):
     # input3D -> input3D[0], input3D[1], ...
     if not is_valid_mplug(mplug):
         return None
@@ -290,7 +292,7 @@ def get_array_plug_elements(mplug):
     return array_elements
 
 
-def get_array_plug_by_physical_index(mplug, index):
+def get_array_mplug_by_physical_index(mplug, index):
     """
     The index can range from 0 to numElements() - 1.
     This function is particularly useful for iteration through the element plugs of an array plug.
@@ -308,7 +310,7 @@ def get_array_plug_by_physical_index(mplug, index):
     return None
 
 
-def get_array_plug_by_logical_index(mplug, index):
+def get_array_mplug_by_logical_index(mplug, index):
     """
     The logical index is the sparse array index used in MEL scripts.
     If a plug does not exist at the given Index, Maya will create a plug at that index.
@@ -339,7 +341,7 @@ def get_mplug_of_node_and_attr(node, attr):
     if array_index is not None:
         if not mplug.isArray:
             log.error("mplug for {}.{} is supposed to have an index, but is not an array attr!".format(node, attr))
-        mplug = get_array_plug_by_logical_index(mplug, array_index)
+        mplug = get_array_mplug_by_logical_index(mplug, array_index)
 
     if child_attr:
         if not mplug.numChildren():

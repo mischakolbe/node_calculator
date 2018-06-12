@@ -1679,7 +1679,7 @@ def _check_for_parent_attribute(plug_list):
             return None
 
         mplug = om_util.get_mplug_of_plug(plug)
-        parent_mplug = om_util.get_parent_plug(mplug)
+        parent_mplug = om_util.get_parent_mplug(mplug)
 
         # Any non-existent or faulty parent_attr breaks chance for parent_attr
         if not parent_mplug:
