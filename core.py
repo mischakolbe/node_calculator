@@ -49,7 +49,7 @@ Example:
         attrs_list -> returns list of attributes in NcAttrs
 
 
-TODO: Maybe make MetadataValues a subClass of Atom?
+TODO: Maybe make NcValues a subClass of Atom?
 TODO: Go through all old code and check function by function if it's present
         And copy/adjust docstrings from same/similar functions!
 """
@@ -67,13 +67,13 @@ from maya.api import OpenMaya
 
 # Local imports
 from . import logger
-from . import lookup_tables
+from . import lookup_table
 from . import om_util
-from . import metadata_value
+from . import nc_value
 reload(logger)
-reload(lookup_tables)
+reload(lookup_table)
 reload(om_util)
-reload(metadata_value)
+reload(nc_value)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,14 +117,14 @@ class Node(object):
         XYZ
 
     Returns:
-        NcNode OR NcCollection OR metadataValue: Instance with given args
+        NcNode OR NcList OR metadataValue: Instance with given args
 
     Example:
         ::
 
             noca.Node("pCube.tx") -> Node instance with pCube1 as node and tx in its NcAttrs instance
-            noca.Node([1, "pCube"]) -> NcCollection instance with value 1 and NcNode with pCube1
-            noca.Node(1) -> IntMetadataValue instance with value 1
+            noca.Node([1, "pCube"]) -> NcList instance with value 1 and NcNode with pCube1
+            noca.Node(1) -> IntNcValue instance with value 1
     """
 
     def __new__(cls, item, attrs=None, auto_unravel=True, auto_consolidate=True, *args, **kwargs):
@@ -133,15 +133,15 @@ class Node(object):
         if kwargs:
             log.warn("unrecognized kwargs: {}".format(kwargs))
 
-        # Redirect plain values right away to a metadata_value
+        # Redirect plain values right away to a nc_value
         if isinstance(item, numbers.Real):
             log.info("Node: Redirecting to Value({})".format(item))
-            return metadata_value.value(item)
+            return nc_value.value(item)
 
-        # Redirect lists or tuples right away to a NcCollection
+        # Redirect lists or tuples right away to a NcList
         if isinstance(item, (list, tuple)):
-            log.info("Node: Redirecting to NcCollection({})".format(item))
-            return NcCollection(item)
+            log.info("Node: Redirecting to NcList({})".format(item))
+            return NcList(item)
 
         log.info("Node: Redirecting to NcNode({})".format(item))
         return NcNode(item, attrs, auto_unravel, auto_consolidate)
@@ -677,7 +677,7 @@ class Op(object):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Atom(object):
     """
-    Base class for NcCollections, NcBaseNode, NcNode and NcAttrs.
+    Base class for NcLists, NcBaseNode, NcNode and NcAttrs.
     Once instantiated this class will have access to the .node and .attrs attributes.
     Therefore all connections and operations on a NcNode can live in here.
     """
@@ -1038,7 +1038,7 @@ class NcBaseNode(Atom):
         Example: add_float("floatAttribute") OR add_short("integerAttribute")
         """
 
-        for attr_type, attr_data in lookup_tables.ATTR_TYPES.iteritems():
+        for attr_type, attr_data in lookup_table.ATTR_TYPES.iteritems():
             # enum must be handled individually because of enumNames-flag
             if attr_type == "enum":
                 continue
@@ -1154,7 +1154,7 @@ class NcBaseNode(Atom):
             return self.__getattr__(attr_name)
 
         # Make a copy of the default addAttr command flags
-        attr_variables = lookup_tables.DEFAULT_ATTR_FLAGS.copy()
+        attr_variables = lookup_table.DEFAULT_ATTR_FLAGS.copy()
         log.debug("Copied default attr_variables: {}".format(attr_variables))
 
         # Add the attr variable into the dictionary
@@ -1325,7 +1325,7 @@ class NcNode(NcBaseNode):
             log.error("Explicit NcNode __init__ with number ({}). Use Node() instead!".format(node))
             return None
 
-        # Lists or tuples should be NcCollection!
+        # Lists or tuples should be NcList!
         if isinstance(node, (list, tuple)):
             log.error("Explicit NcNode __init__ with list or tuple ({}). Use Node() instead!".format(node))
             return None
@@ -1433,11 +1433,11 @@ class NcNode(NcBaseNode):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # COLLECTION
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class NcCollection(Atom):
+class NcList(Atom):
 
     def __init__(self, *args):
-        log.info("NcCollection __init__ ({})".format(args))
-        super(NcCollection, self).__init__()
+        log.info("NcList __init__ ({})".format(args))
+        super(NcList, self).__init__()
 
         # If arguments are given as a list: Unpack the items from it
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
@@ -1447,46 +1447,46 @@ class NcCollection(Atom):
         for arg in args:
             if isinstance(arg, (basestring, numbers.Real)):
                 collection_elements.append(Node(arg))
-            elif isinstance(arg, (NcBaseNode, metadata_value.MetadataValue)):
+            elif isinstance(arg, (NcBaseNode, nc_value.NcValue)):
                 collection_elements.append(arg)
             else:
                 log.error(
-                    "NcCollection element {} is of unsupported type {}!".format(arg, type(arg))
+                    "NcList element {} is of unsupported type {}!".format(arg, type(arg))
                 )
 
         self.elements = collection_elements
 
     def __str__(self):
         """
-        For example for print(NcCollection-instance)
+        For example for print(NcList-instance)
         """
-        # log.debug("NcCollection __str__ ({})".format(self.elements))
+        # log.debug("NcList __str__ ({})".format(self.elements))
 
-        return "NcCollection({})".format(self.elements)
+        return "NcList({})".format(self.elements)
 
     def __repr__(self):
         """
-        For example for running highlighted NcCollection-instance
+        For example for running highlighted NcList-instance
         """
-        # log.debug("NcCollection __repr__ ({})".format(self.elements))
+        # log.debug("NcList __repr__ ({})".format(self.elements))
 
         return str(self.elements)
 
     def __unicode__(self):
         """
-        For example for running highlighted NcCollection-instance
+        For example for running highlighted NcList-instance
         """
-        # log.debug("NcCollection __repr__ ({})".format(self.elements))
+        # log.debug("NcList __repr__ ({})".format(self.elements))
 
         return str(self.elements)
 
     def __getitem__(self, index):
-        log.info("NcCollection __getitem__ ({})".format(index))
+        log.info("NcList __getitem__ ({})".format(index))
 
         return self.elements[index]
 
     def __setitem__(self, index, value):
-        log.info("NcCollection __setitem__ ({}, {})".format(index, value))
+        log.info("NcList __setitem__ ({}, {})".format(index, value))
 
         self.elements[index] = value
 
@@ -1496,7 +1496,7 @@ class NcCollection(Atom):
     @property
     def nodes(self):
         """
-        Easy access to sparse list of all nodes within NcCollection.
+        Easy access to sparse list of all nodes within NcList.
         Useful for example for cmds.hide(my_collection.nodes)
         """
         return_list = []
@@ -1765,9 +1765,9 @@ def _create_and_connect_node(operation, *args):
     """
     # If a multi_index-attribute is given; create list with it of same length than args
     log.info("Creating a new {}-operationNode with args: {}".format(operation, args))
-    new_node_inputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"]
-    if lookup_tables.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
-        new_node_inputs = len(args) * lookup_tables.NODE_LOOKUP_TABLE[operation]["inputs"][:]
+    new_node_inputs = lookup_table.NODE_LOOKUP_TABLE[operation]["inputs"]
+    if lookup_table.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
+        new_node_inputs = len(args) * lookup_table.NODE_LOOKUP_TABLE[operation]["inputs"][:]
 
     # Check dimension-match: args vs. NODE_LOOKUP_TABLE-inputs:
     if len(args) != len(new_node_inputs):
@@ -1781,7 +1781,7 @@ def _create_and_connect_node(operation, *args):
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
     # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
-    node_operation = lookup_tables.NODE_LOOKUP_TABLE[operation].get("operation", None)
+    node_operation = lookup_table.NODE_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
         _unravel_and_set_or_connect_a_to_b(new_node + ".operation", node_operation)
 
@@ -1793,7 +1793,7 @@ def _create_and_connect_node(operation, *args):
 
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
-        if lookup_tables.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
+        if lookup_table.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
         # Support for single-dimension-inputs in the NODE_LOOKUP_TABLE. For example:
@@ -1819,8 +1819,8 @@ def _create_and_connect_node(operation, *args):
 
     # Support for single-dimension-outputs in the NODE_LOOKUP_TABLE. For example:
     # distanceBetween returns 1D attr, no matter what dimension the inputs were
-    outputs = lookup_tables.NODE_LOOKUP_TABLE[operation]["output"]
-    output_is_predetermined = lookup_tables.NODE_LOOKUP_TABLE[operation].get(
+    outputs = lookup_table.NODE_LOOKUP_TABLE[operation]["output"]
+    output_is_predetermined = lookup_table.NODE_LOOKUP_TABLE[operation].get(
         "output_is_predetermined", False
     )
 
@@ -1880,7 +1880,7 @@ def _create_node_name(operation, *args):
         NODE_NAME_PREFIX,  # Common node_calculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
-        lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
+        lookup_table.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
     ])
 
     return name
@@ -1891,7 +1891,7 @@ def _create_traced_operation_node(operation, involved_attributes):
     Maya-createNode that adds the executed command to the command_stack if Tracer is active
     Creates a named node of appropriate type for the necessary operation
     """
-    node_type = lookup_tables.NODE_LOOKUP_TABLE[operation]["node"]
+    node_type = lookup_table.NODE_LOOKUP_TABLE[operation]["node"]
     node_name = _create_node_name(operation, involved_attributes)
     new_node = _traced_create_node(node_type, name=node_name)
 
@@ -1999,7 +1999,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
 
         # Add the setAttr-command to the command stack
         if value is not None:
-            if isinstance(value, metadata_value.MetadataValue):
+            if isinstance(value, nc_value.NcValue):
                 value = value.metadata
 
             if joined_kwargs:
@@ -2043,7 +2043,7 @@ def _traced_get_attr(plug):
     if Atom._is_tracing:
         value_name = Atom._get_next_value_name()
 
-        return_value = metadata_value.value(return_value, metadata=value_name)
+        return_value = nc_value.value(return_value, metadata=value_name)
 
         Atom._traced_values.append(return_value)
 
@@ -2139,7 +2139,7 @@ def _unravel_item_as_list(item):
 def _unravel_item(item):
     """
     Specifically supported types for item:
-    - NcCollection
+    - NcList
     - NcNode
     - NcAttrs
     - list, tuple
@@ -2150,7 +2150,7 @@ def _unravel_item(item):
 
     log.info("_unravel_item ({})".format(item))
 
-    if isinstance(item, NcCollection):
+    if isinstance(item, NcList):
         return _unravel_collection(item)
 
     elif isinstance(item, NcNode):
@@ -2177,7 +2177,7 @@ def _unravel_item(item):
 def _unravel_collection(collection_instance):
     log.info("_unravel_collection ({})".format(collection_instance))
 
-    # A NcCollection is basically just a list, so redirect to _unravel_list
+    # A NcList is basically just a list, so redirect to _unravel_list
     return _unravel_list(collection_instance.elements)
 
 

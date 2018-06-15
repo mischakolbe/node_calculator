@@ -51,7 +51,7 @@ class TestNode(TestCase):
         node = noca.Node(value)
 
         # Make sure instance of correct type was created
-        self.assertIsInstance(node, noca.metadata_value.FloatMetadataValue)
+        self.assertIsInstance(node, noca.nc_value.NcFloatValue)
 
         # Make sure MetadataValue holds correct value
         self.assertEqual(node, value)
@@ -74,7 +74,7 @@ class TestNode(TestCase):
         )
 
         # Make sure instance of correct type was created
-        self.assertIsInstance(node, noca.NcCollection)
+        self.assertIsInstance(node, noca.NcList)
 
         # Make sure Collection with right amount of elements was created
         self.assertEqual(len(node), 4)
@@ -82,7 +82,7 @@ class TestNode(TestCase):
         # Make sure elements of Collection are of correct type
         self.assertIsInstance(node[0], noca.NcNode)
         self.assertIsInstance(node[1], noca.NcNode)
-        self.assertIsInstance(node[2], noca.metadata_value.FloatMetadataValue)
+        self.assertIsInstance(node[2], noca.nc_value.NcFloatValue)
         self.assertIsInstance(node[3], int)
 
 

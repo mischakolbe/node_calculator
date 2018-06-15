@@ -21,8 +21,8 @@ import re
 # Local imports
 from . import logger
 reload(logger)
-from . import lookup_tables
-reload(lookup_tables)
+from . import lookup_table
+reload(lookup_table)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,19 +32,19 @@ logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
 log = logger.log
 
-# This is just to iterate faster. The MetadataValue-types stay in the globals() even when reloaded.
+# This is just to iterate faster. The NcValue-types stay in the globals() even when reloaded.
 # Therefore cleaning globals() by hand so I don't have to restart Maya to clean globals()
 import copy
 a = copy.copy(globals())
 for key, value in a.iteritems():
-    if "MetadataValue" in str(key):
+    if "NcValue" in str(key):
         del globals()[key]
 
 
-class MetadataValue(object):
+class NcValue(object):
     """
-    Only exists for inheritance check: isinstance(XYZ, MetadataValue)
-    IntMetadataValue, FloatMetadataValue, etc. makes them hard to distinguish
+    Only exists for inheritance check: isinstance(XYZ, NcValue)
+    IntNcValue, FloatNcValue, etc. makes them hard to distinguish
     """
     pass
 
@@ -54,17 +54,17 @@ def create_metadata_val_class(class_type):
     Closure to create classes for any type
 
     Args:
-        class_type (builtin-type): Type for which a new MetadataValue-class should be created
+        class_type (builtin-type): Type for which a new NcValue-class should be created
 
     Returns:
-        MetadataValue-class of basetype class_type
+        NcValue-class of basetype class_type
     """
 
     # Can't inherit bool (TypeError: 'bool' not acceptable base type). Redirect to integer!
     if class_type is bool:
         class_type = int
 
-    class MetadataValueClass(class_type, MetadataValue):
+    class NcValueClass(class_type, NcValue):
         def __init__(self, *args, **kwargs):
             """ Leave the init method unchanged """
             class_type.__init__(self, *args, **kwargs)
@@ -80,7 +80,7 @@ def create_metadata_val_class(class_type):
             return self.basetype(self)
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-        # All subsequent magic methods return a new MetadataValue! This is to
+        # All subsequent magic methods return a new NcValue! This is to
         # preserve the origin of the values, even when used with another regular number!
         # The property "_value" is necessary, otherwise it gets stuck in a loop!
         # -> "_value" sticks the held value into its basetype-class to perform the calculation
@@ -210,12 +210,12 @@ def create_metadata_val_class(class_type):
             return_value = self._value <= other
             return value(return_value, metadata=metadata, created_by_user=False)
 
-    return MetadataValueClass
+    return NcValueClass
 
 
 def _concatenate_metadata(operator, input_a, input_b):
     log.debug("_concatenate_metadata ({}, {}, {})".format(operator, input_a, input_b))
-    operator_data = lookup_tables.METADATA_CONCATENATION_TABLE[operator]
+    operator_data = lookup_table.METADATA_CONCATENATION_TABLE[operator]
     operator_symbol = operator_data.get("symbol")
     is_associative = operator_data.get("associative", False)
 
@@ -252,7 +252,7 @@ def value(value, metadata=None, created_by_user=True):
         created_by_user (bool): Whether this value was created by the user or via script
 
     Returns:
-        New instance of MetadataValue whose baseclass matches the base-type of the given value
+        New instance of NcValue whose baseclass matches the base-type of the given value
 
     Example:
         ::
@@ -277,7 +277,7 @@ def value(value, metadata=None, created_by_user=True):
             # >>> <type 'list'>
     """
 
-    # If a MetadataValue is given: Retrieve the basetype of it,
+    # If a NcValue is given: Retrieve the basetype of it,
     # to make a new value of the same basetype
     try:
         value_type = value.basetype
@@ -285,23 +285,23 @@ def value(value, metadata=None, created_by_user=True):
         value_type = type(value)
 
     # Construct the class name out of the type of the given value
-    class_name = "{}MetadataValue".format(value_type.__name__.capitalize())
+    class_name = "Nc{}Value".format(value_type.__name__.capitalize())
 
     if class_name not in globals():
         # Create necessary class type, if it doesn't exist in the globals yet
-        MetadataValue = create_metadata_val_class(value_type)
+        NcValue = create_metadata_val_class(value_type)
 
-        # Setting __name__ sets the class name so it's not "MetadataValue" for all types!
-        MetadataValue.__name__ = class_name
+        # Setting __name__ sets the class name so it's not "NcValue" for all types!
+        NcValue.__name__ = class_name
         # Add the new type to the globals
-        globals()[class_name] = MetadataValue
+        globals()[class_name] = NcValue
 
     else:
         # If the necessary class type already exists: Return it from the globals
-        MetadataValue = globals()[class_name]
+        NcValue = globals()[class_name]
 
     # Create a new instance of the specified type with the given value and metadata
-    return_value = MetadataValue(value)
+    return_value = NcValue(value)
     if metadata is None:
         metadata = value
     return_value.metadata = metadata
