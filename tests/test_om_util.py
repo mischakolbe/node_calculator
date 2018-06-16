@@ -1,5 +1,19 @@
 """
 Unit tests for noca.om_util
+
+
+
+
+
+
+a = noca.Node("A.ty", auto_consolidate=False)
+b = noca.Node("B", auto_consolidate=False)
+c = noca.Node("C", auto_consolidate=False)
+
+multi-"layer" attributes!
+e = noca.Node("blendShape1.inputTarget[0].inputTargetGroup[0].targetWeights[0]")
+
+b.v = e
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,17 +40,40 @@ test_plug_strings = {
     "node.parent_attr":
         # The tuple that should be returned, consisting of:
         # namespace, dag_path, node, parent_attr, array_index, child_attr
-        ('', '', 'node', 'parent_attr', None, ''),
+        (
+            '', '', 'node',
+            [('parent_attr', None)]
+        ),
     "name_space:node.parent_attr":
-        ('name_space', '', 'node', 'parent_attr', None, ''),
+        (
+            'name_space', '', 'node',
+            [('parent_attr', None)]
+        ),
     "|dag|path|node.parent_attr":
-        ('', 'dag|path|', 'node', 'parent_attr', None, ''),
+        (
+            '', 'dag|path|', 'node',
+            [('parent_attr', None)]
+        ),
     "node.parent_attr[1]":
-        ('', '', 'node', 'parent_attr', 1, ''),
+        (
+            '', '', 'node',
+            [('parent_attr', 1)]
+        ),
     "node.parent_attr.child_attr":
-        ('', '', 'node', 'parent_attr', None, 'child_attr'),
-    "name_space:|dag|path|node.parent_attr[1].child_attr":
-        ('name_space', 'dag|path|', 'node', 'parent_attr', 1, 'child_attr'),
+        (
+            '', '', 'node',
+            [('parent_attr', None), ('child_attr', None)]
+        ),
+    "node.parent_attr[1].child_attr[2].grand_child_attr":
+        (
+            '', '', 'node',
+            [('parent_attr', 1), ('child_attr', 2), ('grand_child_attr', None)]
+        ),
+    "name_space:|dag|path|node.parent_attr[1].child_attr[2].grand_child_attr":
+        (
+            'name_space', 'dag|path|', 'node',
+            [('parent_attr', 1), ('child_attr', 2), ('grand_child_attr', None)]
+        )
 }
 
 
@@ -97,7 +134,7 @@ class TestTracerClass(TestCase):
             node_components = om_util.split_node_string(node_string)
             self.assertEqual(node_components, desired_components[:3])
             attr_components = om_util.split_attr_string(attr_string)
-            self.assertEqual(attr_components, desired_components[3:])
+            self.assertEqual(attr_components, desired_components[-1])
 
     def test_mobj(self):
         """ Test mobj creation & retrieving """

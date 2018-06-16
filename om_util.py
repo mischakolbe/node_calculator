@@ -325,28 +325,33 @@ def get_array_mplug_by_logical_index(mplug, index):
         log.error("{} is not an array plug!".format(mplug))
 
 
-def get_mplug_of_node_and_attr(node, attr):
+def get_mplug_of_node_and_attr(node, attr_str):
     """
     This should find the correct mplug for any node, attr input: "pCube1", "tx"
 
     """
     mobj = get_mobj(node)
 
-    parent_attr, array_index, child_attr = split_attr_string(attr)
-    mplug = get_mplug_of_mobj(mobj, parent_attr)
+    attrs = split_attr_string(attr_str)
 
-    if not mplug:
-        log.error("mplug {}.{} does not seem to exist!".format(node, attr))
+    mplug = None
 
-    if array_index is not None:
-        if not mplug.isArray:
-            log.error("mplug for {}.{} is supposed to have an index, but is not an array attr!".format(node, attr))
-        mplug = get_array_mplug_by_logical_index(mplug, array_index)
+    for attr, index in attrs:
+        if mplug is None:
+            mplug = get_mplug_of_mobj(mobj, attr)
+        else:
+            mplug = get_child_mplug(mplug, attr)
 
-    if child_attr:
-        if not mplug.numChildren():
-            log.error("mplug for {}.{} is supposed to have children, but is not a parent attr!".format(node, attr))
-        mplug = get_child_mplug(mplug, child_attr)
+        if not mplug:
+            log.error("mplug {}.{} does not seem to exist!".format(node, attr_str))
+
+        if index is not None:
+            if not mplug.isArray:
+                log.error(
+                    "mplug for {}.{} is supposed to have an index, "
+                    "but is not an array attr!".format(node, attr_str)
+                )
+            mplug = get_array_mplug_by_logical_index(mplug, index)
 
     return mplug
 
@@ -374,35 +379,32 @@ def split_plug_string(plug):
     node, attr = plug.split(".", 1)
 
     namespace, dag_path, node = split_node_string(node)
-    parent_attr, array_index, child_attr = split_attr_string(attr)
+    attrs = split_attr_string(attr)
 
-    return (namespace, dag_path, node, parent_attr, array_index, child_attr)
+    return (namespace, dag_path, node, attrs)
 
 
 def split_attr_string(attr):
     """
-    "parentAttr[arrayIndex].childAttr" ->
-    (parent_attr, array_index, child_attr)
+    "parentAttr[parentIndex].childAttr[childIndex]..." ->
+    [(parentAttr, parentIndex), (childAttr, childIndex), ...]
     """
-    attr_pattern = re.compile(r"(\w+)(\[\d+\])?\.?(\w+)?")
+    attr_pattern = re.compile(r"(\w+)(?:\[(\d+)\])?\.?")
 
     matches = attr_pattern.findall(attr)
 
     if not matches:
         log.error("Attr {} could not be broken down into components!".format(attr))
 
-    if len(matches) > 1:
-        log.error("Attr {} yielded multiple results. Should be singular result!".format(attr))
+    cleaned_matches = []
+    for attr, index in matches:
+        if index:
+            index = int(index)
+        else:
+            index = None
+        cleaned_matches.append((attr, index))
 
-    parent_attr, array_index, child_attr = matches[0]
-
-    if array_index:
-        array_index_pattern = re.compile('(\d+)')
-        array_index = int(array_index_pattern.findall(array_index)[0])
-    else:
-        array_index = None
-
-    return (parent_attr, array_index, child_attr)
+    return cleaned_matches
 
 
 def split_node_string(node):
