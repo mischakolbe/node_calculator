@@ -37,7 +37,7 @@ log = logger.log
 import copy
 a = copy.copy(globals())
 for key, value in a.iteritems():
-    if "NcValue" in str(key):
+    if key.startswith("Nc") and key.endswith("Value"):
         del globals()[key]
 
 

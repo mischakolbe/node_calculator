@@ -136,7 +136,7 @@ class Node(object):
 
         # Redirect plain values right away to a nc_value
         if isinstance(item, numbers.Real):
-            log.info("Node: Redirecting to Value({})".format(item))
+            log.info("Node: Redirecting to NcValue({})".format(item))
             return nc_value.value(item)
 
         # Redirect lists or tuples right away to a NcList
@@ -975,13 +975,13 @@ class NcBaseNode(Atom):
         """
         For example for print(NcNode or NcAttrs instance)
         """
-        return "(node: {}, attrs: {})".format(self.node, self.attrs_list)
+        return "(Node: {}, Attrs: {})".format(self.node, self.attrs_list)
 
     def __repr__(self):
         """
         For example for running highlighted NcNode or NcAttrs instance
         """
-        return "(node: {}, attrs: {})".format(self.node, self.attrs_list)
+        return "{}({}, {})".format(self.__class__.__name__, self.node, self.attrs_list)
 
     def get_shapes(self, full=False):
         """ full=True returns full dag path """
