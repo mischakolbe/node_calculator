@@ -26,3 +26,10 @@ class TestCollectionClass(TestCase):
     def test_xyz(self):
         """ Test XYZ """
         pass
+
+
+        # d = noca.Node([c.ty, 1, b.tz])
+        # for item in d:
+        #     if isinstance(item, noca.Atom):
+        #         # print item.attrs
+        #         item.attrs = a.tx

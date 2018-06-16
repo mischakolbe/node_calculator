@@ -60,6 +60,7 @@ TODO: Go through all old code and check function by function if it's present
 # Python imports
 import numbers
 import itertools
+import copy
 
 # Third party imports
 from maya import cmds
@@ -142,6 +143,11 @@ class Node(object):
         if isinstance(item, (list, tuple)):
             log.info("Node: Redirecting to NcList({})".format(item))
             return NcList(item)
+
+        # Redirect NcAttrs right away to a new NcNode
+        if isinstance(item, NcAttrs):
+            log.info("Node: Redirecting to NcNode({})".format(item))
+            return NcNode(item._node_mobj, item, item.auto_unravel, item.auto_consolidate)
 
         log.info("Node: Redirecting to NcNode({})".format(item))
         return NcNode(item, attrs, auto_unravel, auto_consolidate)
@@ -740,6 +746,25 @@ class Atom(object):
     def __init__(self):
         super(Atom, self).__init__()
 
+    def __pos__(self):
+        """
+        Ignore leading plus signs
+
+        Example:
+            >>> + Node("pCube1.ty")
+        """
+        pass
+
+    def __neg__(self):
+        """
+        Leading minus sign multiplies value by -1
+
+        Example:
+            >>> - Node("pCube1.ty")
+        """
+        result = self * -1
+        return result
+
     def __add__(self, other):
         """
         Regular addition operator.
@@ -944,8 +969,19 @@ class NcBaseNode(Atom):
         self._add_all_add_attr_methods()
 
     def __len__(self):
-        log.info("NcBaseNode __len__ ({})".format(self))
         return len(self.attrs_list)
+
+    def __str__(self):
+        """
+        For example for print(NcNode or NcAttrs instance)
+        """
+        return "(node: {}, attrs: {})".format(self.node, self.attrs_list)
+
+    def __repr__(self):
+        """
+        For example for running highlighted NcNode or NcAttrs instance
+        """
+        return "(node: {}, attrs: {})".format(self.node, self.attrs_list)
 
     def get_shapes(self, full=False):
         """ full=True returns full dag path """
@@ -1014,6 +1050,12 @@ class NcBaseNode(Atom):
         log.debug("NcBaseNode set ({})".format(value))
 
         _unravel_and_set_or_connect_a_to_b(self, value)
+
+    def info(self):
+        message = """auto_unravel: {}, auto_consolidate: {}""".format(
+            self.auto_unravel, self.auto_consolidate
+        )
+        print(message)
 
     @property
     def auto_unravel(self):
@@ -1200,7 +1242,7 @@ class NcAttrs(NcBaseNode):
     """
 
     def __init__(self, holder_node, attrs):
-        log.info("NcAttrs __init__ ({}, {})".format(holder_node, attrs))
+        log.info("NcAttrs __init__ ({})".format(attrs))
         self.__dict__["_holder_node"] = holder_node
 
         if isinstance(attrs, basestring):
@@ -1234,28 +1276,11 @@ class NcAttrs(NcBaseNode):
     def auto_consolidate(self):
         return self._holder_node.auto_consolidate
 
-    def __str__(self):
-        """
-        For example for print(NcAttrs-instance)
-        """
-        # log.debug("NcAttrs __str__ ({}, {})".format(self.node, self.attrs_list))
-
-        return "NcAttrs({})".format(self.attrs_list)
-
-    def __repr__(self):
-        """
-        For example for running highlighted NcAttrs-instance
-        """
-        # log.debug("NcAttrs __repr__ ({}, {})".format(self.node, self.attrs_list))
-
-        return "NcAttrs({})".format(self.attrs_list)
-
     def __unicode__(self):
         """
         For example for cmds.setAttr(NcAttrs-instance)
         """
         # log.debug("NcAttrs __unicode__ ({}, {})".format(self.node, self.attrs_list))
-
         if len(self.attrs_list) == 0:
             return_value = self.node
         elif len(self.attrs_list) == 1:
@@ -1267,6 +1292,10 @@ class NcAttrs(NcBaseNode):
 
     def __getattr__(self, name):
         log.info("NcAttrs __getattr__ ({})".format(name))
+
+        # Take care of keyword attrs!
+        if name == "attrs":
+            return self
 
         if len(self.attrs_list) != 1:
             log.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
@@ -1355,22 +1384,6 @@ class NcNode(NcBaseNode):
         else:
             self.__dict__["_held_attrs"] = NcAttrs(self, attrs)
 
-    def __str__(self):
-        """
-        For example for print(NcNode-instance)
-        """
-        # log.debug("NcNode __str__ ({}, {})".format(self.node, self.attrs))
-
-        return "NcNode(node: {}, attrs: {})".format(self.node, self.attrs)
-
-    def __repr__(self):
-        """
-        For example for running highlighted NcNode-instance
-        """
-        # log.debug("NcNode __repr__ ({}, {})".format(self.node, self.attrs))
-
-        return "NcNode({}, {})".format(self.node, self.attrs)
-
     def __unicode__(self):
         """
         For example for cmds.setAttr(NcNode-instance)
@@ -1443,55 +1456,72 @@ class NcList(Atom):
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
 
-        collection_elements = []
+        list_values = []
         for arg in args:
             if isinstance(arg, (basestring, numbers.Real)):
-                collection_elements.append(Node(arg))
+                list_values.append(Node(arg))
             elif isinstance(arg, (NcBaseNode, nc_value.NcValue)):
-                collection_elements.append(arg)
+                list_values.append(arg)
             else:
                 log.error(
                     "NcList element {} is of unsupported type {}!".format(arg, type(arg))
                 )
 
-        self.elements = collection_elements
+        self.values = list_values
 
     def __str__(self):
         """
         For example for print(NcList-instance)
         """
-        # log.debug("NcList __str__ ({})".format(self.elements))
+        # log.debug("NcList __str__ ({})".format(self.values))
 
-        return "NcList({})".format(self.elements)
+        return "NcList({})".format(self.values)
 
     def __repr__(self):
         """
         For example for running highlighted NcList-instance
         """
-        # log.debug("NcList __repr__ ({})".format(self.elements))
+        # log.debug("NcList __repr__ ({})".format(self.values))
 
-        return str(self.elements)
+        return str(self.values)
 
     def __unicode__(self):
         """
         For example for running highlighted NcList-instance
         """
-        # log.debug("NcList __repr__ ({})".format(self.elements))
+        # log.debug("NcList __repr__ ({})".format(self.values))
 
-        return str(self.elements)
+        return str(self.values)
 
     def __getitem__(self, index):
         log.info("NcList __getitem__ ({})".format(index))
 
-        return self.elements[index]
+        return self.values[index]
 
     def __setitem__(self, index, value):
         log.info("NcList __setitem__ ({}, {})".format(index, value))
 
-        self.elements[index] = value
+        self.values[index] = value
 
     def __len__(self):
-        return len(self.elements)
+        return len(self.values)
+
+    def __delitem__(self, index):
+        del self.values[index]
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __reversed__(self):
+        return reversed(self.values)
+
+    def __copy__(self):
+        """ Defines behavior for copy.copy() for a shallow copy of NcLists """
+        return NcList(copy.copy(self.values))
+
+    def __deepcopy__(self, memodict={}):
+        """ Defines behavior for copy.deepcopy() for a deep copy of NcLists """
+        return NcList(copy.deepcopy(self.values))
 
     @property
     def nodes(self):
@@ -1500,7 +1530,7 @@ class NcList(Atom):
         Useful for example for cmds.hide(my_collection.nodes)
         """
         return_list = []
-        for item in self.elements:
+        for item in self.values:
             if isinstance(item, (NcBaseNode)):
                 return_list.append(item.node)
 
@@ -1509,13 +1539,21 @@ class NcList(Atom):
     def get(self):
 
         return_list = []
-        for item in self.elements:
+        for item in self.values:
             if isinstance(item, NcBaseNode):
                 return_list.append(item.get())
             if isinstance(item, numbers.Real):
                 return_list.append(item)
 
         return return_list
+
+    def append(self, value):
+        self.values.append(value)
+
+    def extend(self, other):
+        if isinstance(other, NcList):
+            other = other.values
+        self.values.extend(other)
 
 
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
@@ -2153,11 +2191,8 @@ def _unravel_item(item):
     if isinstance(item, NcList):
         return _unravel_collection(item)
 
-    elif isinstance(item, NcNode):
-        return _unravel_node_instance(item)
-
-    elif isinstance(item, NcAttrs):
-        return _unravel_attrs_instance(item)
+    elif isinstance(item, NcBaseNode):
+        return _unravel_base_node_instance(item)
 
     elif isinstance(item, (list, tuple)):
         return _unravel_list(item)
@@ -2178,43 +2213,28 @@ def _unravel_collection(collection_instance):
     log.info("_unravel_collection ({})".format(collection_instance))
 
     # A NcList is basically just a list, so redirect to _unravel_list
-    return _unravel_list(collection_instance.elements)
+    return _unravel_list(collection_instance.values)
 
 
-def _unravel_node_instance(node_instance):
-    log.info("_unravel_node_instance ({})".format(node_instance))
+def _unravel_base_node_instance(base_node_instance):
+    log.info("_unravel_base_node_instance ({})".format(base_node_instance))
 
-    if len(node_instance.attrs_list) == 0:
-        return_value = node_instance.node
-    elif len(node_instance.attrs_list) == 1:
-        if GLOBAL_AUTO_UNRAVEL and node_instance.auto_unravel:
-            return_value = _unravel_plug(node_instance.node, node_instance.attrs_list[0])
+    if len(base_node_instance.attrs_list) == 0:
+        return_value = base_node_instance.node
+    elif len(base_node_instance.attrs_list) == 1:
+        if GLOBAL_AUTO_UNRAVEL and base_node_instance.auto_unravel:
+            return_value = _unravel_plug(base_node_instance.node, base_node_instance.attrs_list[0])
         else:
             return_value = om_util.get_mplug_of_node_and_attr(
-                node_instance.node,
-                node_instance.attrs_list[0]
+                base_node_instance.node,
+                base_node_instance.attrs_list[0]
             )
     else:
         return_value = [
-            "{}.{}".format(node_instance.node, attr) for attr in node_instance.attrs_list
+            "{}.{}".format(base_node_instance.node, attr) for attr in base_node_instance.attrs_list
         ]
 
     return return_value
-
-
-def _unravel_attrs_instance(attrs_instance):
-    log.info("_unravel_attrs_instance ({})".format(attrs_instance))
-
-    # An NcAttrs instance can be easily made into a NcNode-instance.
-    # That way only the NcNode unravelling must be handled.
-    unravelled_node = _unravel_node_instance(
-        NcNode(
-            attrs_instance.node,
-            attrs_instance,
-            auto_unravel=attrs_instance.auto_unravel
-        )
-    )
-    return unravelled_node
 
 
 def _unravel_list(list_instance):
