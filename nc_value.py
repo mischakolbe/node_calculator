@@ -1,18 +1,16 @@
 """
-Module to create values of base types (int, str, float, ...).
-Creating a child-class for each value type allows to store metadata onto value.
+Module to create values of base types (int, str, float, ...) that allow to store metadata.
 
 Example:
     ::
 
-        # WORKS:
-        a = value(1, "metadata")
+        # This works:
+        a = value(1, "my_metadata")
 
-        # DOES NOT WORK:
+        # This does NOT work:
         a = 1
-        a.metadata = "metadata"
+        a.metadata = "my_metadata"
         # >>> AttributeError: 'int' object has no attribute 'metadata'
-
 """
 
 # Python modules
@@ -66,17 +64,17 @@ def create_metadata_val_class(class_type):
 
     class NcValueClass(class_type, NcValue):
         def __init__(self, *args, **kwargs):
-            """ Leave the init method unchanged """
+            """Leave the init method unchanged"""
             class_type.__init__(self, *args, **kwargs)
 
         @property
         def basetype(self):
-            """ Convenience property to access the base type easily """
+            """Convenience property to access the base type easily"""
             return class_type
 
         @property
         def _value(self):
-            """ Returns the held value as an instance of the basetype """
+            """Returns the held value as an instance of the basetype"""
             return self.basetype(self)
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -87,60 +85,55 @@ def create_metadata_val_class(class_type):
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
         def __add__(self, other):
-            """
-            Regular addition operator.
-            """
+            """Regular addition operator."""
             metadata = _concatenate_metadata("add", self, other)
             return_value = self._value + other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __radd__(self, other):
-            """
-            Reflected addition operator.
-            Fall-back method in case regular addition is not defined & fails.
+            """Reflected addition operator.
+
+            Note:
+                Fall-back method in case regular addition is not defined & fails.
             """
             metadata = _concatenate_metadata("add", other, self)
             return_value = other + self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __sub__(self, other):
-            """
-            Regular subtraction operator.
-            """
+            """Regular subtraction operator."""
             metadata = _concatenate_metadata("sub", self, other)
             return_value = self._value - other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __rsub__(self, other):
-            """
-            Reflected subtraction operator.
-            Fall-back method in case regular subtraction is not defined & fails.
+            """Reflected subtraction operator.
+
+            Note:
+                Fall-back method in case regular subtraction is not defined & fails.
             """
             metadata = _concatenate_metadata("sub", other, self)
             return_value = other - self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __mul__(self, other):
-            """
-            Regular multiplication operator.
-            """
+            """Regular multiplication operator."""
             metadata = _concatenate_metadata("mul", self, other)
             return_value = self._value * other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __rmul__(self, other):
-            """
-            Reflected multiplication operator.
-            Fall-back method in case regular multiplication is not defined & fails.
+            """Reflected multiplication operator.
+
+            Note:
+                Fall-back method in case regular multiplication is not defined & fails.
             """
             metadata = _concatenate_metadata("mul", other, self)
             return_value = other * self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __div__(self, other):
-            """
-            Regular division operator.
-            """
+            """Regular division operator."""
             metadata = _concatenate_metadata("div", self, other)
             return_value = self._value / other
             return value(return_value, metadata=metadata, created_by_user=False)
@@ -155,57 +148,43 @@ def create_metadata_val_class(class_type):
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __pow__(self, other):
-            """
-            Regular power operator.
-            """
+            """Power operator."""
             metadata = _concatenate_metadata("pow", self, other)
             return_value = self._value ** other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __eq__(self, other):
-            """
-            Equality operator: ==
-            """
+            """Equality operator: =="""
             metadata = _concatenate_metadata("eq", self, other)
             return_value = self._value == other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __ne__(self, other):
-            """
-            Inequality operator: !=
-            """
+            """Inequality operator: !="""
             metadata = _concatenate_metadata("ne", self, other)
             return_value = self._value != other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __gt__(self, other):
-            """
-            Greater than operator: >
-            """
+            """Greater than operator: >"""
             metadata = _concatenate_metadata("gt", self, other)
             return_value = self._value > other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __ge__(self, other):
-            """
-            Greater equal operator: >=
-            """
+            """Greater equal operator: >="""
             metadata = _concatenate_metadata("ge", self, other)
             return_value = self._value >= other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __lt__(self, other):
-            """
-            Less than operator: <
-            """
+            """Less than operator: <"""
             metadata = _concatenate_metadata("lt", self, other)
             return_value = self._value < other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __le__(self, other):
-            """
-            Less equal operator: <=
-            """
+            """Less equal operator: <="""
             metadata = _concatenate_metadata("le", self, other)
             return_value = self._value <= other
             return value(return_value, metadata=metadata, created_by_user=False)
