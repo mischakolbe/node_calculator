@@ -2081,15 +2081,15 @@ def _create_and_connect_node(operation, *args):
         *args (NcNode, string): Attributes involved in the newly created node
 
     Returns:
-        New Maya-node of type NODE_LOOKUP_TABLE[operation]["node"]
+        New Maya-node of type OPERATOR_LOOKUP_TABLE[operation]["node"]
     """
     # If a multi_index-attribute is given; create list with it of same length than args
     LOG.info("Creating a new {}-operationNode with args: {}".format(operation, args))
-    new_node_inputs = lookup_table.NODE_LOOKUP_TABLE[operation]["inputs"]
-    if lookup_table.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
-        new_node_inputs = len(args) * lookup_table.NODE_LOOKUP_TABLE[operation]["inputs"][:]
+    new_node_inputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["inputs"]
+    if lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("is_multi_index", False):
+        new_node_inputs = len(args) * lookup_table.OPERATOR_LOOKUP_TABLE[operation]["inputs"][:]
 
-    # Check dimension-match: args vs. NODE_LOOKUP_TABLE-inputs:
+    # Check dimension-match: args vs. OPERATOR_LOOKUP_TABLE-inputs:
     if len(args) != len(new_node_inputs):
         LOG.error(
             "Dimensions to create node don't match! "
@@ -2100,8 +2100,8 @@ def _create_and_connect_node(operation, *args):
     unravelled_args_list = [_unravel_item_as_list(x) for x in args]
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
-    # If the given node-type has a node-operation; set it according to NODE_LOOKUP_TABLE
-    node_operation = lookup_table.NODE_LOOKUP_TABLE[operation].get("operation", None)
+    # If the given node-type has a node-operation; set it according to OPERATOR_LOOKUP_TABLE
+    node_operation = lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
         _unravel_and_set_or_connect_a_to_b(new_node + ".operation", node_operation)
 
@@ -2113,10 +2113,10 @@ def _create_and_connect_node(operation, *args):
 
         new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
-        if lookup_table.NODE_LOOKUP_TABLE[operation].get("is_multi_index", False):
+        if lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("is_multi_index", False):
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
-        # Support for single-dimension-inputs in the NODE_LOOKUP_TABLE. For example:
+        # Support for single-dimension-inputs in the OPERATOR_LOOKUP_TABLE. For example:
         # The blend-attr of a blendColors-node is always 1D,
         # so only a 1D obj_to_connect must be given!
         elif len(new_node_input) == 1:
@@ -2137,10 +2137,10 @@ def _create_and_connect_node(operation, *args):
 
         _unravel_and_set_or_connect_a_to_b(new_node_input_list, obj_to_connect)
 
-    # Support for single-dimension-outputs in the NODE_LOOKUP_TABLE. For example:
+    # Support for single-dimension-outputs in the OPERATOR_LOOKUP_TABLE. For example:
     # distanceBetween returns 1D attr, no matter what dimension the inputs were
-    outputs = lookup_table.NODE_LOOKUP_TABLE[operation]["output"]
-    output_is_predetermined = lookup_table.NODE_LOOKUP_TABLE[operation].get(
+    outputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["output"]
+    output_is_predetermined = lookup_table.OPERATOR_LOOKUP_TABLE[operation].get(
         "output_is_predetermined", False
     )
 
@@ -2200,7 +2200,7 @@ def _create_node_name(operation, *args):
         NODE_NAME_PREFIX,  # Common node_calculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
-        lookup_table.NODE_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
+        lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
     ])
 
     return name
@@ -2211,7 +2211,7 @@ def _create_traced_operation_node(operation, involved_attributes):
     Maya-createNode that adds the executed command to the command_stack if Tracer is active
     Creates a named node of appropriate type for the necessary operation
     """
-    node_type = lookup_table.NODE_LOOKUP_TABLE[operation]["node"]
+    node_type = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]
     node_name = _create_node_name(operation, involved_attributes)
     new_node = _traced_create_node(node_type, name=node_name)
 

@@ -24,7 +24,6 @@ DN_MIN_MAX_OPERATORS = [
 ]
 
 # All attribute types that can be created by the node_calculator and their default creation values
-
 DEFAULT_ATTR_FLAGS = {
     # General settings - Applies to ALL attribute types!
     "keyable": True,
@@ -183,7 +182,7 @@ METADATA_CONCATENATION_TABLE = {
         "symbol": "**",
     },
     "eq": {
-        "symbol": "=",
+        "symbol": "==",
     },
     "ne": {
         "symbol": "!=",
@@ -204,13 +203,13 @@ METADATA_CONCATENATION_TABLE = {
 
 
 # Dict of all available operations: used node-type, inputs, outputs, etc.
-NODE_LOOKUP_TABLE = {}
+OPERATOR_LOOKUP_TABLE = {}
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # OPERATORS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class NodeLookupTableMetaClass(object):
+class OperatorLookupTableMetaClass(object):
     """
     Base class for node_calculator operators: Everything that goes beyond basic operators (+-*/)
 
@@ -230,15 +229,15 @@ class NodeLookupTableMetaClass(object):
         Note:
             name, bases, body are necessary for metaClass to work properly
         """
-        # Initialize the NODE_LOOKUP_TABLE_dictionary with all available operations
-        self._initialize_node_lookup_table()
+        # Initialize the OPERATOR_LOOKUP_TABLE_dictionary with all available operations
+        self._initialize_operator_lookup_table()
 
-    def _initialize_node_lookup_table(self):
+    def _initialize_operator_lookup_table(self):
         """
-        Fill the global NODE_LOOKUP_TABLE-dictionary with all available operations
+        Fill the global OPERATOR_LOOKUP_TABLE-dictionary with all available operations
 
         Note:
-            NODE_LOOKUP_TABLE is a dict that holds the data for each available operation:
+            OPERATOR_LOOKUP_TABLE is a dict that holds the data for each available operation:
             the necessary node-type, its inputs, outputs, etc.
             This unified data enables to abstract node creation, connection, etc.
 
@@ -250,11 +249,11 @@ class NodeLookupTableMetaClass(object):
             - operation: set operation-attr for different modes of a node
             - output_is_predetermined: should output attrs ALWAYS be given in full?
         """
-        global NODE_LOOKUP_TABLE
+        global OPERATOR_LOOKUP_TABLE
         global DN_MATH_OPERATORS
         global DN_MIN_MAX_OPERATORS
 
-        NODE_LOOKUP_TABLE = {
+        OPERATOR_LOOKUP_TABLE = {
             "blend": {
                 "node": "blendColors",
                 "inputs": [
@@ -400,9 +399,9 @@ class NodeLookupTableMetaClass(object):
             }
         }
 
-        # Fill NODE_LOOKUP_TABLE with condition operations
+        # Fill OPERATOR_LOOKUP_TABLE with condition operations
         for i, condition_operator in enumerate(["eq", "ne", "gt", "ge", "lt", "le"]):
-            NODE_LOOKUP_TABLE[condition_operator] = {
+            OPERATOR_LOOKUP_TABLE[condition_operator] = {
                 "node": "condition",
                 "inputs": [
                     ["firstTerm"],
@@ -417,9 +416,9 @@ class NodeLookupTableMetaClass(object):
                 "operation": i,
             }
 
-        # Fill NODE_LOOKUP_TABLE with +,- operations
+        # Fill OPERATOR_LOOKUP_TABLE with +,- operations
         for i, add_sub_operator in enumerate(["add", "sub"]):
-            NODE_LOOKUP_TABLE[add_sub_operator] = {
+            OPERATOR_LOOKUP_TABLE[add_sub_operator] = {
                 "node": "plusMinusAverage",
                 "inputs": [
                     [
@@ -433,9 +432,9 @@ class NodeLookupTableMetaClass(object):
                 "operation": i + 1,
             }
 
-        # Fill NODE_LOOKUP_TABLE with *,/,** operations
+        # Fill OPERATOR_LOOKUP_TABLE with *,/,** operations
         for i, mult_div_operator in enumerate(["mul", "div", "pow"]):
-            NODE_LOOKUP_TABLE[mult_div_operator] = {
+            OPERATOR_LOOKUP_TABLE[mult_div_operator] = {
                 "node": "multiplyDivide",
                 "inputs": [
                     ["input1X", "input1Y", "input1Z"],
@@ -445,9 +444,9 @@ class NodeLookupTableMetaClass(object):
                 "operation": i + 1,
             }
 
-        # Fill NODE_LOOKUP_TABLE with vectorProduct operations
+        # Fill OPERATOR_LOOKUP_TABLE with vectorProduct operations
         for i, vector_product_operator in enumerate(["dot", "cross"]):
-            NODE_LOOKUP_TABLE[vector_product_operator] = {
+            OPERATOR_LOOKUP_TABLE[vector_product_operator] = {
                 "node": "vectorProduct",
                 "inputs": [
                     ["input1X", "input1Y", "input1Z"],
@@ -458,9 +457,9 @@ class NodeLookupTableMetaClass(object):
                 "operation": i + 1,
             }
 
-        # Fill NODE_LOOKUP_TABLE with dnMinMax operations
+        # Fill OPERATOR_LOOKUP_TABLE with dnMinMax operations
         for i, dn_min_max_operator in enumerate(DN_MIN_MAX_OPERATORS):
-            NODE_LOOKUP_TABLE[dn_min_max_operator] = {
+            OPERATOR_LOOKUP_TABLE[dn_min_max_operator] = {
                 "node": "dnMinMax",
                 "inputs": [
                     [
@@ -474,9 +473,9 @@ class NodeLookupTableMetaClass(object):
                 "operation": i,
             }
 
-        # Fill NODE_LOOKUP_TABLE with dnMath operations
+        # Fill OPERATOR_LOOKUP_TABLE with dnMath operations
         for i, dn_math_operator in enumerate(DN_MATH_OPERATORS):
-            NODE_LOOKUP_TABLE[dn_math_operator] = {
+            OPERATOR_LOOKUP_TABLE[dn_math_operator] = {
                 "node": "dnMathOps",
                 "inputs": [
                     ["inFloatX", "inFloatY", "inFloatZ"],
@@ -486,6 +485,6 @@ class NodeLookupTableMetaClass(object):
             }
 
 
-class NodeLookupTable(object):
-    """ Create NODE_LOOKUP_TABLE from NodeLookupTableMetaClass """
-    __metaclass__ = NodeLookupTableMetaClass
+class OperatorLookupTable(object):
+    """ Create OPERATOR_LOOKUP_TABLE from OperatorLookupTableMetaClass """
+    __metaclass__ = OperatorLookupTableMetaClass
