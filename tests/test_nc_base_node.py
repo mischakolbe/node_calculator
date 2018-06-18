@@ -1,5 +1,5 @@
 """
-Unit tests for noca.NcNode
+Unit tests for noca.NcBaseNode: Must apply for NcNode AND NcAttrs class!
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,13 +62,7 @@ class TestNodeClass(TestCase):
         )
 
     @unittest.skip("Not implemented yet")
-    def test_node_methods(self):
+    def test_some_test(self):
         """ Test XYZ """
-        pass
-
-
-    def test_properties(self):
-        attrs -> NcAttrs
-        attrs_list -> list
-        node -> NcNode
-        plugs -> list
+        for nc_type in [self.test_node, self.test_attrs]:
+            do_whatever_test_you_want

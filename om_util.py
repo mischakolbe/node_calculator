@@ -25,7 +25,6 @@ from maya import cmds
 
 # Local imports
 from . import logger
-reload(logger)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,7 +32,24 @@ reload(logger)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
-log = logger.log
+LOG = logger.log
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Mobj
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_mobj(node):
+    if isinstance(node, OpenMaya.MObject):
+        return node
+
+    if isinstance(node, OpenMaya.MDagPath):
+        return node.node()
+
+    selectionList = OpenMaya.MSelectionList()
+    selectionList.add(node)
+    mobj = selectionList.getDependNode(0)
+
+    return mobj
 
 
 def get_name_of_mobj(mobj):
@@ -66,16 +82,6 @@ def get_shape_mobjs(mobj):
     return return_shape_mobjs
 
 
-def get_mdag_path(mobj):
-    if not isinstance(mobj, OpenMaya.MObject):
-        mobj = get_mobj(mobj)
-
-    mdag_path = None
-    if mobj.hasFn(OpenMaya.MFn.kDagNode):
-        mdag_path = OpenMaya.MDagPath.getAPathTo(mobj)
-    return mdag_path
-
-
 def is_instanced(node):
     """Check if node is Maya-instance
 
@@ -98,7 +104,7 @@ def get_long_name_of_mobj(mobj, full=False):
     full takes precedence - otherwise partial.
     """
     if not isinstance(mobj, OpenMaya.MObject):
-        log.error("Given mobj {} is not an instance of OpenMaya.MObject".format(mobj))
+        LOG.error("Given mobj {} is not an instance of OpenMaya.MObject".format(mobj))
 
     mdag_path = get_mdag_path(mobj)
     if mdag_path:
@@ -110,20 +116,6 @@ def get_long_name_of_mobj(mobj, full=False):
         dag_path = get_name_of_mobj(mobj)
 
     return dag_path
-
-
-def get_mobj(node):
-    if isinstance(node, OpenMaya.MObject):
-        return node
-
-    if isinstance(node, OpenMaya.MDagPath):
-        return node.node()
-
-    selectionList = OpenMaya.MSelectionList()
-    selectionList.add(node)
-    mobj = selectionList.getDependNode(0)
-
-    return mobj
 
 
 def get_node_type(node, api_type=False):
@@ -164,13 +156,6 @@ def rename_mobj(mobj, name):
     dag_modifier.doIt()
 
 
-def set_mobj_attribute(mobj, attr, value):
-    # This should be om-only, too!
-    # http://austinjbaker.com/mplugs-setting-values
-    dag_path = get_long_name_of_mobj(mobj)
-    cmds.setAttr("{}.{}".format(dag_path, attr), value)
-
-
 def selected_nodes_in_scene_as_mobjs():
     mobjs = []
 
@@ -183,14 +168,6 @@ def selected_nodes_in_scene_as_mobjs():
             iterator.next()
 
     return mobjs
-
-
-def get_attr_of_mobj(mobj, attr):
-    # Rewrite this to pure OM!
-    path = get_long_name_of_mobj(mobj)
-    value = cmds.getAttr("{}.{}".format(path, attr))
-
-    return value
 
 
 def select_mobjs(mobjs):
@@ -212,6 +189,80 @@ def select_mobjs(mobjs):
         select_list.append(get_long_name_of_mobj(mobj))
     cmds.select(select_list)
     return select_list
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# MDag
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_mdag_path(mobj):
+    if not isinstance(mobj, OpenMaya.MObject):
+        mobj = get_mobj(mobj)
+
+    mdag_path = None
+    if mobj.hasFn(OpenMaya.MFn.kDagNode):
+        mdag_path = OpenMaya.MDagPath.getAPathTo(mobj)
+    return mdag_path
+
+
+def get_mfn_dag_node(node):
+    mobj = get_mobj(node)
+    mfn_dag_node = OpenMaya.MFnDagNode(mobj)
+
+    return mfn_dag_node
+
+
+def get_parents(node):
+    """Get node's parents
+
+    Args:
+        node (str): node
+
+    Returns:
+        list: parents
+    """
+    parents = []
+    current_parent = get_parent(node)
+
+    # get parent hierarchy recursively because parentCount seems to be broken
+    # Change when parentCount is fixed, since a group "world" would break it!
+    while current_parent != "world":
+        parents.append(current_parent)
+        current_parent = get_parent(current_parent)
+
+    return parents
+
+
+def get_parent(node):
+    """Get node's parent
+
+    Args:
+        node (str): node
+
+    Returns:
+        str: parent
+    """
+    mfn_dag_node = get_mfn_dag_node(node)
+
+    parent = get_name_of_mobj(mfn_dag_node.parent(0))
+    return parent
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# MPlug
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def set_mobj_attribute(mobj, attr, value):
+    # This should be om-only, too!
+    # http://austinjbaker.com/mplugs-setting-values
+    dag_path = get_long_name_of_mobj(mobj)
+    cmds.setAttr("{}.{}".format(dag_path, attr), value)
+
+
+def get_attr_of_mobj(mobj, attr):
+    # Rewrite this to pure OM!
+    path = get_long_name_of_mobj(mobj)
+    value = cmds.getAttr("{}.{}".format(path, attr))
+
+    return value
 
 
 def is_valid_mplug(mplug):
@@ -322,7 +373,7 @@ def get_array_mplug_by_logical_index(mplug, index):
     if mplug.isArray:
         return mplug.elementByLogicalIndex(index)
     else:
-        log.error("{} is not an array plug!".format(mplug))
+        LOG.error("{} is not an array plug!".format(mplug))
 
 
 def get_mplug_of_node_and_attr(node, attr_str):
@@ -343,11 +394,11 @@ def get_mplug_of_node_and_attr(node, attr_str):
             mplug = get_child_mplug(mplug, attr)
 
         if not mplug:
-            log.error("mplug {}.{} does not seem to exist!".format(node, attr_str))
+            LOG.error("mplug {}.{} does not seem to exist!".format(node, attr_str))
 
         if index is not None:
             if not mplug.isArray:
-                log.error(
+                LOG.error(
                     "mplug for {}.{} is supposed to have an index, "
                     "but is not an array attr!".format(node, attr_str)
                 )
@@ -394,7 +445,7 @@ def split_attr_string(attr):
     matches = attr_pattern.findall(attr)
 
     if not matches:
-        log.error("Attr {} could not be broken down into components!".format(attr))
+        LOG.error("Attr {} could not be broken down into components!".format(attr))
 
     cleaned_matches = []
     for attr, index in matches:
@@ -417,10 +468,10 @@ def split_node_string(node):
     matches = node_pattern.findall(node)
 
     if not matches:
-        log.error("Node {} could not be broken down into components!".format(node))
+        LOG.error("Node {} could not be broken down into components!".format(node))
 
     if len(matches) > 1:
-        log.error("Node {} yielded multiple results. Should be singular result!".format(node))
+        LOG.error("Node {} yielded multiple results. Should be singular result!".format(node))
 
     namespace, dag_path, node = matches[0]
 
@@ -428,46 +479,3 @@ def split_node_string(node):
         namespace = namespace.split(":")[0]
 
     return (namespace, dag_path, node)
-
-
-def get_mfn_dag_node(node):
-    mobj = get_mobj(node)
-    mfn_dag_node = OpenMaya.MFnDagNode(mobj)
-
-    return mfn_dag_node
-
-
-def get_parents(node):
-    """Get node's parents
-
-    Args:
-        node (str): node
-
-    Returns:
-        list: parents
-    """
-    parents = []
-    current_parent = get_parent(node)
-
-    # get parent hierarchy recursively because parentCount seems to be broken
-    # Change when parentCount is fixed, since a group "world" would break it!
-    while current_parent != "world":
-        parents.append(current_parent)
-        current_parent = get_parent(current_parent)
-
-    return parents
-
-
-def get_parent(node):
-    """Get node's parent
-
-    Args:
-        node (str): node
-
-    Returns:
-        str: parent
-    """
-    mfn_dag_node = get_mfn_dag_node(node)
-
-    parent = get_name_of_mobj(mfn_dag_node.parent(0))
-    return parent

@@ -14,7 +14,7 @@ from maya import cmds
 # Local imports
 from cmt.test import TestCase
 import node_calculator.core as noca
-from node_calculator import lookup_tables
+from node_calculator import lookup_table
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,7 +29,6 @@ TEST_NODES = [
 IRREGULAR_OPERATORS = [
     "matrix_distance",
 ]
-a, b, c = 0, 0, 0
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,15 +48,15 @@ def _test_condition_op(operator):
     """
 
     def test(self):
-        node_data = lookup_tables.NODE_LOOKUP_TABLE[operator]
+        node_data = lookup_table.NODE_LOOKUP_TABLE[operator]
         condition_value = 1.1
         false_value = 2
 
         # Run noca operation
         bool_operator_func = getattr(noca.Atom, "__{}__".format(operator))
-        condition_node = bool_operator_func(a.tx, condition_value)
-        result = noca.Op.condition(condition_node, b.tx, false_value)
-        c.t = result
+        condition_node = bool_operator_func(self.a.tx, condition_value)
+        result = noca.Op.condition(condition_node, self.b.tx, false_value)
+        self.c.t = result
 
         # Assertions
         self.assertEqual(cmds.nodeType(result.node), node_data.get("node", None))
@@ -65,19 +64,19 @@ def _test_condition_op(operator):
         self.assertEqual(result.operation.get(), node_data.get("operation", None))
 
         self.assertEqual(
-            cmds.listConnections(result.firstTerm.plugs()[0], plugs=True),
+            cmds.listConnections(result.firstTerm.plugs[0], plugs=True),
             ['A.translateX']
         )
         self.assertAlmostEqual(result.secondTerm.get(), condition_value, places=7)
 
         self.assertEqual(result.colorIfFalseR.get(), false_value)
         self.assertEqual(
-            cmds.listConnections(result.colorIfTrueR.plugs()[0], plugs=True),
+            cmds.listConnections(result.colorIfTrueR.plugs[0], plugs=True),
             ['B.translateX']
         )
 
         self.assertEqual(
-            sorted(cmds.listConnections(result.outColorR.plugs()[0], plugs=True)),
+            sorted(cmds.listConnections(result.outColorR.plugs[0], plugs=True)),
             ['C.translateX', 'C.translateY', 'C.translateZ']
         )
 
@@ -96,7 +95,7 @@ def _test_regular_op(operator):
     """
 
     def test(self):
-        node_data = lookup_tables.NODE_LOOKUP_TABLE[operator]
+        node_data = lookup_table.NODE_LOOKUP_TABLE[operator]
 
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
@@ -114,15 +113,15 @@ def _test_regular_op(operator):
             node_inputs = new_node_inputs
 
         possible_inputs = [
-            a.translateX,
-            b.translateX,
-            a.translateY,
-            b.translateY,
-            a.translateZ,
-            b.translateZ,
+            self.a.translateX,
+            self.b.translateX,
+            self.a.translateY,
+            self.b.translateY,
+            self.a.translateZ,
+            self.b.translateZ,
         ]
         true_operator = operator
-        # node_data = lookup_tables.NODE_LOOKUP_TABLE[true_operator]
+        # node_data = lookup_table.NODE_LOOKUP_TABLE[true_operator]
 
         actual_inputs = possible_inputs[0:len(node_inputs)]
 
@@ -133,7 +132,7 @@ def _test_regular_op(operator):
 
         # Run noca operation
         result = noca_operator_func(*actual_inputs)
-        c.t = result
+        self.c.t = result
 
         # Assertions
         self.assertEqual(cmds.nodeType(result.node), node_type)
@@ -141,14 +140,14 @@ def _test_regular_op(operator):
         for node_input, desired_input in zip(node_inputs, actual_inputs):
             if isinstance(node_input, (tuple, list)):
                 node_input = node_input[0]
-            input_plug = noca.Node(result, node_input).plugs()[0]
+            input_plug = noca.Node(result, node_input).plugs[0]
 
             input_plugs = cmds.listConnections(input_plug, plugs=True)
 
-            print(">>>>", desired_input.plugs(), input_plugs)
+            print(">>>>", desired_input.plugs, input_plugs)
             self.assertEqual(
                 input_plugs,
-                desired_input.plugs()
+                desired_input.plugs
             )
 
         # self.assertEqual(result.operation.get(), 2)
@@ -156,21 +155,20 @@ def _test_regular_op(operator):
         # self.assertEqual(result.colorIfFalseR.get(), 2)
 
         # self.assertEqual(
-        #     cmds.listConnections(result.firstTerm.plugs()[0], plugs=True),
+        #     cmds.listConnections(result.firstTerm.plugs[0], plugs=True),
         #     ['A.translateX']
         # )
         # self.assertEqual(
-        #     cmds.listConnections(result.colorIfTrueR.plugs()[0], plugs=True),
+        #     cmds.listConnections(result.colorIfTrueR.plugs[0], plugs=True),
         #     ['B.translateX']
         # )
 
         # self.assertEqual(
-        #     sorted(cmds.listConnections(result.outColorR.plugs()[0], plugs=True)),
+        #     sorted(cmds.listConnections(result.outColorR.plugs[0], plugs=True)),
         #     ['C.translateX', 'C.translateY', 'C.translateZ']
         # )
 
     return test
-
 
 
 class TestOperatorsMeta(type):
@@ -182,7 +180,7 @@ class TestOperatorsMeta(type):
         """
 
         # Add tests for each operator
-        for operator, data in lookup_tables.NODE_LOOKUP_TABLE.iteritems():
+        for operator, data in lookup_table.NODE_LOOKUP_TABLE.iteritems():
 
             # Skip operators that need an individual test
             if operator in IRREGULAR_OPERATORS:
@@ -204,12 +202,9 @@ class TestOperators(TestCase):
     __metaclass__ = TestOperatorsMeta
 
     def setUp(self):
-        global a
-        global b
-        global c
-        a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]))
-        b = noca.Node(cmds.createNode("transform", name=TEST_NODES[1]))
-        c = noca.Node(cmds.createNode("transform", name=TEST_NODES[2]))
+        self.a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]))
+        self.b = noca.Node(cmds.createNode("transform", name=TEST_NODES[1]))
+        self.c = noca.Node(cmds.createNode("transform", name=TEST_NODES[2]))
 
     def tearDown(self):
         cmds.delete(TEST_NODES)

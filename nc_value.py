@@ -18,11 +18,11 @@ Example:
 # Python modules
 import re
 
+# Third party imports
+
 # Local imports
 from . import logger
-reload(logger)
 from . import lookup_table
-reload(lookup_table)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +30,7 @@ reload(lookup_table)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
-log = logger.log
+LOG = logger.log
 
 # This is just to iterate faster. The NcValue-types stay in the globals() even when reloaded.
 # Therefore cleaning globals() by hand so I don't have to restart Maya to clean globals()
@@ -214,7 +214,7 @@ def create_metadata_val_class(class_type):
 
 
 def _concatenate_metadata(operator, input_a, input_b):
-    log.debug("_concatenate_metadata ({}, {}, {})".format(operator, input_a, input_b))
+    LOG.debug("_concatenate_metadata ({}, {}, {})".format(operator, input_a, input_b))
     operator_data = lookup_table.METADATA_CONCATENATION_TABLE[operator]
     operator_symbol = operator_data.get("symbol")
     is_associative = operator_data.get("associative", False)

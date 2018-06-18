@@ -1,5 +1,13 @@
 """
 Unit tests for noca convenience functions
+
+
+
+a1 = noca.Node("A")
+a2 = noca.Node("A", ["tx"])
+a3 = noca.Node("A", ["tx", "ty"])
+b = noca.Node(2)
+c = noca.Node(["A", "B"])
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
