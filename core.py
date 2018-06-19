@@ -136,7 +136,7 @@ Note:
 Example:
     ::
 
-        import node_calculator.core as noca
+        import NodeCalculator.core as noca
 
         a = noca.Node("pCube1")
         b = noca.Node("pCube2")
@@ -210,15 +210,15 @@ except NameError:
 class Node(object):
     """Return instance of appropriate type, based on given args
 
+    Note:
+        Node is an abstract class that returns components of appropriate type
+        that can then be involved in a NodeCalculator calculation.
+
     Args:
         item (bool, int, float, str, list, tuple): Maya node, value, list of nodes, etc.
         attrs (str, list, tuple): String or list of strings that are an attribute on this node
         auto_unravel (bool): Whether or not this instance should be unravelled if possible
         auto_consolidate (bool): Whether or not this instance should be consolidated if possible
-
-    Note:
-        Node is an abstract class that returns components of appropriate type
-        that can then be involved in a NodeCalculator calculation.
 
     Returns:
         NcNode, NcList, NcValue: Instance with given args.
@@ -321,23 +321,6 @@ def create_node(node_type, name=None, **kwargs):
     return noca_node
 
 
-def set_global_auto_consolidate(state):
-    """Set the global auto consolidate state.
-
-    Note:
-        Auto consolidate tries to combine full sets of child attributes into the parent attribute:
-        ["tx", "ty", "tz"] becomes "t".
-
-        Consolidating plugs is preferable: it will make your node graph cleaner and
-        easier to read. However: Using parent plugs can sometimes cause update-issues!
-
-    Args:
-        state (bool): State auto consolidate should be set to
-    """
-    global GLOBAL_AUTO_CONSOLIDATE
-    GLOBAL_AUTO_CONSOLIDATE = state
-
-
 def set_global_auto_unravel(state):
     """Set the global auto unravel state.
 
@@ -356,6 +339,23 @@ def set_global_auto_unravel(state):
     """
     global GLOBAL_AUTO_UNRAVEL
     GLOBAL_AUTO_UNRAVEL = state
+
+
+def set_global_auto_consolidate(state):
+    """Set the global auto consolidate state.
+
+    Note:
+        Auto consolidate tries to combine full sets of child attributes into the parent attribute:
+        ["tx", "ty", "tz"] becomes "t".
+
+        Consolidating plugs is preferable: it will make your node graph cleaner and
+        easier to read. However: Using parent plugs can sometimes cause update-issues!
+
+    Args:
+        state (bool): State auto consolidate should be set to
+    """
+    global GLOBAL_AUTO_CONSOLIDATE
+    GLOBAL_AUTO_CONSOLIDATE = state
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -381,16 +381,16 @@ class OperatorMetaClass(object):
     def condition(condition_node, if_part=False, else_part=True):
         """Set up condition-node.
 
-        Args:
-            condition_node (NcNode): Condition-statement. NcNode is automatically created; see notes!
-            if_part (NcNode, NcAttrs, str, int, float): Value/plug if condition is true
-            else_part (NcNode, NcAttrs, str, int, float): Value/plug if condition is false
-
         Note:
             condition_node must be a NcNode-instance of a Maya condition node.
             This NcNode-object gets automatically created by the overloaded
             comparison-operators of the NcNode-class and should not require manual setup!
             Simply use the usual comparison operators (==, >, <=, etc.) in the first argument.
+
+        Args:
+            condition_node (NcNode): Condition-statement. NcNode is automatically created; see notes!
+            if_part (NcNode, NcAttrs, str, int, float): Value/plug if condition is true
+            else_part (NcNode, NcAttrs, str, int, float): Value/plug if condition is false
 
         Returns:
             NcNode: Instance with condition-node and outColor-attributes
@@ -751,10 +751,12 @@ class OperatorMetaClass(object):
     def choice(*inputs, **kwargs):
         """Create choice-node to switch between various input attributes
 
+        Note:
+            Multi index input seems to also require one 'selector' per index.
+            So we package a copy of the same selector for each input.
+
         Args:
             One or many inputs (any type possible). Optional selector (s=node.attr).
-            Note: Multi index input seems to also require one 'selector' per index. So we package
-            a copy of the same selector for each input
 
         Returns:
             NcNode: Instance with choice-node and output-attribute(s)
@@ -1107,15 +1109,15 @@ class NcBaseNode(NcAtom):
     def __init__(self, auto_unravel=True, auto_consolidate=True):
         """Initialization of any NcBaseNode class.
 
-        Args:
-            auto_unravel (bool): Whether attrs of this instance should be unravelled.
-            auto_consolidate (bool): Whether attrs of this instance should be consolidated.
-
         Note:
             For more detail about auto_unravel & auto_consolidate check
             docString of set_global_auto_consolidate & set_global_auto_unravel!
+
+        Args:
+            auto_unravel (bool): Whether attrs of this instance should be unravelled.
+            auto_consolidate (bool): Whether attrs of this instance should be consolidated.
         """
-        super(NcAtom, self).__init__(self)
+        super(NcAtom, self).__init__()
 
         self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
@@ -1175,11 +1177,11 @@ class NcBaseNode(NcAtom):
     def get_shapes(self, full=False):
         """Convenience method to get shape nodes of self.node
 
-        Args:
-            full (bool): True returns full dag path, False returns shortest dag path
-
         Note:
             Returned MObjects of shapes can can be used directly to create new NcNode instances!
+
+        Args:
+            full (bool): True returns full dag path, False returns shortest dag path
 
         Returns:
             shapes (list): List of MObjects of shapes.
@@ -1239,12 +1241,12 @@ class NcBaseNode(NcAtom):
     def set(self, value):
         """Set or connect the value of a NcNode/NcAttrs-attribute.
 
+        Note:
+            Similar to a cmds.setAttr().
+
         Args:
             value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
                 attribute to this value (=object) or set attribute to this value/array
-
-        Note:
-            Similar to a cmds.setAttr().
         """
         LOG.debug("NcBaseNode set ({})".format(value))
 
@@ -1277,22 +1279,22 @@ class NcBaseNode(NcAtom):
     def set_auto_unravel(self, state):
         """Allows the user to change the auto unravelling state on the fly.
 
-        Args:
-            state (bool): Desired auto unravel state: On/Off
-
         Note:
             For more info about _auto_unravel: Check docString of set_global_auto_unravel
+
+        Args:
+            state (bool): Desired auto unravel state: On/Off
         """
         self.__dict__["_auto_unravel"] = state
 
     def set_auto_consolidate(self, state):
         """Allows the user to change the auto consolidating state on the fly.
 
-        Args:
-            state (bool): Desired auto consolidate state: On/Off
-
         Note:
             For more info about _auto_consolidate: Check docString of set_global_auto_consolidate
+
+        Args:
+            state (bool): Desired auto consolidate state: On/Off
         """
         self.__dict__["_auto_consolidate"] = state
 
@@ -1318,12 +1320,12 @@ class NcBaseNode(NcAtom):
     def _define_add_attr_method(self, attr_type, default_data_type):
         """Closure to add add_XYZ() methods.
 
+        Note:
+            Check docString of _add_all_add_attr_methods.
+
         Args:
             attr_type (str): Name of data type of this attribute: bool, long, short, ...
             default_data_type (str): Either "attributeType" or "dataType". Refer to Maya docs.
-
-        Note:
-            Check docString of _add_all_add_attr_methods.
 
         Returns:
             func (function): Function that will be added to class methods.
@@ -1332,12 +1334,12 @@ class NcBaseNode(NcAtom):
         def func(name, **kwargs):
             """Create an attribute with given name and kwargs
 
+            Note:
+                kwargs are exactly the same as in cmds.addAttr()!
+
             Args:
                 name (str): Name for the new attribute to be created
                 kwargs (dict): User specified attributes to be set for the new attribute
-
-            Note:
-                kwargs are exactly the same as in cmds.addAttr()!
 
             Returns:
                 attr (NcNode): NcNode-instance with the node and new attribute.
@@ -1367,14 +1369,14 @@ class NcBaseNode(NcAtom):
     def add_enum(self, name, enum_name="", cases=None, **kwargs):
         """Create a boolean-attribute for the given attribute
 
+        Note:
+            kwargs are exactly the same as in cmds.addAttr()!
+
         Args:
             name (str): Name for the new attribute to be created
             enum_name (list, str): User-choices for the resulting enum-attribute
             cases (list, str): Overrides enum_name, which I find a horrific name
             kwargs (dict): User specified attributes to be set for the new attribute
-
-        Note:
-            kwargs are exactly the same as in cmds.addAttr()!
 
         Returns:
             attr (NcNode): NcNode-instance with the node and new attribute.
@@ -1401,16 +1403,16 @@ class NcBaseNode(NcAtom):
     ):
         """Convenience method to create a separator-attribute.
 
+        Note:
+            Default name and enum_name are defined by the globals
+            STANDARD_SEPARATOR_NICENAME and STANDARD_SEPARATOR_VALUE!
+            kwargs are exactly the same as in cmds.addAttr()!
+
         Args:
             name (str): Name for the new separator to be created.
             enum_name (list, str): User-choices for the resulting enum-attribute.
             cases (list, str): Overrides enum_name, which I find a horrific name.
             kwargs (dict): User specified attributes to be set for the new attribute.
-
-        Note:
-            Default name and enum_name are defined by the globals
-            STANDARD_SEPARATOR_NICENAME and STANDARD_SEPARATOR_VALUE!
-            kwargs are exactly the same as in cmds.addAttr()!
 
         Returns:
             attr (NcNode): NcNode-instance with the node and new attribute.
@@ -1488,35 +1490,42 @@ class NcBaseNode(NcAtom):
 
         return NcNode(attr)
 
-# TODO: Add docStrings for everything below this comment!
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NcNode
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class NcNode(NcBaseNode):
-    """
+    """NcNodes are linked to Maya nodes and can hold attributes in the form of an NcAttrs-instance.
+
+    Note:
+        Getting attr X from an NcNode that holds attr Y returns only attr X: NcNode.X
+        In contrast: Getting attr X from an NcAttrs that holds attr Y returns: NcAttrs.Y.X
     """
 
     def __init__(self, node, attrs=None, auto_unravel=True, auto_consolidate=True):
-        """
-        NcNode-class constructor
+        """NcNode-class constructor
 
         Note:
             __setattr__ is changed and the usual "self.node = node" results in a loop.
             Therefore attributes need to be set a bit awkwardly; directly via __dict__!
 
+            NcNode uses an MObject as its reference to the Maya node it belongs to.
+            If the Maya node does not exist at instantiation time this will error!
+
         Args:
-            node (str): Represents a Maya node
-            attrs (str): Represents attributes on the node
+            node (str, NcNode, NcAttrs, MObject): Represents a Maya node
+            attrs (str, list, NcAttrs): Represents Maya attributes on the node
+            auto_unravel (bool): Whether attributes should be automatically unravelled.
+                Check set_global_auto_unravel docString for more details.
+            auto_consolidate (bool): Whether attributes should be automatically consolidated.
+                Check set_global_auto_consolidate docString for more details.
 
         Example:
             ::
 
-                a = Node("pCube1")
+                a = Node("pCube1")  # Node invokes NcNode instantiation!
                 b = Node("pCube2.ty")
-                c = b.sx   # This is possible, because the "." (dot) invokes a getattr of
-                             object b. This returns a new Node-object consisting of
-                             b.node (="pCube2") and the given attributes (=["sx"])!
+                b = Node("pCube3", ["ty", "tz", "tx"])
         """
         LOG.info("NcNode __init__ ({}, {}, {}, {})".format(node, attrs, auto_unravel, auto_consolidate))
 
@@ -1558,6 +1567,9 @@ class NcNode(NcBaseNode):
     def __unicode__(self):
         """
         For example for cmds.setAttr(NcNode-instance)
+
+        TODO: NEEDED?! WTF do I do with unicode?!... actually useful or just dumb?
+            Maybe for node AND attrs it can always return the maya node...
         """
         # LOG.debug("NcNode __unicode__ ({}, {})".format(self.node, self.attrs))
 
@@ -1566,16 +1578,27 @@ class NcNode(NcBaseNode):
         return return_value
 
     def __getattr__(self, name):
-        """
-        A getattr of a Node-object returns a NcAttrs-object. Always returns a new
-        NcAttrs-instance, EXCEPT when keyword "attrs" is used to return currently
-        stored NcAttrs of this NcNode instance!
+        """Get a new NcAttrs instance with the MObject this NcNode points to and
+        the requested attribute.
+
+        Note:
+            There are certain keywords that will NOT return a new NcAttrs, but instead:
+            > attrs: Returns currently stored NcAttrs of this NcNode instance
+            > attrs_list: Returns list of stored attributes (list of strings).
+            > node: Returns  (BaseNode)
+            > nodes (NcList)
+            > plugs
+            > items
+
+            A getattr of a Node-object returns a NcAttrs-object, EXCEPT when keyword
+            "attrs" is used to return currently stored NcAttrs of this NcNode instance!
 
         Args:
             name (str): Name of requested attribute
 
         Returns:
-            New Node-object OR itself, if keyword "attrs" was used!
+            return_value (NcAttrs): New NcAttrs instance OR stored NcAttrs
+                                    instance, if keyword "attrs" was used!
 
         Example:
             ::
@@ -1598,8 +1621,12 @@ class NcNode(NcBaseNode):
         return return_value
 
     def __setattr__(self, attribute, value):
-        """
-        Set or connect attribute to the given value.
+        """Set or connect attribute to the given value.
+
+        Args:
+            attribute (str): Name of the attribute to be set
+            value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
+                attribute to this object or set attribute to this value/array
 
         Note:
             setattr is invoked by equal-sign. Does NOT work without attribute given:
@@ -1609,15 +1636,10 @@ class NcNode(NcBaseNode):
                      but here Python calls the assignment operation, NOT setattr.
                      The assignment-operation can't be overridden. Sad but true.
 
-        Args:
-            attribute (str): Name of the attribute to be set
-            value (Node, str, int, float, list, tuple): Connect attribute to this
-                object or set attribute to this value/array
-
         Example:
             ::
 
-                a = Node("pCube1") # Create new Node-object
+                a = Node("pCube1") # Create new NcNode-object
                 a.tx = 7  # Set pCube1.tx to the value 7
                 a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
                 a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
@@ -1627,25 +1649,29 @@ class NcNode(NcBaseNode):
         _unravel_and_set_or_connect_a_to_b(self.__getattr__(attribute), value)
 
     def __setitem__(self, index, value):
-        """
-        Support indexed assignments for NcNode-instances with list-attrs
+        """Set or connect attribute at index to the given value.
+
+        Note:
+            This looks at the list of attributes stored in the NcAttrs of this NcNode.
 
         Args:
             index (int): Index of item to be set
-            value (Node, str, int, float): desired value for the given index
+            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
         """
         LOG.info("NcNode __setitem__ ({}, {})".format(index, value))
         _unravel_and_set_or_connect_a_to_b(self[index], value)
 
     def __getitem__(self, index):
-        """
-        Support indexed lookup for NcNode-instances with list-attrs
+        """Get attribute at index to the given value.
+
+        Note:
+            This looks through the list of attributes stored in the NcAttrs of this NcNode.
 
         Args:
             index (int): Index of desired item
 
         Returns:
-            Object that is at the desired index
+            return_value (NcNode): New NcNode instance, only with attr at index.
         """
         LOG.info("NcNode __getitem__ ({})".format(index))
 
@@ -1660,27 +1686,63 @@ class NcNode(NcBaseNode):
 
     @property
     def attrs(self):
+        """Property to allow easy access to currently stored NcAttrs instance of this NcNode.
+
+        Returns:
+            _held_attrs (NcAttrs): NcAttrs instance that represents Maya attributes.
+        """
         return self._held_attrs
 
     @property
     def attrs_list(self):
+        """Property to allow easy access to list of stored attributes of this NcNode instance.
+
+        Returns:
+            _held_attrs (list): List of strings that represent Maya attributes.
+        """
         return self.attrs.attrs_list
 
     @property
     def node(self):
-        # LOG.info("NcNode @property node")
+        """Property to allow easy access to name of Maya node this NcNode is linked to.
+
+        Returns:
+            value (str): Name of Maya node in the scene.
+        """
         return om_util.get_long_name_of_mobj(self._node_mobj)
 
 
+#TODO: ADD DOCSTRINGS FROM HERE ONWARDS!
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NcAttrs
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class NcAttrs(NcBaseNode):
-    """
+    """NcAttrs are linked to an NcNode instance. NcAttrs represent attributes on Maya nodes.
+
+    Note:
+        Getting attr X from an NcAttrs that holds attr Y returns a "concatenated" attr: NcAttrs.Y.X
+        In contrast: Getting attr X from an NcNode that holds attr Y only returns: NcAttrs.X
     """
 
     def __init__(self, holder_node, attrs):
+        """NcAttrs-class constructor
+
+        Note:
+            __setattr__ is changed and the usual "self.node = node" results in a loop.
+            Therefore attributes need to be set a bit awkwardly; directly via __dict__!
+
+            NcNode uses an MObject as its reference to the Maya node it belongs to.
+            If the Maya node does not exist at instantiation time this will error!
+
+        Args:
+            holder_node (str, NcNode, NcAttrs, MObject): Represents a Maya node
+            attrs (str, list, NcAttrs): Represents Maya attributes on the node
+        """
         LOG.info("NcAttrs __init__ ({})".format(attrs))
+        if not isinstance(holder_node, NcNode):
+            LOG.error("holder_node must be of type NcNode! Given: {}".format(holder_node))
+            return None
+
         self.__dict__["_holder_node"] = holder_node
 
         if isinstance(attrs, basestring):
@@ -1879,18 +1941,16 @@ class NcList(NcAtom):
                 raise StopIteration
             i += 1
 
-        return iter(self.items)
-
     def __reversed__(self):
         return reversed(self.items)
 
     def __copy__(self):
         """ Defines behavior for copy.copy() for a shallow copy of NcLists """
-        return NcList(copy.copy(self.items))
+        yield NcList(copy.copy(self.items))
 
     def __deepcopy__(self, memodict={}):
         """ Defines behavior for copy.deepcopy() for a deep copy of NcLists """
-        return NcList(copy.deepcopy(self.items))
+        yield NcList(copy.deepcopy(self.items))
 
     @property
     def nodes(self):
@@ -1931,6 +1991,9 @@ class NcList(NcAtom):
         self.items.extend(other)
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SET & CONNECT PLUGS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     """
     Generic function to set obj_a to value of obj_b OR connect obj_b into obj_a.
@@ -2290,7 +2353,7 @@ def _create_node_name(operation, *args):
 
     # Combine all name-elements
     name = "_".join([
-        NODE_NAME_PREFIX,  # Common node_calculator-prefix
+        NODE_NAME_PREFIX,  # Common NodeCalculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
         lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
@@ -2699,8 +2762,10 @@ def _unravel_plug(node, attr):
 # Tracer
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Tracer(object):
-    """
-    Class that returns all maya-commands inside the with-statement
+    """Class that returns all Maya commands executed by NodeCalculator formula.
+
+    Note:
+        Any NodeCalculator formula enclosed in a with-statement will be logged.
 
     Example:
         ::
@@ -2711,18 +2776,27 @@ class Tracer(object):
     """
 
     def __init__(self, trace=True, print_trace=False, pprint_trace=False, cheers_love=False):
-        # Allow either note or notes as keywords
+        """Tracer-class constructor.
+
+        Args:
+            trace (bool): Enables/disables tracing.
+            print_trace (bool): Enable printing command stack as a list.
+            pprint_trace (bool): Enable printing command stack as a multi-line string.
+        """
         self.trace = trace
         self.print_trace = print_trace
         self.pprint_trace = pprint_trace
         self.cheers_love = cheers_love
 
     def __enter__(self):
+        """with-statement "start method". Sets up NcAtom class variables for tracing.
+
+        Note:
+            The returned variable is what X in "with noca.Tracer() as X" will be.
+
+        Returns:
+            NcAtom._executed_commands_stack (list): List of all executed commands.
         """
-        with-statement; entering-method
-        Flushes _executed_commands_stack (NcAtom-classAttribute) and starts tracing
-        """
-        # Do not add to stack if unwanted
         NcAtom._is_tracing = bool(self.trace)
 
         NcAtom._initialize_trace_variables()
@@ -2730,46 +2804,67 @@ class Tracer(object):
         return NcAtom._executed_commands_stack
 
     def __exit__(self, exc_type, value, traceback):
-        """
-        with-statement; exit-method
-        Print all executed commands, if desired
-        """
+        """with-statement "end method". Print executed commands during tracing, if desired."""
+
         # Tell the user if he/she wants to print results but they were not traced!
-        if not self.trace and (self.print_trace or self.pprint_trace):
-            print("node_calculator commands were not traced!")
-        else:
-            # Print executed commands as list
-            if self.print_trace:
-                print("node_calculator command-stack:", NcAtom._executed_commands_stack)
-            # Print executed commands on separate lines
-            if self.cheers_love:
-                # A bit of nerd-fun...
-                print("~~~~~~~~~~~~~~~~ The cavalry's here: ~~~~~~~~~~~~~~~~")
-                for item in NcAtom._executed_commands_stack:
-                    print(item)
-                print("~~~~~~ The world could always use more heroes! ~~~~~~")
-            elif self.pprint_trace:
-                print("~~~~~~~~~ node_calculator command-stack: ~~~~~~~~~")
-                for item in NcAtom._executed_commands_stack:
-                    print(item)
-                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        if not self.trace and (self.print_trace or self.pprint_trace or self.cheers_love):
+            LOG.warn("NodeCalculator commands were not traced!")
+            return False
+
+        # Print executed commands as list
+        if self.print_trace:
+            print("NodeCalculator command-stack:", NcAtom._executed_commands_stack)
+
+        # Print executed commands on separate lines
+        if self.cheers_love:
+            # A bit of nerd-fun...
+            print("~~~~~~~~~~~~~~~~ The cavalry's here: ~~~~~~~~~~~~~~~~")
+            for item in NcAtom._executed_commands_stack:
+                print(item)
+            print("~~~~~~ The world could always use more heroes! ~~~~~~")
+
+        elif self.pprint_trace:
+            print("~~~~~~~~~ NodeCalculator command-stack: ~~~~~~~~~")
+            for item in NcAtom._executed_commands_stack:
+                print(item)
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
         NcAtom._is_tracing = False
 
 
 class TracerMObject(object):
-    """
-    This is a bit ugly, but I need to attach metadata (tracer_variable) to MObject instance
+    """Class that allows to store metadata with MObjects, used for the Tracer.
+
+    Note:
+        The Tracer uses variable names for created nodes. This class is an easy
+        and convenient way to store these variable names with the MObject itself.
     """
 
     def __init__(self, node, tracer_variable):
+        """TracerMObject-class constructor.
+
+        Args:
+            node (MObject): Maya MObject
+            tracer_variable (str): Variable name for this MObject.
+        """
         super(TracerMObject, self).__init__()
         self.mobj = om_util.get_mobj(node)
         self._tracer_variable = tracer_variable
 
     @property
     def node(self):
+        """Property to allow easy access to name of Maya node this TracerMObject stores.
+
+        Returns:
+            value (str): Name of Maya node in the scene.
+        """
         return om_util.get_name_of_mobj(self.mobj)
 
     @property
     def tracer_variable(self):
+        """Property to allow easy access to variable name of this TracerMObject.
+
+        Returns:
+            value (str): Variable name the NodeCalculator associated with this MObject.
+        """
         return self._tracer_variable
