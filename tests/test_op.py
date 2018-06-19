@@ -48,12 +48,12 @@ def _test_condition_op(operator):
     """
 
     def test(self):
-        node_data = lookup_table.NODE_LOOKUP_TABLE[operator]
+        node_data = lookup_table.OPERATOR_LOOKUP_TABLE[operator]
         condition_value = 1.1
         false_value = 2
 
         # Run noca operation
-        bool_operator_func = getattr(noca.Atom, "__{}__".format(operator))
+        bool_operator_func = getattr(noca.NcAtom, "__{}__".format(operator))
         condition_node = bool_operator_func(self.a.tx, condition_value)
         result = noca.Op.condition(condition_node, self.b.tx, false_value)
         self.c.t = result
@@ -95,7 +95,7 @@ def _test_regular_op(operator):
     """
 
     def test(self):
-        node_data = lookup_table.NODE_LOOKUP_TABLE[operator]
+        node_data = lookup_table.OPERATOR_LOOKUP_TABLE[operator]
 
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
@@ -121,12 +121,12 @@ def _test_regular_op(operator):
             self.b.translateZ,
         ]
         true_operator = operator
-        # node_data = lookup_table.NODE_LOOKUP_TABLE[true_operator]
+        # node_data = lookup_table.OPERATOR_LOOKUP_TABLE[true_operator]
 
         actual_inputs = possible_inputs[0:len(node_inputs)]
 
         try:
-            noca_operator_func = getattr(noca.Atom, "__{}__".format(true_operator))
+            noca_operator_func = getattr(noca.NcAtom, "__{}__".format(true_operator))
         except AttributeError:
             noca_operator_func = getattr(noca.Op, true_operator)
 
@@ -180,7 +180,7 @@ class TestOperatorsMeta(type):
         """
 
         # Add tests for each operator
-        for operator, data in lookup_table.NODE_LOOKUP_TABLE.iteritems():
+        for operator, data in lookup_table.OPERATOR_LOOKUP_TABLE.iteritems():
 
             # Skip operators that need an individual test
             if operator in IRREGULAR_OPERATORS:
