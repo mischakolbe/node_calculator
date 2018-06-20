@@ -131,7 +131,6 @@ Note:
     - node (BaseNode)
     - nodes (NcList)
     - plugs
-    - items
 
 Example:
     ::
@@ -1527,16 +1526,26 @@ class NcNode(NcBaseNode):
                 b = Node("pCube2.ty")
                 b = Node("pCube3", ["ty", "tz", "tx"])
         """
-        LOG.info("NcNode __init__ ({}, {}, {}, {})".format(node, attrs, auto_unravel, auto_consolidate))
+        LOG.debug(
+            "%s __init__ (%s, %s, %s, %s)" % (
+                self.__class__.__name__, node, attrs, auto_unravel, auto_consolidate
+            )
+        )
 
         # Plain values should be Value-instance!
         if isinstance(node, numbers.Real):
-            LOG.error("Explicit NcNode __init__ with number ({}). Use Node() instead!".format(node))
+            LOG.error(
+                "Explicit NcNode __init__ with number (%s). "
+                "Use Node() instead!" % (node)
+            )
             return None
 
         # Lists or tuples should be NcList!
         if isinstance(node, (list, tuple)):
-            LOG.error("Explicit NcNode __init__ with list or tuple ({}). Use Node() instead!".format(node))
+            LOG.error(
+                "Explicit NcNode __init__ with list or tuple (%s). "
+                "Use Node() instead!" % (node)
+            )
             return None
 
         super(NcNode, self).__init__(auto_unravel, auto_consolidate)
@@ -1583,15 +1592,10 @@ class NcNode(NcBaseNode):
 
         Note:
             There are certain keywords that will NOT return a new NcAttrs, but instead:
-            > attrs: Returns currently stored NcAttrs of this NcNode instance
-            > attrs_list: Returns list of stored attributes (list of strings).
-            > node: Returns  (BaseNode)
-            > nodes (NcList)
-            > plugs
-            > items
-
-            A getattr of a Node-object returns a NcAttrs-object, EXCEPT when keyword
-            "attrs" is used to return currently stored NcAttrs of this NcNode instance!
+            > attrs: Returns currently stored NcAttrs of this NcNode instance.
+            > attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+            > node: Returns name of Maya node in scene (str).
+            > plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
         Args:
             name (str): Name of requested attribute
@@ -1620,11 +1624,11 @@ class NcNode(NcBaseNode):
 
         return return_value
 
-    def __setattr__(self, attribute, value):
+    def __setattr__(self, name, value):
         """Set or connect attribute to the given value.
 
         Args:
-            attribute (str): Name of the attribute to be set
+            name (str): Name of the attribute to be set
             value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
                 attribute to this object or set attribute to this value/array
 
@@ -1644,25 +1648,12 @@ class NcNode(NcBaseNode):
                 a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
                 a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
         """
-        LOG.info("NcNode __setattr__ ({})".format(attribute, value))
+        LOG.info("NcNode __setattr__ ({})".format(name, value))
 
-        _unravel_and_set_or_connect_a_to_b(self.__getattr__(attribute), value)
-
-    def __setitem__(self, index, value):
-        """Set or connect attribute at index to the given value.
-
-        Note:
-            This looks at the list of attributes stored in the NcAttrs of this NcNode.
-
-        Args:
-            index (int): Index of item to be set
-            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
-        """
-        LOG.info("NcNode __setitem__ ({}, {})".format(index, value))
-        _unravel_and_set_or_connect_a_to_b(self[index], value)
+        _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
 
     def __getitem__(self, index):
-        """Get attribute at index to the given value.
+        """Get stored attribute at given index.
 
         Note:
             This looks through the list of attributes stored in the NcAttrs of this NcNode.
@@ -1684,6 +1675,28 @@ class NcNode(NcBaseNode):
 
         return return_value
 
+    def __setitem__(self, index, value):
+        """Set or connect attribute at index to the given value.
+
+        Note:
+            This looks at the list of attributes stored in the NcAttrs of this NcNode.
+
+        Args:
+            index (int): Index of item to be set
+            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
+        """
+        LOG.info("NcNode __setitem__ ({}, {})".format(index, value))
+        _unravel_and_set_or_connect_a_to_b(self[index], value)
+
+    @property
+    def node(self):
+        """Property to allow easy access to name of Maya node this NcNode is linked to.
+
+        Returns:
+            value (str): Name of Maya node in the scene.
+        """
+        return om_util.get_long_name_of_mobj(self._node_mobj)
+
     @property
     def attrs(self):
         """Property to allow easy access to currently stored NcAttrs instance of this NcNode.
@@ -1702,17 +1715,7 @@ class NcNode(NcBaseNode):
         """
         return self.attrs.attrs_list
 
-    @property
-    def node(self):
-        """Property to allow easy access to name of Maya node this NcNode is linked to.
 
-        Returns:
-            value (str): Name of Maya node in the scene.
-        """
-        return om_util.get_long_name_of_mobj(self._node_mobj)
-
-
-#TODO: ADD DOCSTRINGS FROM HERE ONWARDS!
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NcAttrs
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1752,24 +1755,47 @@ class NcAttrs(NcBaseNode):
 
     @property
     def node(self):
-        # LOG.info("NcAttrs @property node")
+        """Property to allow easy access to name of Maya node this NcAttrs is linked to.
+
+        Returns:
+            value (str): Name of Maya node in the scene.
+        """
         return self._holder_node.node
 
     @property
     def attrs(self):
-        # LOG.info("NcAttrs @property attrs")
+        """Property to allow easy access to this NcAttrs instance.
+
+        Returns:
+            self (NcAttrs): NcAttrs instance that represents Maya attributes.
+        """
         return self
 
     @property
     def attrs_list(self):
+        """Property to allow easy access to list of stored attributes of this NcAttrs instance.
+
+        Returns:
+            _held_attrs (list): List of strings that represent Maya attributes.
+        """
         return self._held_attrs_list
 
     @property
     def _node_mobj(self):
+        """Property to allow easy access to the MObject this NcAttrs instance refers to.
+
+        Note:
+            MObject is stored on the NcNode this NcAttrs instance refers to!
+
+        Returns:
+            _node_mobj (MObject): MObject instance of Maya node in the scene
+        """
         return self._holder_node._node_mobj
 
     def __unicode__(self):
         """
+        TODO: FIGURE OUT WHAT TO DO WITH THIS!
+
         For example for cmds.setAttr(NcAttrs-instance)
 
         MAYBE PUT THIS INTO BASENODE CLASS?!
@@ -1795,9 +1821,34 @@ class NcAttrs(NcBaseNode):
         return return_value
 
     def __getattr__(self, name):
-        LOG.info("NcAttrs __getattr__ ({})".format(name))
+        """Get a new NcAttrs instance with the requested attr concatenated onto existing attr(s).
 
-        # Take care of keyword attrs!
+        Note:
+            There are certain keywords that will NOT return a new NcAttrs, but instead:
+            > attrs: Returns currently stored NcAttrs of this NcNode instance.
+            > attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+            > node: Returns name of Maya node in scene (str).
+            > plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
+
+        Args:
+            name (str): Name of requested attribute
+
+        Returns:
+            return_value (NcAttrs): New NcAttrs instance OR self, if keyword "attrs" was used!
+
+        Example:
+            ::
+
+                a = Node("pCube1") # Create new NcNode-object
+                a.tx.ty  # invokes __getattr__ on NcNode "a" first, which returns
+                           an NcAttrs instance with node: "a" & attrs: "tx".
+                           The __getattr__ described here then acts on the retrieved
+                           NcAttrs instance and returns a new NcAttrs instance.
+                           This time with node: "a" & attrs: "tx.ty"!
+        """
+        LOG.debug("%s __getattr__ (%s)" % (self.__class__.__name__, name))
+
+        # Keyword "attrs" is a special case!
         if name == "attrs":
             return self
 
@@ -1812,21 +1863,46 @@ class NcAttrs(NcBaseNode):
         return return_value
 
     def __setattr__(self, name, value):
-        LOG.info("NcAttrs __setattr__ ({})".format(name, value))
+        """Set or connect attribute to the given value.
+
+        Args:
+            name (str): Name of the attribute to be set
+            value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
+                attribute to this object or set attribute to this value/array
+
+        Note:
+            setattr is invoked by equal-sign. Does NOT work without attribute given:
+            a = Node("pCube1.ty")  # Initialize Node-object with attribute given
+            a.ty = 7  # Works fine if attribute is specifically called
+            a = 7  # Does NOT work! It looks like the same operation as above,
+                     but here Python calls the assignment operation, NOT setattr.
+                     The assignment-operation can't be overridden. Sad but true.
+
+        Example:
+            ::
+
+                a = Node("pCube1") # Create new NcNode-object
+                a.tx = 7  # Set pCube1.tx to the value 7
+                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
+                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
+        """
+        LOG.debug("%s __setattr__ (%s, %s)" % (self.__class__.__name__, name, value))
 
         _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
 
     def __getitem__(self, index):
-        """
-        Support indexed lookup for NcAttrs-instances
+        """Get stored attribute at given index.
+
+        Note:
+            This looks through the list of stored attributes.
 
         Args:
             index (int): Index of desired item
 
         Returns:
-            Object that is at the desired index
+            return_value (NcNode): New NcNode instance, solely with attribute at index.
         """
-        LOG.info("NcAttrs __getitem__ ({})".format(index))
+        LOG.debug("%s __getitem__ (%s)" % (self.__class__.__name__, index))
 
         return_value = NcAttrs(
             self._holder_node,
@@ -1836,14 +1912,16 @@ class NcAttrs(NcBaseNode):
         return return_value
 
     def __setitem__(self, index, value):
-        """
-        Support indexed assignments for NcAttrs-instances
+        """Set or connect attribute at given index to the given value.
+
+        Note:
+            This looks at the stored list of attributes.
 
         Args:
             index (int): Index of item to be set
-            value (Node, str, int, float): desired value for the given index
+            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
         """
-        LOG.info("NcAttrs __setitem__ ({}, {})".format(index, value))
+        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
         if isinstance(value, numbers.Real):
             LOG.error(
                 "Can't set NcAttrs item to number {}. Use a Value instance for this!".format(value)
@@ -1856,125 +1934,186 @@ class NcAttrs(NcBaseNode):
 # NcList
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class NcList(NcAtom):
+    """NcList is a list with overloaded operators (due to inheritance from NcAtom).
+
+    Note:
+        NcList has the following keywords:
+        > nodes: Returns all Maya nodes within the list: [node, ...] (list of strings)
+    """
 
     def __init__(self, *args):
-        LOG.info("NcList __init__ ({})".format(args))
+        """NcList-class constructor
+
+        Args:
+            args (NcNode, NcAttrs, NcValue, str, list, tuple): Any number of values
+                that should be stored as an array of values
+        """
+        LOG.debug("%s __init__ (%s)" % (self.__class__.__name__, args))
         super(NcList, self).__init__()
 
         # If arguments are given as a list: Unpack the items from it
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
 
+        # Go through given args and cast them to appropriate type (NcNode, NcValue)
         list_items = []
         for arg in args:
-            if isinstance(arg, (basestring, numbers.Real)):
-                list_items.append(Node(arg))
-            elif isinstance(arg, (NcBaseNode, nc_value.NcValue)):
-                list_items.append(arg)
-            else:
-                LOG.error(
-                    "NcList element {} is of unsupported type {}!".format(arg, type(arg))
-                )
+            converted_arg = self._convert_item_to_nc_instance(arg)
+            list_items.append(converted_arg)
 
-        self.items = list_items
+        self._items = list_items
 
     def __str__(self):
-        """
-        For example for print(NcList-instance)
-        """
-        # LOG.debug("NcList __str__ ({})".format(self.items))
+        """Readable format of NcList instance.
 
-        return "NcList({})".format(self.items)
+        Note:
+            For example invoked by using print(NcList instance) in Maya
+
+        Returns:
+            string (str): String of all NcList _items.
+        """
+        return "NcList({})".format(self._items)
 
     def __repr__(self):
-        """
-        For example for running highlighted NcList-instance
-        """
-        # LOG.debug("NcList __repr__ ({})".format(self.items))
+        """Unambiguous format of NcList instance.
 
-        return str(self.items)
+        Note:
+            For example invoked by running highlighted NcList instance in Maya
+
+        Returns:
+            string (str): String of concatenated class-type, node and attrs.
+        """
+        return "{}({})".format(self.__class__.__name__, self._items)
 
     def __unicode__(self):
         """
+        TODO: FIGURE IT OUT!!!
         For example for running highlighted NcList-instance
         """
-        # LOG.debug("NcList __repr__ ({})".format(self.items))
-
-        return str(self.items)
+        return str(self._items)
 
     def __getitem__(self, index):
-        LOG.info("NcList __getitem__ ({})".format(index))
+        """Get stored item at given index.
 
-        return self.items[index]
+        Note:
+            This looks through the _items list of this NcList instance.
 
-    def __setitem__(self, index, value):
-        LOG.info("NcList __setitem__ ({}, {})".format(index, value))
-
-        self.items[index] = value
-
-    def __len__(self):
-        """
-        Return the length of the NcList.
+        Args:
+            index (int): Index of desired item
 
         Returns:
-            Int: length of stored values list
+            return_value (NcNode, NcValue): Stored item at index.
         """
-        return len(self.items)
+        LOG.debug("%s __getitem__ (%s)" % (self.__class__.__name__, index))
+
+        return self._items[index]
+
+    def __setitem__(self, index, value):
+        """Set or connect attribute at index to the given value.
+
+        Note:
+            This looks at the _items list of this NcList instance
+
+        Args:
+            index (int): Index of item to be set
+            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
+        """
+        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
+
+        self._items[index] = value
+
+    def __len__(self):
+        """Return the length of the NcList.
+
+        Returns:
+            length (int): Number of items stored in this NcList instance.
+        """
+        return len(self._items)
 
     def __delitem__(self, index):
-        del self.items[index]
+        """Delete the item at the given index from this NcList instance.
+
+        Args:
+            index (int): Index of the item to be deleted.
+        """
+        del self._items[index]
 
     def __iter__(self):
-        """
-        Generator to iterate over list of attributes
+        """Generator to iterate over items stored in this NcList instance.
 
         Yields:
-            Next item in list of attributes.
+            Next item in stored list of items.
         """
-        LOG.debug("{} __iter__ ({})".format(self.__class__.__name__), self)
+        LOG.debug("%s __iter__ ()" % (self.__class__.__name__))
 
         i = 0
         while True:
             try:
-                yield self.items[i]
+                yield self._items[i]
             except IndexError:
                 raise StopIteration
             i += 1
 
     def __reversed__(self):
-        return reversed(self.items)
+        """Reverse the list of stored items on this NcList instance.
+
+        Returns:
+            Reversed list of items.
+        """
+        return reversed(self._items)
 
     def __copy__(self):
-        """ Defines behavior for copy.copy() for a shallow copy of NcLists """
-        yield NcList(copy.copy(self.items))
+        """Behavior for copy.copy().
 
-    def __deepcopy__(self, memodict={}):
-        """ Defines behavior for copy.deepcopy() for a deep copy of NcLists """
-        yield NcList(copy.deepcopy(self.items))
+        Returns:
+            copied_list (NcList): Shallow copy of this NcList instance.
+        """
+        return NcList(copy.copy(self._items))
+
+    def __deepcopy__(self):
+        """Behavior for copy.deepcopy().
+
+        Returns:
+            copied_list (NcList): Deep copy of this NcList instance.
+        """
+        return NcList(copy.deepcopy(self._items))
 
     @property
     def nodes(self):
-        """
-        Easy access to sparse list of all nodes within NcList.
-        Useful for example for cmds.hide(my_collection.nodes)
+        """Sparse list of all nodes within NcList instance.
+
+        Note:
+            Only names of Maya nodes are in return_list.
+            Furthermore: It is a sparse list without any duplicate names.
+
+            This can be useful for example for cmds.hide(my_collection.nodes)
+
+        Returns:
+            return_list (list): List of names of Maya nodes stored in this NcList instance.
         """
         return_list = []
-        for item in self.items:
+
+        for item in self._items:
             if isinstance(item, (NcBaseNode)):
                 return_list.append(item.node)
 
-        return list(set(return_list))
+        return_list = list(set(return_list))
+
+        return return_list
 
     def get(self):
-        """
-        Helper function to allow easy access to the value of a Node-attributes.
-        Equivalent to a getAttr.
+        """Get current value of all items within this NcList instance.
+
+        Note:
+            NcNode & NcAttrs instances in list are queried.
+            NcValues are added to return list unaltered.
 
         Returns:
-            Int, Float, List - depending on the "queried" attributes.
+            return_list (list): List of queried values.
+                Can be list of (int, float, list), depending on "queried" attributes!
         """
         return_list = []
-        for item in self.items:
+        for item in self._items:
             if isinstance(item, NcBaseNode):
                 return_list.append(item.get())
             if isinstance(item, numbers.Real):
@@ -1983,14 +2122,65 @@ class NcList(NcAtom):
         return return_list
 
     def append(self, value):
-        self.items.append(value)
+        """Append value to list of items.
+
+        Note:
+            Given value will be converted automatically to appropriate
+            NodeCalculator type before being appended!
+
+        Args:
+            value (NcNode, NcAttrs, str, int, float): New value to be added to list.
+        """
+        converted_value = self._convert_item_to_nc_instance(value)
+        self._items.append(converted_value)
+
+    def insert(self, index, value):
+        """Insert value to list of items at the given index.
+
+        Note:
+            Given value will be converted automatically to appropriate
+            NodeCalculator type before being inserted!
+
+        Args:
+            index (int): Index at which the value should be inserted.
+            value (NcNode, NcAttrs, str, int, float): New value to be inserted into list.
+        """
+        converted_value = self._convert_item_to_nc_instance(value)
+        self._items.insert(index, converted_value)
 
     def extend(self, other):
+        """Extend NcList with another list.
+
+        Args:
+            other (NcList, list): List to be added to the end of this NcList instance.
+        """
         if isinstance(other, NcList):
-            other = other.values
-        self.items.extend(other)
+            other = other._items
+        self._items.extend(other)
 
+    @staticmethod
+    def _convert_item_to_nc_instance(item):
+        """Convert the given item into a NodeCalculator friendly class instance.
 
+        Args:
+            item (NcNode, NcAttrs, str, int, float): Item to be converted into
+                either a NcNode or a NcValue.
+
+        Returns:
+            value (NcNode, NcValue): Given item in the appropriate format.
+        """
+        if isinstance(item, (NcBaseNode, nc_value.NcValue)):
+            return item
+        elif isinstance(item, (basestring, numbers.Real)):
+            return Node(item)
+        else:
+            LOG.error(
+                "%s is of unsupported type %s! "
+                "Can't convert to NcList item!" % (item, type(item))
+            )
+            return None
+
+#TODO: ADD DOCSTRINGS FROM HERE ON!
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SET & CONNECT PLUGS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
