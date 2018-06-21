@@ -40,7 +40,8 @@ for key, value in a.iteritems():
 
 
 class NcValue(object):
-    """
+    """BaseClass inherited by all NcValue-classes created on the fly.
+
     Only exists for inheritance check: isinstance(XYZ, NcValue)
     IntNcValue, FloatNcValue, etc. makes them hard to distinguish
     """

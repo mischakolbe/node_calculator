@@ -2180,13 +2180,12 @@ class NcList(NcAtom):
             )
             return None
 
-#TODO: ADD DOCSTRINGS FROM HERE ON!
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SET & CONNECT PLUGS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
-    """
-    Generic function to set obj_a to value of obj_b OR connect obj_b into obj_a.
+    """Set obj_a to value of obj_b OR connect obj_b into obj_a.
 
     Note:
         Allowed assignments are:
@@ -2194,15 +2193,19 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         Setting 1-D attribute to a 1-D value/attr  # pCube1.tx = 7
         Setting X-D attribute to a 1-D value/attr  # pCube1.t = 7  # same as pCube1.t = [7]*3
         Setting X-D attribute to a X-D value/attr  # pCube1.t = [1, 2, 3]
+        Setting 1-D attribute to a X-D value/attr  # Error: Ambiguous connection!
 
     Args:
-        obj_a (NcNode, str): Needs to be a plug. Either as a NcNode-object or as a string ("node.attr")
-        obj_b (NcNode, int, float, list, tuple, string): Can be a numeric value, a list of values
-            or another plug either in the form of a NcNode-object or as a string ("node.attr")
+        obj_a (NcNode, NcAttrs, str): Needs to be a plug. Either as a
+            NodeCalculator-object or as a string ("node.attr")
+        obj_b (NcNode, NcAttrs, int, float, list, tuple, string): Can be a
+            numeric value, a list of values or another plug either in the form
+            of a NodeCalculator-object or as a string ("node.attr")
     """
-    LOG.info("_unravel_and_set_or_connect_a_to_b ({}, {})".format(obj_a, obj_b))
+    LOG.debug("_unravel_and_set_or_connect_a_to_b (%s, %s)" % (obj_a, obj_b))
 
-    # If both inputs are NcNodes and either has auto_unravel off: Turn it off for both
+    # If both inputs are NcBaseNode instances and either has _auto_unravel off:
+    # Turn it off for both
     if isinstance(obj_a, NcBaseNode) and isinstance(obj_b, NcBaseNode):
         if not obj_a._auto_unravel:
             if obj_b._auto_unravel:
@@ -2221,64 +2224,61 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
                 auto_consolidate=obj_a._auto_consolidate
             )
 
+    # Unravel the given objects into a standard list-form:
+    # Strings become NcNode instances, parent attributes are split up into their
+    # child attributes, etc. This ensures the following setting/connecting can
+    # expect the inputs to be in a consistent form.
     obj_a_unravelled_list = _unravel_item_as_list(obj_a)
     obj_b_unravelled_list = _unravel_item_as_list(obj_b)
 
+    # As described in the docString Note: Input dimensions are crucial.
+    # If they don't match they must either be matched or an error must be thrown!
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
 
+    # A multidimensional connection into a 1D attribute does not make sense!
     if obj_a_dim == 1 and obj_b_dim != 1:
-        # A multidimensional connection into a 1D attribute does not make sense!
         LOG.error(
-            "Ambiguous connection from {}D to {}D: ({}, {})".format(
-                obj_b_dim,
-                obj_a_dim,
-                obj_b_unravelled_list,
-                obj_a_unravelled_list,
+            "Ambiguous connection from %sD to %sD: (%s, %s)" % (
+                obj_b_dim, obj_a_dim, obj_b_unravelled_list, obj_a_unravelled_list
             )
         )
         return False
 
+    # If obj_a and obj_b are higher dimensional but not the same dimension
+    # the connection can't be resolved! 2D -> 3D or 4D -> 2D is ambiguous!
     if obj_a_dim > 1 and obj_b_dim > 1 and obj_a_dim != obj_b_dim:
-        # If obj_a and obj_b are higher dimensional but not the same dimension
-        # the connection can't be resolved! 2D -> 3D or 4D -> 2D is ambiguous!
         LOG.error(
             "Dimension mismatch for connection that can't be resolved! "
-            "From {}D to {}D: ({}, {})".format(
-                obj_b_dim,
-                obj_a_dim,
-                obj_b_unravelled_list,
-                obj_a_unravelled_list,
+            "From %sD to %sD: (%s, %s)" % (
+                obj_b_dim, obj_a_dim, obj_b_unravelled_list, obj_a_unravelled_list
             )
         )
         return False
 
+    # Dimensionality above 3 is most likely not going to be handled reliable; warn user!
     if obj_a_dim > 3:
         LOG.warn(
-            "obj_a {} is {}D; greater than 3D! Many operations only work stable up to 3D!".format(
-                obj_a_unravelled_list,
-                obj_a_dim,
-            )
+            "obj_a %s is %sD; greater than 3D! Many operations only work "
+            "stable up to 3D!" % (obj_a_unravelled_list, obj_a_dim)
         )
     if obj_b_dim > 3:
         LOG.warn(
-            "obj_b {} is {}D; greater than 3D! Many operations only work stable up to 3D!".format(
-                obj_b_unravelled_list,
-                obj_b_dim,
-            )
+            "obj_b %s is %sD; greater than 3D! Many operations only work "
+            "stable up to 3D!" % (obj_b_unravelled_list, obj_b_dim)
         )
 
-    # Match input-dimensions: Both obj_X_matched_list have the same length
-    # This takes care of 1D to XD setting/connecting
+    # Match input-dimensions: Both obj_X_unravelled_list will have the same
+    # length, which takes care of 1D to XD setting/connecting.
     if obj_a_dim != obj_b_dim:
         obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
         LOG.info(
-            "Matched obj_b_unravelled_list {} dimension to obj_a_dim {}!".format(
-                obj_b_unravelled_list,
-                obj_a_dim,
+            "Matched obj_b_unravelled_list %s dimension to obj_a_dim %s!" % (
+                obj_b_unravelled_list, obj_a_dim,
             )
         )
 
+    # If plug consolidation is allowed: Try to do so.
     auto_consolidate_allowed = _is_consolidation_allowed([obj_a, obj_b])
     if GLOBAL_AUTO_CONSOLIDATE and auto_consolidate_allowed:
         consolidated_plugs = _consolidate_plug_pair_to_min_dimension(
@@ -2287,14 +2287,22 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         )
         obj_a_unravelled_list, obj_b_unravelled_list = consolidated_plugs
 
+    # Pass the fully processed inputs to be connected
     _set_or_connect_a_to_b(obj_a_unravelled_list, obj_b_unravelled_list, **kwargs)
 
 
 def _is_consolidation_allowed(inputs):
+    """Check given inputs for any NcBaseNode-instance that is not set to auto consolidate
+
+    Args:
+        inputs (NcNode, NcAttrs, str, int, float, list, tuple): Items to check
+            for a turned off auto-consolidation.
+
+    Returns:
+        value (bool): True, if all given items allow for consolidation.
     """
-    Check given inputs for any NcBaseNode-instance that is not set to auto consolidate
-    """
-    LOG.debug("_is_consolidation_allowed ({})".format(inputs))
+    LOG.debug("_is_consolidation_allowed (%s)" % (inputs))
+
     if not isinstance(inputs, (tuple, list)):
         inputs = [inputs]
 
@@ -2307,9 +2315,23 @@ def _is_consolidation_allowed(inputs):
 
 
 def _consolidate_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
-    LOG.info("_consolidate_plug_pair_to_min_dimension ({}, {})".format(obj_a_list, obj_b_list))
+    """Try to consolidate the given input plugs.
 
-    # A 3D to 3D connection can be 1 connection if both have a parent-attribute!
+    Note:
+        A full set of child attributes can be reduced to their parent attribute:
+        ["tx", "ty", "tz"] becomes ["t"]
+
+    Args:
+        obj_a_list (NcNode, NcAttrs, str, int, float, list, tuple): First item to check.
+        obj_b_list (NcNode, NcAttrs, str, int, float, list, tuple): Second item to check.
+
+    Returns:
+        return_list (list): Consolidated plugs, if consolidation was successful.
+            Otherwise given inputs are returned as a list.
+    """
+    LOG.debug("_consolidate_plug_pair_to_min_dimension (%s, %s)" % (obj_a_list, obj_b_list))
+
+    # A 3D to 3D connection can be 1 connection if both can be  a parent-attribute!
     parent_plug_a = _check_for_parent_attribute(obj_a_list)
     parent_plug_b = _check_for_parent_attribute(obj_b_list)
 
@@ -2322,18 +2344,16 @@ def _consolidate_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
 
 
 def _check_for_parent_attribute(plug_list):
-    """
-    Check whether the given attribute_list can be reduced to a single parent attribute
+    """Check whether the given plug_list can be reduced to a single parent attribute
 
     Args:
-        attribute_list (list): List of attributes: ["node.attribute", ...]
+        plug_list (list): List of plugs: ["node.attribute", ...]
 
     Returns:
-        mplug, None: If parent attribute was found it is returned as an mplug,
-                    otherwise returns None
+        potential_parent_mplug (MPlug, None): If parent attribute was found it
+            is returned as an MPlug instance, otherwise None is returned
     """
-    # Make sure all attributes are unique, so [outputX, outputX, outputZ] doesn't match to output)
-    LOG.info("_check_for_parent_attribute ({})".format(plug_list))
+    LOG.debug("_check_for_parent_attribute (%s)" % (plug_list))
 
     # Initialize variables for a potential parent node & attribute
     potential_parent_mplug = None
@@ -2351,42 +2371,53 @@ def _check_for_parent_attribute(plug_list):
         if not parent_mplug:
             return None
 
-        # The first parent_attr becomes the potential_parent_attr...
+        # The first parent_attr becomes the potential_parent_attr.
         if potential_parent_mplug is None:
             potential_parent_mplug = parent_mplug
-        # ...if any subsequent potential_parent_attr is different to the existing: exit
+        # Break if any subsequent potential_parent_attr is different to the existing
         elif potential_parent_mplug != parent_mplug:
             return None
 
         # If the plug passed all previous tests: Add it to the list
         checked_mplugs.append(mplug)
 
-    # The plug should not be reduced if the list of all checked attributes
-    # does not match the full list of available children attributes!
+    # Given plug_list should not be reduced if the list of all checked attributes
+    # does not match the full list of available children attributes exactly!
     # Example A: [outputX] should not be reduced to [output], since Y & Z are missing!
-    # Example B: [outputX, outputZ, outputY] isn't in the right order and should not be reduced!
+    # Example B: [outputX, outputX, outputZ] has duplicates and should not be reduced!
+    # Example C: [outputX, outputZ, outputY] isn't in the right order and should not be reduced!
     all_child_mplugs = om_util.get_child_mplugs(potential_parent_mplug)
-
     for checked_mplug, child_mplug in itertools.izip_longest(checked_mplugs, all_child_mplugs):
         empty_plug_detected = checked_mplug is None or child_mplug is None
         if empty_plug_detected or checked_mplug != child_mplug:
             return None
 
-    # If it got to this point: It must be a parent_attr
+    # If it got to this point: It must be a valid parent_attr
     return potential_parent_mplug
 
 
 def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
-    LOG.info("_set_or_connect_a_to_b ({}, {}, {})".format(obj_a_list, obj_b_list, kwargs))
+    """Set or connect the first list of inputs to the second list of inputs.
+
+    Args:
+        obj_a_list (list): List of MPlugs to be set or connected into.
+        obj_b_list (list): List of MPlugs, int, float, etc. which obj_a_list
+            items will be set or connected to.
+        kwargs (dict): Arguments used in _traced_set_attr (~ cmds.setAttr)
+
+    Returns:
+        status (bool): Returns False, if setting/connecting was not possible.
+    """
+    LOG.debug("_set_or_connect_a_to_b (%s, %s, %s)" % (obj_a_list, obj_b_list, kwargs))
 
     for obj_a_item, obj_b_item in zip(obj_a_list, obj_b_list):
         # Make sure obj_a_item exists in the Maya scene and get its dimensionality
         if not cmds.objExists(obj_a_item):
-            LOG.error("obj_a_item seems not to be a Maya attr: {}!".format(obj_a_item))
+            LOG.error("obj_a_item seems not to be a Maya attr: %s!" % (obj_a_item))
 
         # If obj_b_item is a simple number...
         if isinstance(obj_b_item, numbers.Real):
-            # # ...set 1-D obj_a_item to 1-D obj_b_item-value.
+            # ...set 1-D obj_a_item to 1-D obj_b_item-value.
             _traced_set_attr(obj_a_item, obj_b_item, **kwargs)
 
         # If obj_b_item is a valid attribute in the Maya scene...
@@ -2394,19 +2425,26 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
             #  ...connect it.
             _traced_connect_attr(obj_b_item, obj_a_item)
 
-        # If obj_b_item didn't match anything; obj_b_item-type is not recognized/supported.
+        # If obj_b_item didn't match anything; obj_b_item-type is not supported.
         else:
-            msg = "Cannot set obj_b_item: {} because of unknown type: {}".format(
-                obj_b_item,
-                type(obj_b_item),
+            LOG.error(
+                "Cannot set obj_b_item: %s because of unknown type: %s" % (
+                    obj_b_item, type(obj_b_item)
+                )
             )
-            LOG.error(msg)
             return False
 
 
 def _is_valid_maya_attr(plug):
-    """ Check if given plug is of an existing Maya attribute """
-    LOG.info("_is_valid_maya_attr ({})".format(plug))
+    """Check if given plug is of an existing Maya attribute.
+
+    Args:
+        plug (str): String of a Maya plug in the scene (node.attr).
+
+    Returns:
+        status (bool): Whether the given plug is an existing plug in the scene.
+    """
+    LOG.debug("_is_valid_maya_attr (%s)" % (plug))
 
     if isinstance(plug, basestring) and "." in plug:
         node, attr = plug.split(".", 1)
@@ -2414,7 +2452,7 @@ def _is_valid_maya_attr(plug):
 
     return False
 
-
+#TODO: Add docStrings from here!
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE, CONNECT AND SETUP NODE
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2737,18 +2775,18 @@ def _traced_get_attr(plug):
 
 
 def _join_kwargs_for_cmds(**kwargs):
-    """
-    Concatenates kwargs for Tracer.
+    """Concatenates Maya command kwargs for Tracer.
 
     Args:
-        kwargs (dict): Keyword-pairs that should be converted to a string
+        kwargs (dict): Key/value-pairs that should be converted to a string.
 
     Returns:
-        str: A string that can be directly fed into the command of the Tracer-stack
+        joined_kwargs (str): String of kwargs&values for the command in the Tracer-stack.
     """
     prepared_kwargs = []
 
     for key, val in kwargs.iteritems():
+        # Add quotes around values that are strings
         if isinstance(val, basestring):
             prepared_kwargs.append("{}='{}'".format(key, val))
         else:
