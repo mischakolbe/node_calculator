@@ -2450,6 +2450,7 @@ def _is_valid_maya_attr(plug):
         node, attr = plug.split(".", 1)
         return cmds.attributeQuery(attr, node=node, exists=True)
 
+    cmds.error("Given string '%s' does not seem to be a Maya attribute!" % (plug))
     return False
 
 #TODO: Add docStrings from here!
@@ -2630,7 +2631,7 @@ def _traced_create_node(node_type, **kwargs):
 
         # Creating a spaceLocator is a special case (no type or parent-flag)
         if node_type == "spaceLocator":
-            joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+            joined_kwargs = _join_cmds_kwargs(**kwargs)
             command = [
                 "{var} = cmds.spaceLocator({kwargs})[0]".format(
                     var=node_variable,
@@ -2643,7 +2644,7 @@ def _traced_create_node(node_type, **kwargs):
             # Add the parent back into the kwargs, if given. A bit nasty, I know...
             if parent:
                 kwargs["parent"] = parent
-            joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+            joined_kwargs = _join_cmds_kwargs(**kwargs)
             command = "{var} = cmds.createNode('{op}', {kwargs})".format(
                 var=node_variable,
                 op=node_type,
@@ -2672,7 +2673,7 @@ def _traced_add_attr(node, **kwargs):
         node = node_variable if node_variable else "'{}'".format(node)
 
         # Join any given kwargs so they can be passed on to the addAttr-command
-        joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+        joined_kwargs = _join_cmds_kwargs(**kwargs)
 
         # Add the addAttr-command to the command stack
         NcAtom._add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
@@ -2703,7 +2704,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
             plug = "'{}'".format(plug)
 
         # Join any given kwargs so they can be passed on to the setAttr-command
-        joined_kwargs = _join_kwargs_for_cmds(**kwargs)
+        joined_kwargs = _join_cmds_kwargs(**kwargs)
 
         # Add the setAttr-command to the command stack
         if value is not None:
@@ -2774,7 +2775,7 @@ def _traced_get_attr(plug):
     return return_value
 
 
-def _join_kwargs_for_cmds(**kwargs):
+def _join_cmds_kwargs(**kwargs):
     """Concatenates Maya command kwargs for Tracer.
 
     Args:
@@ -2832,18 +2833,20 @@ def _traced_connect_attr(plug_a, plug_b):
 # UNRAVELLING INPUTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def _unravel_item_as_list(item):
-    """
-    Return a clean list of values or plugs
+    """Convert input into clean list of values or MPlugs.
 
     Args:
-        input_val (int, float, list, Node): input to be unravelled and returned as list
+        item (NcNode, NcAttrs, NcList, int, float, list, str): input to be
+            unravelled and returned as list.
 
     Returns:
-        list with values and (direct, ie all 1D-) plugs
+        unravelled_item (list): List consistent of values or MPlugs
     """
-    LOG.info("_unravel_item_as_list ({})".format(item))
+    LOG.debug("_unravel_item_as_list (%s)" % (item))
+
     unravelled_item = _unravel_item(item)
 
+    # The returned value MUST be a list!
     if not isinstance(unravelled_item, list):
         unravelled_item = [unravelled_item]
 
@@ -2851,34 +2854,23 @@ def _unravel_item_as_list(item):
 
 
 def _unravel_item(item):
-    """
-    Return clean plugs or values that can be set/connected by maya
+    """Turn input into MPlugs or values that can be set/connected by Maya.
 
     Note:
-        3D plugs become list of 1D-plugs, Nodes are returned as plugs.
+        The items of a list are all unravelled as well!
+        Parent plug becomes list of child plugs: "t" -> ["tx", "ty", "tz"]
 
     Args:
-        input_val (int, float, list, set, Node, str): input to be unravelled/cleaned
+        item (NcList, NcNode, NcAttrs, NcValue, list, tuple, str, numbers):
+            input to be unravelled/cleaned.
 
     Returns:
-        int, str, list: Clean plugs or values
-
-
-
-    Specifically supported types for item:
-    - NcList
-    - NcNode
-    - NcAttrs
-    - list, tuple
-    - basestring
-    - numbers
-    - metadata variables
+        value (MPlug, NcValue, int, float, list): MPlug or value
     """
-
-    LOG.info("_unravel_item ({})".format(item))
+    LOG.debug("_unravel_item (%s)" % (item))
 
     if isinstance(item, NcList):
-        return _unravel_collection(item)
+        return _unravel_nc_list(item)
 
     elif isinstance(item, NcBaseNode):
         return _unravel_base_node_instance(item)
@@ -2894,91 +2886,120 @@ def _unravel_item(item):
 
     else:
         LOG.error(
-            "_unravel_item can't unravel {} of type {}".format(item, type(item))
+            "_unravel_item can't unravel %s of type %s" % (item, type(item))
         )
 
 
-def _unravel_collection(collection_instance):
-    LOG.info("_unravel_collection ({})".format(collection_instance))
+def _unravel_nc_list(nc_list):
+    """Unravel NcList instance; get value or MPlug of its NcList-items.
 
-    # A NcList is basically just a list, so redirect to _unravel_list
-    return _unravel_list(collection_instance.values)
+    Args:
+        nc_list (NcList): NcList to be unravelled.
 
+    Returns:
+        value (list): List of unravelled NcList-items.
+    """
+    LOG.debug("_unravel_nc_list (%s)" % (nc_list))
 
-def _unravel_base_node_instance(base_node_instance):
-    LOG.info("_unravel_base_node_instance ({})".format(base_node_instance))
-
-    if len(base_node_instance.attrs_list) == 0:
-        return_value = base_node_instance.node
-    elif len(base_node_instance.attrs_list) == 1:
-        if GLOBAL_AUTO_UNRAVEL and base_node_instance._auto_unravel:
-            return_value = _unravel_plug(base_node_instance.node, base_node_instance.attrs_list[0])
-        else:
-            return_value = om_util.get_mplug_of_node_and_attr(
-                base_node_instance.node,
-                base_node_instance.attrs_list[0]
-            )
-    else:
-        return_value = [
-            "{}.{}".format(base_node_instance.node, attr) for attr in base_node_instance.attrs_list
-        ]
-
-    return return_value
+    # An NcList is basically just a list; redirect to _unravel_list
+    return _unravel_list(nc_list._items)
 
 
 def _unravel_list(list_instance):
-    LOG.info("_unravel_list ({})".format(list_instance))
+    """Unravel list instance; get value or MPlug of its items.
+
+    Args:
+        list_instance (list, tuple): list to be unravelled.
+
+    Returns:
+        unravelled_list (list): List of unravelled items.
+    """
+    LOG.debug("_unravel_list (%s)" % (list_instance))
 
     unravelled_list = []
+
     for item in list_instance:
         unravelled_item = _unravel_item(item)
-
         unravelled_list.append(unravelled_item)
 
     return unravelled_list
 
 
-def _unravel_str(str_instance):
-    """
-    XXX
+def _unravel_base_node_instance(base_node_instance):
+    """Unravel NcBaseNode instance; get name of node or MPlug of Maya attribute
+    it refers to.
 
     Args:
-        str_instance (str): XXX
+        base_node_instance (NcNode, NcAttrs): Instance to find Mplug for.
 
     Returns:
-        XXX: XXX
+        return_value (MPlug, str): MPlug of the Maya attribute the given
+            NcNode/NcAttrs refers to or name of node, if no attrs are defined.
     """
-    LOG.info("_unravel_str ({})".format(str_instance))
+    LOG.debug("_unravel_base_node_instance (%s)" % (base_node_instance))
 
-    # Since a string most likely indicates a maya node or attribute:
-    # Try to split it and unravel plug
-    split_elements = str_instance.split(".", 1)
-    if len(split_elements) != 2:
-        cmds.error(
-            "The given string {} does not seem to be a Maya attribute!".format(
-                str_instance
+    # If there are no attributes specified on the given NcNode/NcAttrs: return node name
+    if len(base_node_instance.attrs_list) == 0:
+        return_value = base_node_instance.node
+    # If a single attribute is defined; try to unravel it into child attributes (if they exist)
+    elif len(base_node_instance.attrs_list) == 1:
+        # If unravelling is allowed: Try to unravel plug...
+        if GLOBAL_AUTO_UNRAVEL and base_node_instance._auto_unravel:
+            return_value = _unravel_plug(base_node_instance.node, base_node_instance.attrs_list[0])
+        # ...otherwise get MPlug of given attribute directly.
+        else:
+            return_value = om_util.get_mplug_of_node_and_attr(
+                base_node_instance.node,
+                base_node_instance.attrs_list[0]
             )
-        )
-    node, attr = split_elements
+    # If multiple attributes are defined; Return list of unravelled plugs
+    else:
+        return_value = [
+            _unravel_plug(base_node_instance.node, attr) for attr in base_node_instance.attrs_list
+        ]
+
+    return return_value
+
+
+def _unravel_str(str_instance):
+    """Convert name of a Maya plug into an MPlug.
+
+    Args:
+        str_instance (str): Name of the plug; "node.attr"
+
+    Returns:
+        return_value (MPlug, None): MPlug of the Maya attribute, None if given
+            string doesn't refer to a valid Maya plug in the scene.
+    """
+    LOG.debug("_unravel_str (%s)" % (str_instance))
+
+    if not _is_valid_maya_attr(str_instance):
+        return None
+
+    node, attr = str_instance.split(".", 1)
     return _unravel_plug(node, attr)
 
 
 def _unravel_plug(node, attr):
-    """
-    Try to break up a parent-attribute into its children-attributes:
-    .t -> [tx, ty, tz]
+    """Convert Maya node/attribute combination into an MPlug.
 
-    There is probably going to be an issue with multi-index attributes
-    # This is necessary because attributeQuery doesn't recognize input3D[0].input3Dx, etc.
-    # It only recognizes input3D and returns [input3Dx, input3Dy, input3Dz].
-    # Didn't manage to query indexed attrs properly ~.~
-    # Since objExists was already run it is probably safe(ish) to ignore...
+    Note:
+        Tries to break up a parent attribute into its child attributes:
+        .t -> [tx, ty, tz]
+
+    Args:
+        node (str): Name of the Maya node
+        attr (str): Name of the attribute on the Maya node
+
+    Returns:
+        return_value (MPlug, list): MPlug of the Maya attribute, list of MPlugs
+            if a parent attribute was unravelled to its child attributes.
     """
-    LOG.info("_unravel_plug ({}, {})".format(node, attr))
+    LOG.debug("_unravel_plug (%s, %s)" % (node, attr))
 
     return_value = om_util.get_mplug_of_node_and_attr(node, attr)
 
-    # Check if the found mplug has child attributes
+    # Try to unravel the found MPlug into child attributes
     child_plugs = om_util.get_child_mplugs(return_value)
     if child_plugs:
         return_value = [child_plug for child_plug in child_plugs]

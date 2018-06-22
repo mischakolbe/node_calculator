@@ -23,7 +23,7 @@ DN_MIN_MAX_OPERATORS = [
     # "abs_min_abs", "abs_max_abs",
 ]
 
-# All attribute types that can be created by the node_calculator and their default creation values
+# All attribute types that can be created by the NodeCalculator and their default creation values
 DEFAULT_ATTR_FLAGS = {
     # General settings - Applies to ALL attribute types!
     "keyable": True,
@@ -163,7 +163,7 @@ ATTR_TYPES = {
 }
 
 
-# All metadata concatenation strings
+# All NcValue concatenation strings
 METADATA_CONCATENATION_TABLE = {
     "add": {
         "symbol": "+",
@@ -210,31 +210,25 @@ OPERATOR_LOOKUP_TABLE = {}
 # OPERATORS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class OperatorLookupTableMetaClass(object):
-    """
-    Base class for node_calculator operators: Everything that goes beyond basic operators (+-*/)
-
-    A meta-class was used, because many methods of this class are created on the fly
-    in the __init__ method. First I simply instantiated the class, but a metaclass
-    is more elegant (thanks, @sbi!).
+    """Base class for NodeCalculator operators:
+    Everything that goes beyond basic operators (+-*/)
 
     Note:
-        Instead of adding each dnMath/dnMinMax/.. operator separately they're
-        created on the fly via a closure!
+        A meta-class was used, because many methods of this class are created
+        on the fly in the __init__ method (possibly even with closures).
     """
 
     def __init__(self, name, bases, body):
-        """
-        Operator-class constructor
+        """Operator-class constructor
 
         Note:
             name, bases, body are necessary for metaClass to work properly
         """
-        # Initialize the OPERATOR_LOOKUP_TABLE_dictionary with all available operations
+        # Initialize the OPERATOR_LOOKUP_TABLE_dictionary
         self._initialize_operator_lookup_table()
 
     def _initialize_operator_lookup_table(self):
-        """
-        Fill the global OPERATOR_LOOKUP_TABLE-dictionary with all available operations
+        """Fill OPERATOR_LOOKUP_TABLE-dictionary with all available operations.
 
         Note:
             OPERATOR_LOOKUP_TABLE is a dict that holds the data for each available operation:
@@ -409,7 +403,7 @@ class OperatorLookupTableMetaClass(object):
                 ],
                 # The condition node is a special case!
                 # It gets created during the magic-method-comparison and fully connected after
-                # being passed on to the cond()-method in this OperatorMetaClass
+                # being passed on to the condition()-method in this OperatorMetaClass
                 "output": [
                     None
                 ],
@@ -486,5 +480,5 @@ class OperatorLookupTableMetaClass(object):
 
 
 class OperatorLookupTable(object):
-    """ Create OPERATOR_LOOKUP_TABLE from OperatorLookupTableMetaClass """
+    """Create OPERATOR_LOOKUP_TABLE from OperatorLookupTableMetaClass"""
     __metaclass__ = OperatorLookupTableMetaClass
