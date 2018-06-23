@@ -104,6 +104,20 @@ Supported operations:
 
 
 Note:
+    In any comment/docString of the NodeCalculator I try to adhere to the convention:
+    * node: Unique name of a Maya node in the scene (dagPath only if non-unique name)
+    * attr/attribute: Attribute on a Maya node in the scene
+    * plug: Combination of node and attribute; node.attr
+
+    NcNode and NcAttrs instances provide these keywords (DO NOT USE AS ATTR NAMES!):
+    * attrs: Returns currently stored NcAttrs of this NcNode instance.
+    * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+    * node: Returns name of Maya node in scene (str).
+    * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
+
+    NcList instances provide these keywords:
+    * nodes: Returns all Maya nodes within the list: [node, ...] (list of strings)
+
     min/max operations temporary unavailable, due to broken dnMinMax-node:
         .. code-block:: python
 
@@ -124,13 +138,6 @@ Note:
 
             # abs_max_abs
             Op.abs_max_abs(*attrs)  # Any number of inputs possible
-
-    Keywords (DO NOT USE AS ATTRIBUTE NAMES!):
-    - attrs
-    - attrs_list
-    - node (BaseNode)
-    - nodes (NcList)
-    - plugs
 
 Example:
     ::
@@ -165,10 +172,6 @@ from . import logger
 from . import lookup_table
 from . import om_util
 from . import nc_value
-reload(logger)
-reload(lookup_table)
-reload(om_util)
-reload(nc_value)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -205,7 +208,24 @@ try:
 except NameError:
     basestring = str
 
+try:
+    reload
+except NameError:
+    from importlib import reload
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# RELOAD MODULES (useful for dev work!)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+reload(logger)
+reload(lookup_table)
+reload(om_util)
+reload(nc_value)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BASIC FUNCTIONALITY
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Node(object):
     """Return instance of appropriate type, based on given args
 
@@ -232,26 +252,26 @@ class Node(object):
 
     def __new__(cls, item, attrs=None, auto_unravel=True, auto_consolidate=True, *args, **kwargs):
         if args:
-            LOG.warn("unrecognized args: {}".format(args))
+            LOG.warn("unrecognized args: %s" % (args))
         if kwargs:
-            LOG.warn("unrecognized kwargs: {}".format(kwargs))
+            LOG.warn("unrecognized kwargs: %s" % (kwargs))
 
         # Redirect plain values right away to a nc_value
         if isinstance(item, numbers.Real):
-            LOG.info("Node: Redirecting to NcValue({})".format(item))
+            LOG.info("Node: Redirecting to NcValue(%s)" % (item))
             return nc_value.value(item)
 
         # Redirect lists or tuples right away to a NcList
         if isinstance(item, (list, tuple)):
-            LOG.info("Node: Redirecting to NcList({})".format(item))
+            LOG.info("Node: Redirecting to NcList(%s)" % (item))
             return NcList(item)
 
         # Redirect NcAttrs right away to a new NcNode
         if isinstance(item, NcAttrs):
-            LOG.info("Node: Redirecting to NcNode({})".format(item))
+            LOG.info("Node: Redirecting to NcNode(%s)" % (item))
             return NcNode(item._node_mobj, item, item._auto_unravel, item._auto_consolidate)
 
-        LOG.info("Node: Redirecting to NcNode({})".format(item))
+        LOG.info("Node: Redirecting to NcNode(%s)" % (item))
         return NcNode(item, attrs, auto_unravel, auto_consolidate)
 
     def __init__(self, *args, **kwargs):
@@ -403,9 +423,9 @@ class OperatorMetaClass(object):
         # Make sure condition_node is of expected Node-type!
         # condition_node was created during comparison of NcNode-object(s)
         if not isinstance(condition_node, NcNode):
-            LOG.error("{0} isn't NcNode-instance.".format(condition_node))
+            LOG.error("%s isn't NcNode-instance." % (condition_node))
         if cmds.objectType(condition_node.node) != "condition":
-            LOG.error("{0} isn't of type condition.".format(condition_node))
+            LOG.error("%s isn't of type condition." % (condition_node))
 
         condition_inputs = [
             ["colorIfTrueR", "colorIfTrueG", "colorIfTrueB"],
@@ -810,6 +830,8 @@ class NcAtom(object):
         Example:
             >>> + Node("pCube1.ty")
         """
+        LOG.debug("%s __pos__ (%s)" % (self.__class__.__name__, self))
+
         pass
 
     def __neg__(self):
@@ -818,6 +840,8 @@ class NcAtom(object):
         Example:
             >>> - Node("pCube1.ty")
         """
+        LOG.debug("%s __neg__ (%s)" % (self.__class__.__name__, self))
+
         result = self * -1
         return result
 
@@ -827,7 +851,7 @@ class NcAtom(object):
         Example:
             >>> Node("pCube1.ty") + 4
         """
-        LOG.info("NcAtom __add__ ({}, {})".format(self, other))
+        LOG.debug("%s __add__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("add", self, other)
 
@@ -840,7 +864,7 @@ class NcAtom(object):
         Example:
             >>> 4 + Node("pCube1.ty")
         """
-        LOG.info("NcAtom __radd__ ({}, {})".format(self, other))
+        LOG.debug("%s __radd__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("add", other, self)
 
@@ -850,7 +874,7 @@ class NcAtom(object):
         Example:
             >>> Node("pCube1.ty") - 4
         """
-        LOG.info("NcAtom __sub__ ({}, {})".format(self, other))
+        LOG.debug("%s __sub__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("sub", self, other)
 
@@ -863,7 +887,7 @@ class NcAtom(object):
         Example:
             >>> 4 - Node("pCube1.ty")
         """
-        LOG.info("NcAtom __rsub__ ({}, {})".format(self, other))
+        LOG.debug("%s __rsub__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("sub", other, self)
 
@@ -873,7 +897,7 @@ class NcAtom(object):
         Example:
             >>> Node("pCube1.ty") * 4
         """
-        LOG.info("NcAtom __mul__ ({}, {})".format(self, other))
+        LOG.debug("%s __mul__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("mul", self, other)
 
@@ -886,7 +910,7 @@ class NcAtom(object):
         Example:
             >>> 4 * Node("pCube1.ty")
         """
-        LOG.info("NcAtom __rmul__ ({}, {})".format(self, other))
+        LOG.debug("%s __rmul__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("mul", other, self)
 
@@ -896,7 +920,7 @@ class NcAtom(object):
         Example:
             >>> Node("pCube1.ty") / 4
         """
-        LOG.info("NcAtom __div__ ({}, {})".format(self, other))
+        LOG.debug("%s __div__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("div", self, other)
 
@@ -909,7 +933,7 @@ class NcAtom(object):
         Example:
             >>> 4 / Node("pCube1.ty")
         """
-        LOG.info("NcAtom __rdiv__ ({}, {})".format(self, other))
+        LOG.debug("%s __rdiv__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("div", other, self)
 
@@ -919,7 +943,7 @@ class NcAtom(object):
         Example:
             >>> Node("pCube1.ty") ** 4
         """
-        LOG.info("NcAtom __pow__ ({}, {})".format(self, other))
+        LOG.debug("%s __pow__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return _create_and_connect_node("pow", self, other)
 
@@ -929,7 +953,7 @@ class NcAtom(object):
         Returns:
             NcNode-instance of a newly created Maya condition-node
         """
-        LOG.info("NcAtom __eq__ ({}, {})".format(self, other))
+        LOG.debug("%s __eq__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return self._compare(other, "eq")
 
@@ -939,7 +963,7 @@ class NcAtom(object):
         Returns:
             NcNode-instance of a newly created Maya condition-node
         """
-        LOG.info("NcAtom __ne__ ({}, {})".format(self, other))
+        LOG.debug("%s __ne__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return self._compare(other, "ne")
 
@@ -949,7 +973,7 @@ class NcAtom(object):
         Returns:
             NcNode-instance of a newly created Maya condition-node
         """
-        LOG.info("NcAtom __gt__ ({}, {})".format(self, other))
+        LOG.debug("%s __gt__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return self._compare(other, "gt")
 
@@ -959,7 +983,7 @@ class NcAtom(object):
         Returns:
             NcNode-instance of a newly created Maya condition-node
         """
-        LOG.info("NcAtom __ge__ ({}, {})".format(self, other))
+        LOG.debug("%s __ge__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return self._compare(other, "ge")
 
@@ -969,7 +993,7 @@ class NcAtom(object):
         Returns:
             NcNode-instance of a newly created Maya condition-node
         """
-        LOG.info("NcAtom __lt__ ({}, {})".format(self, other))
+        LOG.debug("%s __lt__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return self._compare(other, "lt")
 
@@ -979,7 +1003,7 @@ class NcAtom(object):
         Returns:
             NcNode-instance of a newly created Maya condition-node
         """
-        LOG.info("NcAtom __le__ ({}, {})".format(self, other))
+        LOG.debug("%s __le__ (%s, %s)" % (self.__class__.__name__, self, other))
 
         return self._compare(other, "le")
 
@@ -1163,7 +1187,7 @@ class NcBaseNode(NcAtom):
         Yields:
             Node (NcNode): Next item in list of attributes.
         """
-        LOG.debug("{} __iter__ ({})".format(self.__class__.__name__), self)
+        LOG.debug("%s __iter__ (%s)" % (self.__class__.__name__), self)
 
         i = 0
         while True:
@@ -1217,12 +1241,12 @@ class NcBaseNode(NcAtom):
         """Get the value of a NcNode/NcAttrs-attribute.
 
         Note:
-            Similar to a cmds.getAttr().
+            Works similar to a cmds.getAttr().
 
         Returns:
             return_value (int, float, list): Value of the queried attribute.
         """
-        LOG.info("NcBaseNode get ({})".format(self))
+        LOG.debug("%s get (%s)" % (self.__class__.__name__, self))
 
         if len(self.attrs_list) == 1:
             return_value = _traced_get_attr("{}.{}".format(self.node, self.attrs_list[0]))
@@ -1233,7 +1257,7 @@ class NcBaseNode(NcAtom):
             ])
             return return_value
         else:
-            LOG.warn("No attribute exists on {}! Returned None".format(self))
+            LOG.warn("No attribute exists on %s! Returned None" % (self))
 
             return None
 
@@ -1247,7 +1271,7 @@ class NcBaseNode(NcAtom):
             value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
                 attribute to this value (=object) or set attribute to this value/array
         """
-        LOG.debug("NcBaseNode set ({})".format(value))
+        LOG.debug("%s set (%s)" % (self.__class__.__name__, value))
 
         _unravel_and_set_or_connect_a_to_b(self, value)
 
@@ -1270,8 +1294,8 @@ class NcBaseNode(NcAtom):
             return pm.PyNode(self.plugs[0])
 
         LOG.error(
-            "Tried to create PyNode from NcNode with multiple attributes: {} "
-            "PyNode only supports node or single attributes!".format(self)
+            "Tried to create PyNode from NcNode with multiple attributes: %s "
+            "PyNode only supports node or single attributes!" % (self)
         )
         return None
 
@@ -1445,21 +1469,21 @@ class NcBaseNode(NcAtom):
         # Replace spaces in name not to cause Maya-warnings
         attr_name = attr_name.replace(' ', '_')
 
-        # Check whether attribute already exists. If so; return early!
-        attr = "{}.{}".format(self.node, attr_name)
-        if cmds.objExists(attr):
-            LOG.warn("Attribute {} already existed!".format(attr))
+        # Check whether attribute already exists. If so; return it directly!
+        plug = "{}.{}".format(self.node, attr_name)
+        if cmds.objExists(plug):
+            LOG.warn("Attribute %s already existed!" % (plug))
             return self.__getattr__(attr_name)
 
         # Make a copy of the default addAttr command flags
         attr_variables = lookup_table.DEFAULT_ATTR_FLAGS.copy()
-        LOG.debug("Copied default attr_variables: {}".format(attr_variables))
+        LOG.debug("Copied default attr_variables: %s" % (attr_variables))
 
         # Add the attr variable into the dictionary
         attr_variables["longName"] = attr_name
         # Override default values with kwargs
         attr_variables.update(kwargs)
-        LOG.debug("Added custom attr_variables: {}".format(attr_variables))
+        LOG.debug("Added custom attr_variables: %s" % (attr_variables))
 
         # Extract attributes that need to be set via setAttr-command
         set_attr_values = {
@@ -1467,8 +1491,8 @@ class NcBaseNode(NcAtom):
             "lock": attr_variables.pop("lock", None),
         }
         attr_value = attr_variables.pop("value", None)
-        LOG.debug("Extracted set_attr-variables from attr_variables: {}".format(attr_variables))
-        LOG.debug("set_attr-variables: {}".format(set_attr_values))
+        LOG.debug("Extracted set_attr-variables from attr_variables: %s" % (attr_variables))
+        LOG.debug("set_attr-variables: %s" % (set_attr_values))
 
         # Add the attribute
         _traced_add_attr(self.node, **attr_variables)
@@ -1478,16 +1502,16 @@ class NcBaseNode(NcAtom):
             key: val for (key, val) in set_attr_values.iteritems()
             if val is not None
         }
-        LOG.debug("Pruned set_attr-variables: {}".format(set_attr_values))
+        LOG.debug("Pruned set_attr-variables: %s" % (set_attr_values))
 
         # If there is no value to be set; set any attribute flags directly
         if attr_value is None:
-            _traced_set_attr(attr, **set_attr_values)
+            _traced_set_attr(plug, **set_attr_values)
         else:
             # If a value is given; use the set_or_connect function
-            _unravel_and_set_or_connect_a_to_b(attr, attr_value, **set_attr_values)
+            _unravel_and_set_or_connect_a_to_b(plug, attr_value, **set_attr_values)
 
-        return NcNode(attr)
+        return NcNode(plug)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1519,7 +1543,11 @@ class NcNode(NcBaseNode):
             auto_consolidate (bool): Whether attributes should be automatically consolidated.
                 Check set_global_auto_consolidate docString for more details.
 
-        Example:
+        Attributes:
+            _node_mobj (MObject): Reference to Maya node.
+            _held_attrs (NcAttrs): NcAttrs instance that defines the attributes.
+
+        Examples:
             ::
 
                 a = Node("pCube1")  # Node invokes NcNode instantiation!
@@ -1556,7 +1584,7 @@ class NcNode(NcBaseNode):
                 attrs = node.attrs
             # Initialization with "object.attrs" string
             elif "." in node:
-                node, attrs = node.split(".", 1)
+                node, attrs = _split_plug_into_node_and_attr(node)
             else:
                 attrs = []
 
@@ -1580,8 +1608,6 @@ class NcNode(NcBaseNode):
         TODO: NEEDED?! WTF do I do with unicode?!... actually useful or just dumb?
             Maybe for node AND attrs it can always return the maya node...
         """
-        # LOG.debug("NcNode __unicode__ ({}, {})".format(self.node, self.attrs))
-
         return_value = self.node
 
         return return_value
@@ -1592,10 +1618,10 @@ class NcNode(NcBaseNode):
 
         Note:
             There are certain keywords that will NOT return a new NcAttrs, but instead:
-            > attrs: Returns currently stored NcAttrs of this NcNode instance.
-            > attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
-            > node: Returns name of Maya node in scene (str).
-            > plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
+            * attrs: Returns currently stored NcAttrs of this NcNode instance.
+            * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+            * node: Returns name of Maya node in scene (str).
+            * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
         Args:
             name (str): Name of requested attribute
@@ -1611,7 +1637,7 @@ class NcNode(NcBaseNode):
                 a.tx  # invokes __getattr__ and returns a new Node-object.
                         It's the same as typing Node("a.tx")
         """
-        LOG.info("NcNode __getattr__ ({})".format(name))
+        LOG.debug("%s __getattr__ (%s)" % (self.__class__.__name__, name))
 
         # Take care of keyword attrs!
         if name == "attrs":
@@ -1648,7 +1674,7 @@ class NcNode(NcBaseNode):
                 a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
                 a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
         """
-        LOG.info("NcNode __setattr__ ({})".format(name, value))
+        LOG.debug("%s __setattr__ (%s, %s)" % (self.__class__.__name__, name, value))
 
         _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
 
@@ -1664,7 +1690,7 @@ class NcNode(NcBaseNode):
         Returns:
             return_value (NcNode): New NcNode instance, only with attr at index.
         """
-        LOG.info("NcNode __getitem__ ({})".format(index))
+        LOG.debug("%s __getitem__ (%s)" % (self.__class__.__name__, index))
 
         return_value = NcNode(
             self._node_mobj,
@@ -1685,7 +1711,8 @@ class NcNode(NcBaseNode):
             index (int): Index of item to be set
             value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
         """
-        LOG.info("NcNode __setitem__ ({}, {})".format(index, value))
+        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
+
         _unravel_and_set_or_connect_a_to_b(self[index], value)
 
     @property
@@ -1740,10 +1767,16 @@ class NcAttrs(NcBaseNode):
         Args:
             holder_node (str, NcNode, NcAttrs, MObject): Represents a Maya node
             attrs (str, list, NcAttrs): Represents Maya attributes on the node
+
+
+        Attributes:
+            _holder_node (NcNode): Reference to NcNode instance this NcAttrs belongs to.
+            _held_attrs_list (list): Strings that represent attributes on a Maya node.
         """
-        LOG.info("NcAttrs __init__ ({})".format(attrs))
+        LOG.debug("%s __init__ (%s)" % (self.__class__.__name__, attrs))
+
         if not isinstance(holder_node, NcNode):
-            LOG.error("holder_node must be of type NcNode! Given: {}".format(holder_node))
+            LOG.error("holder_node must be of type NcNode! Given: %s" % (holder_node))
             return None
 
         self.__dict__["_holder_node"] = holder_node
@@ -1810,7 +1843,6 @@ class NcAttrs(NcBaseNode):
             # Error: Problem calling __apiobject__ method of passed object #
             # Error: attribute of type 'NcAttrs' is not callable #
         """
-        # LOG.debug("NcAttrs __unicode__ ({}, {})".format(self.node, self.attrs_list))
         if len(self.attrs_list) == 0:
             return_value = self.node
         elif len(self.attrs_list) == 1:
@@ -1825,10 +1857,10 @@ class NcAttrs(NcBaseNode):
 
         Note:
             There are certain keywords that will NOT return a new NcAttrs, but instead:
-            > attrs: Returns currently stored NcAttrs of this NcNode instance.
-            > attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
-            > node: Returns name of Maya node in scene (str).
-            > plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
+            * attrs: Returns currently stored NcAttrs of this NcNode instance.
+            * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+            * node: Returns name of Maya node in scene (str).
+            * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
         Args:
             name (str): Name of requested attribute
@@ -1853,7 +1885,7 @@ class NcAttrs(NcBaseNode):
             return self
 
         if len(self.attrs_list) != 1:
-            LOG.error("Tried to get attr of non-singular attribute: {}".format(self.attrs_list))
+            LOG.error("Tried to get attr of non-singular attribute: %s" % (self.attrs_list))
 
         return_value = NcAttrs(
             self._holder_node,
@@ -1924,7 +1956,7 @@ class NcAttrs(NcBaseNode):
         LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
         if isinstance(value, numbers.Real):
             LOG.error(
-                "Can't set NcAttrs item to number {}. Use a Value instance for this!".format(value)
+                "Can't set NcAttrs item to number %s. Use a Value instance for this!" % (value)
             )
             return False
         self.attrs_list[index] = value
@@ -1938,7 +1970,7 @@ class NcList(NcAtom):
 
     Note:
         NcList has the following keywords:
-        > nodes: Returns all Maya nodes within the list: [node, ...] (list of strings)
+        * nodes: Returns all Maya nodes within the list: [node, ...] (list of strings)
     """
 
     def __init__(self, *args):
@@ -1972,7 +2004,7 @@ class NcList(NcAtom):
         Returns:
             string (str): String of all NcList _items.
         """
-        return "NcList({})".format(self._items)
+        return "{}({})".format(self.__class__.__name__, self._items)
 
     def __repr__(self):
         """Unambiguous format of NcList instance.
@@ -2446,46 +2478,48 @@ def _is_valid_maya_attr(plug):
     """
     LOG.debug("_is_valid_maya_attr (%s)" % (plug))
 
-    if isinstance(plug, basestring) and "." in plug:
-        node, attr = plug.split(".", 1)
-        return cmds.attributeQuery(attr, node=node, exists=True)
+    split_plug = _split_plug_into_node_and_attr(plug)
+    if split_plug:
+        return cmds.attributeQuery(split_plug[1], node=split_plug[0], exists=True)
 
-    cmds.error("Given string '%s' does not seem to be a Maya attribute!" % (plug))
+    LOG.error("Given string '%s' does not seem to be a Maya attribute!" % (plug))
     return False
 
-#TODO: Add docStrings from here!
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CREATE, CONNECT AND SETUP NODE
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def _create_and_connect_node(operation, *args):
-    """
-    Generic function to create properly named Maya nodes
+    """Generic function to create & connect adequately named Maya nodes.
 
     Args:
         operation (str): Operation the new node has to perform
-        *args (NcNode, string): Attributes involved in the newly created node
+        *args (NcNode, NcAttrs, string): Attributes connecting into the newly created node
 
     Returns:
-        New Maya-node of type OPERATOR_LOOKUP_TABLE[operation]["node"]
+        new_node (NcNode): New NcNode instance with the newly created Maya-node
+            of type OPERATOR_LOOKUP_TABLE[operation]["node"] and with attributes
+            stored in OPERATOR_LOOKUP_TABLE[operation]["output"].
     """
+    LOG.debug("Creating a new %s-operationNode with args: %s" % (operation, args))
+
     # If a multi_index-attribute is given; create list with it of same length than args
-    LOG.info("Creating a new {}-operationNode with args: {}".format(operation, args))
     new_node_inputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["inputs"]
     if lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("is_multi_index", False):
         new_node_inputs = len(args) * lookup_table.OPERATOR_LOOKUP_TABLE[operation]["inputs"][:]
 
-    # Check dimension-match: args vs. OPERATOR_LOOKUP_TABLE-inputs:
+    # Check that dimensions match: args must be of same length as node-inputs:
     if len(args) != len(new_node_inputs):
         LOG.error(
             "Dimensions to create node don't match! "
-            "Given args: {} Required node-inputs: {}".format(args, new_node_inputs)
+            "Given args: %s Required node-inputs: %s" % (args, new_node_inputs)
         )
 
     # Unravel all given arguments and create a new node according to given operation
     unravelled_args_list = [_unravel_item_as_list(x) for x in args]
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
-    # If the given node-type has a node-operation; set it according to OPERATOR_LOOKUP_TABLE
+    # If the given node-type has an operation attr; set it according to OPERATOR_LOOKUP_TABLE
     node_operation = lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
         _unravel_and_set_or_connect_a_to_b(new_node + ".operation", node_operation)
@@ -2494,52 +2528,60 @@ def _create_and_connect_node(operation, *args):
     # 3D to 3D requires 3D-input, 1D to 2D needs 2D-input, 1D to 1D only needs 1D-input
     max_dim = max([len(x) for x in unravelled_args_list])
 
-    for i, (new_node_input, obj_to_connect) in enumerate(zip(new_node_inputs, args)):
-
-        new_node_input_list = [(new_node + "." + x) for x in new_node_input][:max_dim]
+    # Connect all given args to the inputs of the newly created Maya node.
+    for i, (plug_to_connect, new_node_input) in enumerate(zip(args, new_node_inputs)):
+        new_node_input_list = [(new_node + "." + _input) for _input in new_node_input][:max_dim]
         # multi_index inputs must always be caught and filled!
         if lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("is_multi_index", False):
             new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
 
         # Support for single-dimension-inputs in the OPERATOR_LOOKUP_TABLE. For example:
         # The blend-attr of a blendColors-node is always 1D,
-        # so only a 1D obj_to_connect must be given!
+        # so only a 1D plug_to_connect must be given!
         elif len(new_node_input) == 1:
-            if len(_unravel_item_as_list(obj_to_connect)) > 1:
+            if len(_unravel_item_as_list(plug_to_connect)) > 1:
                 LOG.error(
-                    "Tried to connect multi-dimensional attribute to 1D input: "
-                    "node: {} attrs: {} input: {}".format(
-                        new_node,
-                        new_node_input,
-                        obj_to_connect
-                    )
+                    "Unable to connect multi-dimensional plug %s to 1D "
+                    "input %s.%s!" % (plug_to_connect, new_node, new_node_input)
                 )
                 return False
             else:
-                LOG.info("Directly connecting 1D input to 1D obj!")
-                _unravel_and_set_or_connect_a_to_b(new_node + "." + new_node_input[0], obj_to_connect)
+                LOG.debug(
+                    "Directly connecting 1D plug %s to 1D "
+                    "input %s.%s" % (plug_to_connect, new_node, new_node_input)
+                )
+                _unravel_and_set_or_connect_a_to_b(new_node + "." + new_node_input[0], plug_to_connect)
                 continue
 
-        _unravel_and_set_or_connect_a_to_b(new_node_input_list, obj_to_connect)
+        _unravel_and_set_or_connect_a_to_b(new_node_input_list, plug_to_connect)
 
     # Support for single-dimension-outputs in the OPERATOR_LOOKUP_TABLE. For example:
     # distanceBetween returns 1D attr, no matter what dimension the inputs were
-    outputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["output"]
     output_is_predetermined = lookup_table.OPERATOR_LOOKUP_TABLE[operation].get(
         "output_is_predetermined", False
     )
 
+    # Return new NcNode instance with the appropriate output-attributes.
+    outputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["output"]
     if len(outputs) == 1 or output_is_predetermined:
-        # If the outputs are of length 1 anyways or should not be altered: Return directly
-        return Node(new_node, outputs)
+        # If the outputs are of length 1 or should not be altered: Return directly
+        return NcNode(new_node, outputs)
+
     else:
         # Truncate the number of outputs according to how many attributes were processed
-        return Node(new_node, outputs[:max_dim])
+        return NcNode(new_node, outputs[:max_dim])
 
 
 def _create_node_name(operation, *args):
-    """
-    Create a procedural node-name that is as descriptive as possible
+    """Create a procedural Maya node name that is as descriptive as possible.
+
+    Args:
+        operation (str): Operation the new node has to perform
+        *args (MPlug, NcNode, NcAttrs, list, numbers, str): Attributes
+            connecting into the newly created node.
+
+    Returns:
+        name (str): Generated name for the given node operation and args.
     """
     if isinstance(args, tuple) and len(args) == 1:
         args = args[0]
@@ -2547,7 +2589,7 @@ def _create_node_name(operation, *args):
     involved_args = []
     for arg in args:
         # Unwrap list of lists, if it's only one element
-        if isinstance(arg, list) and len(arg) == 1:
+        if isinstance(arg, (list, tuple)) and len(arg) == 1:
             arg = arg[0]
 
         if isinstance(arg, OpenMaya.MPlug):
@@ -2556,7 +2598,7 @@ def _create_node_name(operation, *args):
             involved_args.append(plug_name)
 
         elif isinstance(arg, NcBaseNode):
-            # Use the involved attrs, if they don't exist; use the node name
+            # Use the involved attrs, if there are none; use the node name
             if arg.attrs:
                 involved_args.extend(arg.as_list)
             else:
@@ -2576,38 +2618,63 @@ def _create_node_name(operation, *args):
             else:
                 involved_args.append(str(arg))
 
+        elif isinstance(arg, basestring):
+            # Strings can be added directly to the list.
+            involved_args.append(arg)
+
         else:
             # Unknown arg-type
             involved_args.append("UNK" + str(arg))
 
     # Combine all name-elements
-    name = "_".join([
+    name_elements = [
         NODE_NAME_PREFIX,  # Common NodeCalculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
         lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
-    ])
+    ]
+    name = "_".join(name_elements)
 
     return name
 
 
-def _create_traced_operation_node(operation, involved_attributes):
-    """
-    Maya-createNode that adds the executed command to the command_stack if Tracer is active
-    Creates a named node of appropriate type for the necessary operation
+def _create_traced_operation_node(operation, attrs):
+    """Create an adequately named Maya node for the given operation and
+    add it to the command_stack if Tracer is active.
+
+    Args:
+        operation (str): Operation the new node has to perform
+        attrs (MPlug, NcNode, NcAttrs, list, numbers, str): Attributes that
+            will be connecting into the newly created node
+
+    Returns:
+        new_node (str): Name of newly created Maya node.
     """
     node_type = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]
-    node_name = _create_node_name(operation, involved_attributes)
+    node_name = _create_node_name(operation, attrs)
     new_node = _traced_create_node(node_type, name=node_name)
 
     return new_node
 
 
 def _traced_create_node(node_type, **kwargs):
+    """Create a Maya node and add it to the _traced_nodes if Tracer is active
+
+    Note:
+        This is simply an overloaded cmds.createNode(node_type, **kwargs).
+
+        If Tracer is active: Created nodes are associated with a variable.
+        If they are referred to later on in the NodeCalculator statement, the
+        variable name will be used instead of their node-name.
+
+    Args:
+        node_type (str): Type of the Maya node that should be created.
+        **kwargs: cmds.createNode-flags
+
+    Returns:
+        new_node (str): Name of newly created Maya node.
     """
-    Maya-createNode that adds the executed command to the command_stack if Tracer is active
-    Creates a named node of appropriate type for the necessary operation
-    """
+
     # Make sure a sensible name is in the kwargs
     kwargs["name"] = kwargs.get("name", node_type)
 
@@ -2625,7 +2692,7 @@ def _traced_create_node(node_type, **kwargs):
             parent = parent.node
         cmds.parent(new_node, parent)
 
-    # Add new node to traced nodes, if Tracer is active
+    # Add creation command and new node to traced nodes, if Tracer is active
     if NcAtom._is_tracing:
         node_variable = NcAtom._get_next_variable_name()
 
@@ -2640,8 +2707,10 @@ def _traced_create_node(node_type, **kwargs):
             ]
             if parent:
                 command.append("cmds.parent({}, {})".format(new_node, parent))
+
+        # Any non-locator node only requires a createNode command.
         else:
-            # Add the parent back into the kwargs, if given. A bit nasty, I know...
+            # If given: Add the parent back into the kwargs for non-locator nodes.
             if parent:
                 kwargs["parent"] = parent
             joined_kwargs = _join_cmds_kwargs(**kwargs)
@@ -2650,6 +2719,7 @@ def _traced_create_node(node_type, **kwargs):
                 op=node_type,
                 kwargs=joined_kwargs
             )
+
         NcAtom._add_to_command_stack(command)
 
         # Add the newly created node to the tracer. Use the mobj for non-ambiguity
@@ -2660,8 +2730,14 @@ def _traced_create_node(node_type, **kwargs):
 
 
 def _traced_add_attr(node, **kwargs):
-    """
-    Maya-addAttr that adds the executed command to the command_stack if Tracer is active
+    """Add an attr on a Maya node & add command to _command_stack if Tracer is active
+
+    Note:
+        This is simply an overloaded cmds.addAttr(node, **kwargs).
+
+    Args:
+        node (str): Maya node the attribute should be added to.
+        **kwargs: cmds.addAttr-flags
     """
     cmds.addAttr(node, **kwargs)
 
@@ -2680,8 +2756,15 @@ def _traced_add_attr(node, **kwargs):
 
 
 def _traced_set_attr(plug, value=None, **kwargs):
-    """
-    Maya-setAttr that adds the executed command to the command_stack if Tracer is active
+    """Set an attr on a Maya node & add command to _command_stack if Tracer is active
+
+    Note:
+        This is simply an overloaded cmds.setAttr(plug, value, **kwargs).
+
+    Args:
+        plug (MPlug, str): Plug of a Maya node that should be set.
+        value (list, numbers, bool): Value the given plug should be set to.
+        **kwargs: cmds.setAttr-flags
     """
 
     # Set plug to value
@@ -2694,7 +2777,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
     if NcAtom._is_tracing:
 
         # ...look for the node of the given attribute...
-        node, attr = str(plug).split(".", 1)
+        node, attr = _split_plug_into_node_and_attr(plug)
         node_variable = NcAtom._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
@@ -2731,9 +2814,17 @@ def _traced_set_attr(plug, value=None, **kwargs):
 
 
 def _traced_get_attr(plug):
-    """
-    Maya-getAttr that adds the executed command to the command_stack if Tracer is active,
-    Tweaked cmds.getAttr: Takes care of awkward return value of 3D-attributes
+    """Get value of an attr on a Maya node & add command to _command_stack if Tracer is active
+
+    Note:
+        This is a tweaked & overloaded cmds.getAttr(plug): Awkward return values
+        of 3D-attributes are converted of tuple(list()) to a simple list().
+
+    Args:
+        plug (MPlug, str): Plug of a Maya node, whose value should be queried.
+
+    Returns:
+        return_value (list, numbers, bool, str): Queried value of Maya node plug.
     """
 
     # Variable to keep track of whether return value had to be unpacked or not
@@ -2752,12 +2843,12 @@ def _traced_get_attr(plug):
     if NcAtom._is_tracing:
         value_name = NcAtom._get_next_value_name()
 
-        return_value = nc_value.value(return_value, metadata=value_name)
+        return_value = nc_value.value(return_value, metadata=value_name, created_by_user=False)
 
         NcAtom._add_to_traced_values(return_value)
 
         # ...look for the node of the given attribute...
-        node, attr = str(plug).split(".", 1)
+        node, attr = _split_plug_into_node_and_attr(plug)
         node_variable = NcAtom._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
@@ -2799,8 +2890,14 @@ def _join_cmds_kwargs(**kwargs):
 
 
 def _traced_connect_attr(plug_a, plug_b):
-    """
-    Maya-connectAttr that adds the executed command to the command_stack if Tracer is active
+    """Connect 2 plugs & add executed command to the command_stack if Tracer is active.
+
+    Note:
+        This is simply an overloaded cmds.connectAttr(plug_a, plug_b, force=True).
+
+    Args:
+        plug_a (MPlug, str): Source plug
+        plug_b (MPlug, str): Destination plug
     """
     # Connect plug_a to plug_b
     cmds.connectAttr(plug_a, plug_b, force=True)
@@ -2808,12 +2905,13 @@ def _traced_connect_attr(plug_a, plug_b):
     # If commands are traced...
     if NcAtom._is_tracing:
 
-        # Format both attributes correctly
-        formatted_attrs = []
+        # Format both command arguments correctly & replace nodes with
+        # variables, if they are part of the traced nodes!
+        formatted_args = []
         for plug in [plug_a, plug_b]:
 
             # Look for the node of the current attribute...
-            node, attr = str(plug).split(".", 1)
+            node, attr = _split_plug_into_node_and_attr(plug)
             node_variable = NcAtom._get_tracer_variable_for_node(node)
             if node_variable:
                 # ...if it is already part of the traced nodes: Use its variable instead...
@@ -2821,11 +2919,11 @@ def _traced_connect_attr(plug_a, plug_b):
             # ...otherwise make sure it's stored as a string
             else:
                 formatted_attr = "'{}'".format(plug)
-            formatted_attrs.append(formatted_attr)
+            formatted_args.append(formatted_attr)
 
         # Add the connectAttr-command to the command stack
         NcAtom._add_to_command_stack(
-            "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_attrs)
+            "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_args)
         )
 
 
@@ -2973,10 +3071,7 @@ def _unravel_str(str_instance):
     """
     LOG.debug("_unravel_str (%s)" % (str_instance))
 
-    if not _is_valid_maya_attr(str_instance):
-        return None
-
-    node, attr = str_instance.split(".", 1)
+    node, attr = _split_plug_into_node_and_attr(str_instance)
     return _unravel_plug(node, attr)
 
 
@@ -3005,6 +3100,28 @@ def _unravel_plug(node, attr):
         return_value = [child_plug for child_plug in child_plugs]
 
     return return_value
+
+
+def _split_plug_into_node_and_attr(plug):
+    """Split given plug into its node and attribute part.
+
+    Args:
+        plug (MPlug, str): Plug of a Maya node/attribute combination.
+
+    Returns:
+        node, attr (tuple of strings, None): Separated node and attribute part
+            or None if separation was not possible.
+    """
+
+    if isinstance(plug, OpenMaya.MPlug):
+        plug = str(plug)
+
+    if isinstance(plug, basestring) and "." in plug:
+        node, attr = plug.split(".", 1)
+        return (node, attr)
+
+    LOG.error("Given plug %s could not be split into node and attr parts!" % (plug))
+    return None
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

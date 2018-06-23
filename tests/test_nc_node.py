@@ -67,8 +67,8 @@ class TestNodeClass(TestCase):
         pass
 
 
-    def test_properties(self):
-        attrs -> NcAttrs
-        attrs_list -> list
-        node -> NcNode
-        plugs -> list
+    # def test_properties(self):
+    #     attrs -> NcAttrs
+    #     attrs_list -> list
+    #     node -> NcNode
+    #     plugs -> list
