@@ -2313,7 +2313,7 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     # If plug consolidation is allowed: Try to do so.
     auto_consolidate_allowed = _is_consolidation_allowed([obj_a, obj_b])
     if GLOBAL_AUTO_CONSOLIDATE and auto_consolidate_allowed:
-        consolidated_plugs = _consolidate_plug_pair_to_min_dimension(
+        consolidated_plugs = _consolidate_plugs_to_min_dimension(
             obj_a_unravelled_list,
             obj_b_unravelled_list
         )
@@ -2346,33 +2346,37 @@ def _is_consolidation_allowed(inputs):
     return True
 
 
-def _consolidate_plug_pair_to_min_dimension(obj_a_list, obj_b_list):
+def _consolidate_plugs_to_min_dimension(*plugs):
     """Try to consolidate the given input plugs.
 
     Note:
         A full set of child attributes can be reduced to their parent attribute:
         ["tx", "ty", "tz"] becomes ["t"]
+        A 3D to 3D connection can be 1 connection if both plugs have such a parent-attribute!
+        However: A 1D attr can not connect to a 3D attr and must not be consolidated.
 
     Args:
-        obj_a_list (NcNode, NcAttrs, str, int, float, list, tuple): First item to check.
-        obj_b_list (NcNode, NcAttrs, str, int, float, list, tuple): Second item to check.
+        *plugs (list(NcNode, NcAttrs, str, int, float, list, tuple)): Plugs to check.
 
     Returns:
-        return_list (list): Consolidated plugs, if consolidation was successful.
-            Otherwise given inputs are returned as a list.
+        parent_plugs (list): Consolidated plugs, if consolidation was successful.
+            Otherwise given inputs are returned unaltered.
     """
-    LOG.debug("_consolidate_plug_pair_to_min_dimension (%s, %s)" % (obj_a_list, obj_b_list))
+    LOG.debug("_consolidate_plugs_to_min_dimension ({})".format(plugs))
 
-    # A 3D to 3D connection can be 1 connection if both can be  a parent-attribute!
-    parent_plug_a = _check_for_parent_attribute(obj_a_list)
-    parent_plug_b = _check_for_parent_attribute(obj_b_list)
+    parent_plugs = []
+    for plug in plugs:
+        parent_plug = _check_for_parent_attribute(plug)
 
-    # Only reduce the connection if BOTH objects have a parent-attribute!
-    # A 1D attr can not connect to a 3D attr!
-    if parent_plug_a is not None and parent_plug_b is not None:
-        return ([parent_plug_a], [parent_plug_b])
-    else:
-        return (obj_a_list, obj_b_list)
+        # If any plug doesn't have a parent it's impossible to consolidate plugs!
+        if parent_plug is None:
+            # Return early!
+            return plugs
+
+        parent_plugs.append([parent_plug])
+
+    # If all given plugs have a parent plug: Return them as a list of lists.
+    return parent_plugs
 
 
 def _check_for_parent_attribute(plug_list):
