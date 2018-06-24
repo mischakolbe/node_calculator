@@ -1,3 +1,9 @@
+"""Various lookup tables used in the NodeCalculator initialization and evaluation.
+
+:author: Mischa Kolbe <mischakolbe@gmail.com>
+"""
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -244,8 +250,6 @@ class OperatorLookupTableMetaClass(object):
             - output_is_predetermined: should output attrs ALWAYS be given in full?
         """
         global OPERATOR_LOOKUP_TABLE
-        global DN_MATH_OPERATORS
-        global DN_MIN_MAX_OPERATORS
 
         OPERATOR_LOOKUP_TABLE = {
             "blend": {

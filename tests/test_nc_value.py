@@ -1,5 +1,18 @@
 """
 Unit tests for noca.nc_value
+
+
+TODO: Metadata concatenation!
+a = noca.Node("pCube1")
+b = noca.Node("pSphere1")
+
+with noca.Tracer(pprint_trace=True):
+    curr_tx = a.tx.get()
+
+    b.ty = curr_tx + 2
+
+# >>> val1 = cmds.getAttr('pCube1.tx')
+# >>> cmds.setAttr('pSphere1.translateY', val1 + 2)
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

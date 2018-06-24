@@ -1,5 +1,51 @@
-"""
-Module to create values of base types (int, str, float, ...) that allow to store metadata.
+"""Module for values of base types (int, float, ...) that allow storing metadata.
+
+:author: Mischa Kolbe <mischakolbe@gmail.com>
+
+Note:
+    The stored metadata on NcValues is essential to keep track of where values
+    came from when the NodeCalculator is tracing.
+
+    When a value is queried in a NodeCalculator formula it returns an NcValue
+    instance, which has the value-variable attached to it. For example:
+
+        a = noca.Node("pCube1")
+
+        with noca.Tracer(pprint_trace=True):
+            a.tx.get()
+
+        # >>> val1 = cmds.getAttr('pCube1.tx')
+
+    "val1" is the stored variable name of this queried value. When it is used
+    in a calculation later in the formula the variable name is used instaed of
+    the value itself. For example:
+
+        a = noca.Node("pCube1")
+        b = noca.Node("pSphere1")
+
+        with noca.Tracer(pprint_trace=True):
+            curr_tx = a.tx.get()
+            b.ty = curr_tx
+
+        # >>> val1 = cmds.getAttr('pCube1.tx')
+        # >>> cmds.setAttr('pSphere1.translateY', val1)
+        # Rather than plugging in the queried value (making it very unclear
+        # where that value came from), the value-variable "val1" is used instead.
+
+    Furthermore: Basic math operations performed on NcValues are stored, too!
+    This allows to keep track of where values came from as much as possible:
+
+        a = noca.Node("pCube1")
+        b = noca.Node("pSphere1")
+
+        with noca.Tracer(pprint_trace=True):
+            curr_tx = a.tx.get()
+            b.ty = curr_tx + 2  # Adding 2 doesn't break the origin of curr_tx!
+
+        # >>> val1 = cmds.getAttr('pCube1.tx')
+        # >>> cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
+        # Note that the printed trace contains the correct calculation including
+        # the value-variable "val1".
 
 Example:
     ::
@@ -15,6 +61,7 @@ Example:
 
 # Python modules
 import re
+import copy
 
 # Third party imports
 
@@ -30,33 +77,130 @@ logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
 LOG = logger.log
 
-# This is just to iterate faster. The NcValue-types stay in the globals() even when reloaded.
-# Therefore cleaning globals() by hand so I don't have to restart Maya to clean globals()
-import copy
-a = copy.copy(globals())
-for key, value in a.iteritems():
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CLEAN GLOBALS (useful for dev work!)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# NcValue-types stay in globals() even when reloaded. Avoids restarting Maya.
+globals_copy = copy.copy(globals())
+for key, value in globals_copy.iteritems():
     if key.startswith("Nc") and key.endswith("Value"):
         del globals()[key]
 
 
-class NcValue(object):
-    """BaseClass inherited by all NcValue-classes created on the fly.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BASIC FUNCTIONALITY
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def value(value, metadata=None, created_by_user=True):
+    """Create a new value with metadata of appropriate NcValue-type.
 
-    Only exists for inheritance check: isinstance(XYZ, NcValue)
-    IntNcValue, FloatNcValue, etc. makes them hard to distinguish
+    Note:
+        For clarity: The given value is of a certain type & an appropriate type
+        of NcValue must be used. For example:
+        - A value of type <int> will become a <NcIntValue>
+        - A value of type <float> will become a <NcFloatValue>
+        - A value of type <list> will become a <NcListValue>
+        The first time a certain NcValue class is required (meaning: if it's not
+        in the globals yet) the function _create_metadata_val_class is called to
+        create and add the necessary class to the globals.
+        Any subsequent time that particular NcValue class is needed, the
+        existing class constructor in the globals is used.
+
+        The reason for all this is that each created NcValue class is an instance
+        of the appropriate base type. For example:
+        - An instance of <NcIntValue> inherits from <int>
+        - An instance of <NcFloatValue> inherits from <float>
+        - An instance of <NcListValue> inherits from <list>
+
+    Args:
+        value (bool, int, float, list, dict, ...): Value of any type
+        metadata (bool, int, float, list, ...): Any data that should be attached to this value
+        created_by_user (bool): Whether this value was created by the user or via script
+
+    Returns:
+        return_value (class-instance): New instance of appropriate NcValue-class
+            Read Notes for details.
+
+    Examples:
+        ::
+
+            a = value(1, "some metadata")
+            print(a)
+            # >>> 1
+            print(a.metadata)
+            # >>> "some metadata"
+            print(a.basetype)
+            # >>> <type 'int'>
+            a.maya_node = "pCube1"  # Not only .metadata can be stored!
+            print(a.maya_node)
+            # >>> pCube1
+
+            b = value([1, 2, 3], "some other metadata")
+            print(b)
+            # >>> [1, 2, 3]
+            print(b.metadata)
+            # >>> "some other metadata"
+            print(b.basetype)
+            # >>> <type 'list'>
+    """
+
+    # Retrieve the basetype of NcValues, to make a new value of the same basetype
+    if isinstance(value, NcValue):
+        value_type = value.basetype
+    else:
+        value_type = type(value)
+
+    # Construct the class name out of the type of the given value
+    class_name = "Nc{}Value".format(value_type.__name__.capitalize())
+
+    # If the necessary class type already exists in the globals: Return it
+    if class_name in globals():
+        NewNcValueClass = globals()[class_name]
+
+    # If it doesn't exist in the globals yet: Create necessary class type
+    else:
+        NewNcValueClass = _create_metadata_val_class(value_type)
+
+        # Setting __name__ sets the class name so it's not "NewNcValueClass" for all types!
+        NewNcValueClass.__name__ = class_name
+        # Add the new type to the globals
+        globals()[class_name] = NewNcValueClass
+
+    # Create a new instance of the specified type with the given value and metadata
+    return_value = NewNcValueClass(value)
+    if metadata is None:
+        metadata = value
+    return_value.metadata = metadata
+    return_value.created_by_user = created_by_user
+
+    return return_value
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# NODE CALCULATOR VALUE CLASS CREATIONS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class NcValue(object):
+    """BaseClass inherited by all NcValue-classes that are created on the fly.
+
+    Note:
+        Only exists for inheritance check: isinstance(XYZ, NcValue)
+        NcIntValue, NcFloatValue, etc. are otherwise hard to identify.
     """
     pass
 
 
-def create_metadata_val_class(class_type):
-    """
-    Closure to create classes for any type
+def _create_metadata_val_class(class_type):
+    """Closure to create value class of any type.
+
+    Note:
+        Check docString of value function for more details.
 
     Args:
         class_type (builtin-type): Type for which a new NcValue-class should be created
 
     Returns:
-        NcValue-class of basetype class_type
+        NcValueClass (class of appropriate type): New class constructor for a
+            NcValue class of appropriate type to match given class_type
     """
 
     # Can't inherit bool (TypeError: 'bool' not acceptable base type). Redirect to integer!
@@ -70,12 +214,20 @@ def create_metadata_val_class(class_type):
 
         @property
         def basetype(self):
-            """Convenience property to access the base type easily"""
+            """Convenience property to access the base type easily.
+
+            Returns:
+                class_type (builtin-type): Type which this class is derived from.
+            """
             return class_type
 
         @property
         def _value(self):
-            """Returns the held value as an instance of the basetype"""
+            """Get the held value as an instance of the basetype.
+
+            Returns:
+                value (basetype): Held value cast to its basetype.
+            """
             return self.basetype(self)
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -140,9 +292,10 @@ def create_metadata_val_class(class_type):
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __rdiv__(self, other):
-            """
-            Reflected division operator.
-            Fall-back method in case regular division is not defined & fails.
+            """Reflected division operator.
+
+            Note:
+                Fall-back method in case regular division is not defined & fails.
             """
             metadata = _concatenate_metadata("div", other, self)
             return_value = other / self._value
@@ -194,17 +347,45 @@ def create_metadata_val_class(class_type):
 
 
 def _concatenate_metadata(operator, input_a, input_b):
-    LOG.debug("_concatenate_metadata ({}, {}, {})".format(operator, input_a, input_b))
+    """Concatenate the metadata for the given NcValue(s).
+
+    Note:
+        Check docString of this module for more detail why this is important.
+
+    Args:
+        operator (str): Name of the operator sign to be used for concatenation
+        input_a (NcValue, int, float, bool): First part of the operation
+        input_b (NcValue, int, float, bool): Second part of the operation
+
+    Returns:
+        return_metadata (str): Concatenated metadata for performed operation.
+
+    Examples:
+        ::
+
+            a = noca.Node("pCube1")
+            b = noca.Node("pSphere1")
+
+            with noca.Tracer(pprint_trace=True):
+                curr_tx = a.tx.get()
+
+                b.ty = curr_tx + 2
+
+            # >>> val1 = cmds.getAttr('pCube1.tx')
+            # >>> cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
+    """
+    LOG.debug("_concatenate_metadata (%s, %s, %s)" % (operator, input_a, input_b))
+
     operator_data = lookup_table.METADATA_CONCATENATION_TABLE[operator]
     operator_symbol = operator_data.get("symbol")
     is_associative = operator_data.get("associative", False)
 
-    # Replace input_a by its metadata, if input_a has such an attribute
-    if hasattr(input_a, "metadata"):
+    # If input_a is an NcValue instance: Replace input_a by its metadata
+    if isinstance(input_a, NcValue):
         input_a = input_a.metadata
 
-    # Replace input_b by its metadata, if input_b has such an attribute
-    if hasattr(input_b, "metadata"):
+    # If input_b is an NcValue instance: Replace input_b by its metadata
+    if isinstance(input_b, NcValue):
         input_b = input_b.metadata
 
     # Any non-associative operation potentially needs parenthesis
@@ -222,69 +403,3 @@ def _concatenate_metadata(operator, input_a, input_b):
     return_metadata = "{} {} {}".format(input_a, operator_symbol, input_b)
 
     return return_metadata
-
-
-def value(value, metadata=None, created_by_user=True):
-    """
-    Args:
-        value (bool, int, float, list, dict, ...): Value of any data type
-        metadata (bool, int, float, list, ...): Any data that should be attached to this value
-        created_by_user (bool): Whether this value was created by the user or via script
-
-    Returns:
-        New instance of NcValue whose baseclass matches the base-type of the given value
-
-    Example:
-        ::
-
-            a = value(1, "some metadata")
-            print(a)
-            # >>> 1
-            print(a.metadata)
-            # >>> "some metadata"
-            print(a.basetype)
-            # >>> <type 'int'>
-            a.maya_node = "pCube1"  # ANY attribute can be stored onto a! Not only .metadata
-            print(a.maya_node)
-            # >>> pCube1
-
-            b = value([1, 2, 3], "some other metadata")
-            print(b)
-            # >>> [1, 2, 3]
-            print(b.metadata)
-            # >>> "some other metadata"
-            print(b.basetype)
-            # >>> <type 'list'>
-    """
-
-    # If a NcValue is given: Retrieve the basetype of it,
-    # to make a new value of the same basetype
-    try:
-        value_type = value.basetype
-    except AttributeError:
-        value_type = type(value)
-
-    # Construct the class name out of the type of the given value
-    class_name = "Nc{}Value".format(value_type.__name__.capitalize())
-
-    if class_name not in globals():
-        # Create necessary class type, if it doesn't exist in the globals yet
-        NcValue = create_metadata_val_class(value_type)
-
-        # Setting __name__ sets the class name so it's not "NcValue" for all types!
-        NcValue.__name__ = class_name
-        # Add the new type to the globals
-        globals()[class_name] = NcValue
-
-    else:
-        # If the necessary class type already exists: Return it from the globals
-        NcValue = globals()[class_name]
-
-    # Create a new instance of the specified type with the given value and metadata
-    return_value = NcValue(value)
-    if metadata is None:
-        metadata = value
-    return_value.metadata = metadata
-    return_value.created_by_user = created_by_user
-
-    return return_value
