@@ -1,19 +1,5 @@
 """
 Unit tests for noca.om_util
-
-
-
-
-
-
-a = noca.Node("A.ty", auto_consolidate=False)
-b = noca.Node("B", auto_consolidate=False)
-c = noca.Node("C", auto_consolidate=False)
-
-multi-"layer" attributes!
-e = noca.Node("blendShape1.inputTarget[0].inputTargetGroup[0].targetWeights[0]")
-
-b.v = e
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,7 +149,7 @@ class TestTracerClass(TestCase):
         # Test MObject selection and retrieving of selection
         om_util.select_mobjs(test_node_mobj)
         self.assertEqual(cmds.ls(selection=True), [self.node_name])
-        selected_mobjs = om_util.selected_nodes_in_scene_as_mobjs()
+        selected_mobjs = om_util.get_selected_nodes_as_mobjs()
         self.assertEqual(len(selected_mobjs), 1)
         self.assertEqual(om_util.get_name_of_mobj(selected_mobjs[0]), self.node_name)
 

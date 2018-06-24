@@ -1187,7 +1187,7 @@ class NcBaseNode(NcAtom):
         Yields:
             Node (NcNode): Next item in list of attributes.
         """
-        LOG.debug("%s __iter__ (%s)" % (self.__class__.__name__), self)
+        LOG.debug("%s __iter__ (%s)" % (self.__class__.__name__, self))
 
         i = 0
         while True:
