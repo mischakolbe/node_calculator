@@ -172,6 +172,10 @@ from . import logger
 from . import lookup_table
 from . import om_util
 from . import nc_value
+reload(logger)
+reload(lookup_table)
+reload(om_util)
+reload(nc_value)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,20 +212,6 @@ try:
 except NameError:
     basestring = str
 
-try:
-    reload
-except NameError:
-    from importlib import reload
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# RELOAD MODULES (useful for dev work!)
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-reload(logger)
-reload(lookup_table)
-reload(om_util)
-reload(nc_value)
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BASIC FUNCTIONALITY
@@ -250,7 +240,7 @@ class Node(object):
             Node(1) -> NcIntValue instance with value 1
     """
 
-    def __new__(cls, item, attrs=None, auto_unravel=True, auto_consolidate=True, *args, **kwargs):
+    def __new__(cls, item, attrs=None, auto_unravel=None, auto_consolidate=None, *args, **kwargs):
         if args:
             LOG.warn("unrecognized args: %s" % (args))
         if kwargs:
@@ -269,9 +259,20 @@ class Node(object):
         # Redirect NcAttrs right away to a new NcNode
         if isinstance(item, NcAttrs):
             LOG.info("Node: Redirecting to NcNode(%s)" % (item))
-            return NcNode(item._node_mobj, item, item._auto_unravel, item._auto_consolidate)
+            # If auto_unravel/auto_consolidate are not specifically given: Use item settings!
+            if auto_unravel is None:
+                auto_unravel = item._auto_unravel
+            if auto_consolidate is None:
+                auto_consolidate = item._auto_consolidate
+            return NcNode(item._node_mobj, item, auto_unravel, auto_consolidate)
 
         LOG.info("Node: Redirecting to NcNode(%s)" % (item))
+        # If auto_unravel/auto_consolidate are not specifically given: Turn them on!
+        if auto_unravel is None:
+            auto_unravel = True
+        if auto_consolidate is None:
+            auto_consolidate = True
+
         return NcNode(item, attrs, auto_unravel, auto_consolidate)
 
     def __init__(self, *args, **kwargs):
@@ -1129,7 +1130,7 @@ class NcBaseNode(NcAtom):
         is instantiated in the form of a NcNode or NcAttrs instance.
     """
 
-    def __init__(self, auto_unravel=True, auto_consolidate=True):
+    def __init__(self):
         """Initialization of any NcBaseNode class.
 
         Note:
@@ -1144,9 +1145,6 @@ class NcBaseNode(NcAtom):
 
         self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
-
-        self.__dict__["_auto_unravel"] = auto_unravel
-        self.__dict__["_auto_consolidate"] = auto_consolidate
 
         self._add_all_add_attr_methods()
 
@@ -1248,18 +1246,18 @@ class NcBaseNode(NcAtom):
         """
         LOG.debug("%s get (%s)" % (self.__class__.__name__, self))
 
+        # If only a single attribute exists: Return its value directly
         if len(self.attrs_list) == 1:
-            return_value = _traced_get_attr("{}.{}".format(self.node, self.attrs_list[0]))
-            return return_value
+            return_value = _traced_get_attr(self.plugs[0])
+        # If multiple attributes exist: Return list of values
         elif len(self.attrs_list):
-            return_value = _traced_get_attr([
-                "{}.{}".format(self.node, attr) for attr in self.attrs_list
-            ])
-            return return_value
+            return_value = [_traced_get_attr(x) for x in self.plugs]
+        # If no attribute is given on Node: Warn user and return None
         else:
             LOG.warn("No attribute exists on %s! Returned None" % (self))
+            return_value = None
 
-            return None
+        return return_value
 
     def set(self, value):
         """Set or connect the value of a NcNode/NcAttrs-attribute.
@@ -1415,6 +1413,9 @@ class NcBaseNode(NcAtom):
 
             kwargs["enumName"] = enum_name
 
+        # Replace any user inputs for attributeType. Type is defined by method name!
+        kwargs["attributeType"] = "enum"
+
         return self._add_traced_attr(name, **kwargs)
 
     def add_separator(
@@ -1513,6 +1514,52 @@ class NcBaseNode(NcAtom):
 
         return NcNode(plug)
 
+    def __setattr__(self, name, value):
+        """Set or connect attribute to the given value.
+
+        Note:
+            Since setattr uses __getattr__ method it works for NcNode AND NcAttrs!
+
+            setattr is invoked by equal-sign. Does NOT work without attribute given:
+            a = Node("pCube1.ty")  # Initialize Node-object with attribute given
+            a.ty = 7  # Works fine if attribute is specifically called
+            a = 7  # Does NOT work! It looks like the same operation as above,
+                     but here Python calls the assignment operation, NOT setattr.
+                     The assignment-operation can't be overridden. Sad but true.
+
+        Args:
+            name (str): Name of the attribute to be set
+            value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
+                attribute to this object or set attribute to this value/array
+
+        Example:
+            ::
+
+                a = Node("pCube1") # Create new NcNode-object
+                a.tx = 7  # Set pCube1.tx to the value 7
+                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
+                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
+        """
+        LOG.debug("%s __setattr__ (%s, %s)" % (self.__class__.__name__, name, value))
+
+        _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
+
+    def __setitem__(self, index, value):
+        """Set or connect attribute at index to the given value.
+
+        Note:
+            Since setitem uses __getitem__ method it works for NcNode AND NcAttrs!
+
+            This looks at the list of attributes stored in the NcAttrs of this NcNode.
+
+        Args:
+            index (int): Index of item to be set
+            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
+        """
+        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
+
+        _unravel_and_set_or_connect_a_to_b(self[index], value)
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NcNode
@@ -1525,7 +1572,7 @@ class NcNode(NcBaseNode):
         In contrast: Getting attr X from an NcAttrs that holds attr Y returns: NcAttrs.Y.X
     """
 
-    def __init__(self, node, attrs=None, auto_unravel=True, auto_consolidate=True):
+    def __init__(self, node, attrs=None, auto_unravel=None, auto_consolidate=None):
         """NcNode-class constructor
 
         Note:
@@ -1576,7 +1623,7 @@ class NcNode(NcBaseNode):
             )
             return None
 
-        super(NcNode, self).__init__(auto_unravel, auto_consolidate)
+        super(NcNode, self).__init__()
 
         # Handle case where no attrs were given
         if attrs is None:
@@ -1588,9 +1635,15 @@ class NcNode(NcBaseNode):
             else:
                 attrs = []
 
-        # Make sure node truly is an mobj!
-        if isinstance(node, NcNode):
+        # If given node is an NcNode or NcAttrs; retrieve data from it!
+        if isinstance(node, NcBaseNode):
             node_mobj = node._node_mobj
+
+            # Use settings of given node if auto_unravel or auto_consolidate aren't set
+            if auto_unravel is None:
+                auto_unravel = node._auto_unravel
+            if auto_consolidate is None:
+                auto_consolidate = node._auto_consolidate
         else:
             node_mobj = om_util.get_mobj(node)
 
@@ -1600,6 +1653,14 @@ class NcNode(NcBaseNode):
             self.__dict__["_held_attrs"] = attrs
         else:
             self.__dict__["_held_attrs"] = NcAttrs(self, attrs)
+
+        # If auto_unravel or auto_consolidate are not set; turn them on by default!
+        if auto_unravel is None:
+            auto_unravel = True
+        if auto_consolidate is None:
+            auto_consolidate = True
+        self.__dict__["_auto_unravel"] = auto_unravel
+        self.__dict__["_auto_consolidate"] = auto_consolidate
 
     def __unicode__(self):
         """
@@ -1650,34 +1711,6 @@ class NcNode(NcBaseNode):
 
         return return_value
 
-    def __setattr__(self, name, value):
-        """Set or connect attribute to the given value.
-
-        Args:
-            name (str): Name of the attribute to be set
-            value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
-                attribute to this object or set attribute to this value/array
-
-        Note:
-            setattr is invoked by equal-sign. Does NOT work without attribute given:
-            a = Node("pCube1.ty")  # Initialize Node-object with attribute given
-            a.ty = 7  # Works fine if attribute is specifically called
-            a = 7  # Does NOT work! It looks like the same operation as above,
-                     but here Python calls the assignment operation, NOT setattr.
-                     The assignment-operation can't be overridden. Sad but true.
-
-        Example:
-            ::
-
-                a = Node("pCube1") # Create new NcNode-object
-                a.tx = 7  # Set pCube1.tx to the value 7
-                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
-                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
-        """
-        LOG.debug("%s __setattr__ (%s, %s)" % (self.__class__.__name__, name, value))
-
-        _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
-
     def __getitem__(self, index):
         """Get stored attribute at given index.
 
@@ -1700,20 +1733,6 @@ class NcNode(NcBaseNode):
         )
 
         return return_value
-
-    def __setitem__(self, index, value):
-        """Set or connect attribute at index to the given value.
-
-        Note:
-            This looks at the list of attributes stored in the NcAttrs of this NcNode.
-
-        Args:
-            index (int): Index of item to be set
-            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
-        """
-        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
-
-        _unravel_and_set_or_connect_a_to_b(self[index], value)
 
     @property
     def node(self):
@@ -1765,7 +1784,7 @@ class NcAttrs(NcBaseNode):
             If the Maya node does not exist at instantiation time this will error!
 
         Args:
-            holder_node (str, NcNode, NcAttrs, MObject): Represents a Maya node
+            holder_node (NcNode): Represents a Maya node
             attrs (str, list, NcAttrs): Represents Maya attributes on the node
 
 
@@ -1775,16 +1794,21 @@ class NcAttrs(NcBaseNode):
         """
         LOG.debug("%s __init__ (%s)" % (self.__class__.__name__, attrs))
 
+        super(NcAttrs, self).__init__()
+
         if not isinstance(holder_node, NcNode):
             LOG.error("holder_node must be of type NcNode! Given: %s" % (holder_node))
             return None
 
         self.__dict__["_holder_node"] = holder_node
 
-        if isinstance(attrs, basestring):
-            self.__dict__["_held_attrs_list"] = [attrs]
-        else:
-            self.__dict__["_held_attrs_list"] = attrs
+        if attrs is None:
+            attrs = []
+        elif isinstance(attrs, NcAttrs):
+            attrs = attrs._held_attrs_list
+        elif isinstance(attrs, basestring):
+            attrs = [attrs]
+        self.__dict__["_held_attrs_list"] = attrs
 
     @property
     def node(self):
@@ -1824,6 +1848,24 @@ class NcAttrs(NcBaseNode):
             _node_mobj (MObject): MObject instance of Maya node in the scene
         """
         return self._holder_node._node_mobj
+
+    @property
+    def _auto_unravel(self):
+        """Property to allow easy access to _auto_unravel attribute of _holder_node.
+
+        Returns:
+            state (bool): Whether auto unravelling is allowed
+        """
+        return self._holder_node._auto_unravel
+
+    @property
+    def _auto_consolidate(self):
+        """Property to allow easy access to _auto_consolidate attribute of _holder_node.
+
+        Returns:
+            state (bool): Whether auto consolidating is allowed
+        """
+        return self._holder_node._auto_consolidate
 
     def __unicode__(self):
         """
@@ -1894,34 +1936,6 @@ class NcAttrs(NcBaseNode):
 
         return return_value
 
-    def __setattr__(self, name, value):
-        """Set or connect attribute to the given value.
-
-        Args:
-            name (str): Name of the attribute to be set
-            value (NcNode, NcAttrs, str, int, float, list, tuple): Connect
-                attribute to this object or set attribute to this value/array
-
-        Note:
-            setattr is invoked by equal-sign. Does NOT work without attribute given:
-            a = Node("pCube1.ty")  # Initialize Node-object with attribute given
-            a.ty = 7  # Works fine if attribute is specifically called
-            a = 7  # Does NOT work! It looks like the same operation as above,
-                     but here Python calls the assignment operation, NOT setattr.
-                     The assignment-operation can't be overridden. Sad but true.
-
-        Example:
-            ::
-
-                a = Node("pCube1") # Create new NcNode-object
-                a.tx = 7  # Set pCube1.tx to the value 7
-                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
-                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
-        """
-        LOG.debug("%s __setattr__ (%s, %s)" % (self.__class__.__name__, name, value))
-
-        _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
-
     def __getitem__(self, index):
         """Get stored attribute at given index.
 
@@ -1942,24 +1956,6 @@ class NcAttrs(NcBaseNode):
         )
 
         return return_value
-
-    def __setitem__(self, index, value):
-        """Set or connect attribute at given index to the given value.
-
-        Note:
-            This looks at the stored list of attributes.
-
-        Args:
-            index (int): Index of item to be set
-            value (NcNode, NcAttrs, str, int, float): Set/connect item at index to this.
-        """
-        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, index, value))
-        if isinstance(value, numbers.Real):
-            LOG.error(
-                "Can't set NcAttrs item to number %s. Use a Value instance for this!" % (value)
-            )
-            return False
-        self.attrs_list[index] = value
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
