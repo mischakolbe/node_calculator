@@ -19,7 +19,6 @@ import node_calculator.core as noca
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Value of all the types that should be tested
 TEST_NODES = {
     "A": "transform",
     "B": "transform",
@@ -50,7 +49,7 @@ class TestTracerClass(TestCase):
             "var1 = cmds.createNode('multiplyDivide', name='nc_MUL_translateX_1f_multiplyDivide')",
             "cmds.setAttr(var1 + '.operation', 1)",
             "cmds.connectAttr('A.translateX', var1 + '.input1X', force=True)",
-            "cmds.setAttr(var1 + '.input2X', val1)",
+            "cmds.setAttr(var1 + '.input2X', (val1 + 2) / 2)",
             "var2 = cmds.createNode('plusMinusAverage', name='nc_SUB_list_outputX_plusMinusAverage')",
             "cmds.setAttr(var2 + '.operation', 2)",
             "cmds.connectAttr('B.scale', var2 + '.input3D[0]', force=True)",
@@ -66,6 +65,6 @@ class TestTracerClass(TestCase):
             c = noca.Node("C")
             a.ty = 1.1
             num = a.ty.get()
-            c.t = b.s - a.tx * num
+            c.t = b.s - a.tx * ((num + 2) / 2)
 
         self.assertEqual(trace, expected_trace)

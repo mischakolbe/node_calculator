@@ -20,7 +20,6 @@ from node_calculator import lookup_table
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Value of all the types that should be tested
 TEST_NODES = [
     "A",
     "B",
@@ -29,13 +28,13 @@ TEST_NODES = [
 ]
 
 MATRIX_OPERATORS = [
-    "decompose_matrix",
     "inverse_matrix",
     "mult_matrix",
     "transpose_matrix",
 ]
 
 IRREGULAR_OPERATORS = [
+    "decompose_matrix",
     "matrix_distance",
     "compose_matrix",
     "point_matrix_mult",
@@ -298,6 +297,33 @@ class TestOperators(TestCase):
         # Test that the outputs are correct
         plug_connected_to_output = cmds.listConnections(result.plugs, plugs=True)[0]
         self.assertEqual(plug_connected_to_output, "{}.inMatrix".format(TEST_NODES[3]))
+
+    def test_decompose_matrix(self):
+        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["decompose_matrix"]
+        node_type = node_data.get("node", None)
+        node_inputs = node_data.get("inputs", None)
+
+        input_plugs = [self.a.worldMatrix]
+
+        result = noca.Op.decompose_matrix(input_plugs[0])
+        self.c.translateX = result[0]
+
+        # Test that the created node is of the correct type
+        self.assertEqual(cmds.nodeType(result.node), node_type)
+
+        for node_input, desired_input in zip(node_inputs, input_plugs):
+            if isinstance(node_input, (tuple, list)):
+                node_input = node_input[0]
+            # Check the correct plug is connected into the input-plug
+            input_connections = cmds.listConnections(
+                "{}.{}".format(result.node, node_input),
+                plugs=True
+            )
+            self.assertEqual(input_connections, desired_input.plugs)
+
+        # Test that the outputs are correct
+        plug_connected_to_output = cmds.listConnections(result.plugs, plugs=True)[0]
+        self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_point_matrix_mult(self):
         node_data = lookup_table.OPERATOR_LOOKUP_TABLE["point_matrix_mult"]

@@ -1,13 +1,5 @@
 """
 Unit tests for noca convenience functions
-
-
-
-a1 = noca.Node("A")
-a2 = noca.Node("A", ["tx"])
-a3 = noca.Node("A", ["tx", "ty"])
-b = noca.Node(2)
-c = noca.Node(["A", "B"])
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,11 +18,9 @@ import node_calculator.core as noca
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 class TestNode(TestCase):
 
-    def test_node_creation(self):
+    def test_node_without_attrs_creation(self):
         """ Test node creation via noca-convenience function """
         transform = cmds.group(empty=True, name="testGroup")
         node = noca.Node(transform)
@@ -53,7 +43,7 @@ class TestNode(TestCase):
         # Make sure attributes were added to this node instance
         self.assertEqual(len(node.attrs), len(attributes))
 
-    def test_metadata_variable_creation(self):
+    def test_nc_value_creation(self):
         """ Test metadata variable creation via noca-convenience function """
         value = 1.1
         node = noca.Node(value)
@@ -64,7 +54,7 @@ class TestNode(TestCase):
         # Make sure MetadataValue holds correct value
         self.assertEqual(node, value)
 
-    def test_collection_creation(self):
+    def test_nc_list_creation(self):
         """ Test collection creation via noca-convenience function """
         transform_a = cmds.group(empty=True, name="testGroupA")
         attributes = ["tx", "tz"]

@@ -1,18 +1,5 @@
 """
-Unit tests for noca.nc_value
-
-
-TODO: Metadata concatenation!
-a = noca.Node("pCube1")
-b = noca.Node("pSphere1")
-
-with noca.Tracer(pprint_trace=True):
-    curr_tx = a.tx.get()
-
-    b.ty = curr_tx + 2
-
-# >>> val1 = cmds.getAttr('pCube1.tx')
-# >>> cmds.setAttr('pSphere1.translateY', val1 + 2)
+Unit tests for noca.nc_value / NcValue classes
 """
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,6 +30,10 @@ TEST_VALUES = [
     {"one": 1, "two": 2}  # Dictionary
 ]
 
+METADATAS = [
+    "metadata_a",
+    "metadata_b",
+]
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
@@ -62,9 +53,9 @@ def _test_type(value):
     value_type = type(value)
 
     def test(self):
-        meta_val = noca.nc_value.value(value, "metadata")
+        meta_val = noca.nc_value.value(value, METADATAS[0])
         self.assertEqual(meta_val, value)
-        self.assertEqual(meta_val.metadata, "metadata")
+        self.assertEqual(meta_val.metadata, METADATAS[0])
         self.assertEqual(
             meta_val.__class__.__name__,
             "Nc{}Value".format(value_type.__name__.capitalize())
@@ -110,8 +101,8 @@ class TestNcValue(TestCase):
         """
         value = TEST_VALUES[1]
 
-        meta_val_a = noca.nc_value.value(value, "metadata_a")
-        meta_val_b = noca.nc_value.value(value, "metadata_b")
+        meta_val_a = noca.nc_value.value(value, METADATAS[0])
+        meta_val_b = noca.nc_value.value(value, METADATAS[1])
 
         self.assertIs(meta_val_a.basetype, meta_val_b.basetype)
 
@@ -123,8 +114,8 @@ class TestNcValue(TestCase):
         value = TEST_VALUES[1]
         value_type = type(value)
 
-        meta_val_a = noca.nc_value.value(value, "metadata_a")
-        meta_val_b = noca.nc_value.value(meta_val_a, "metadata_b")
+        meta_val_a = noca.nc_value.value(value, METADATAS[0])
+        meta_val_b = noca.nc_value.value(meta_val_a, METADATAS[1])
 
         self.assertIs(meta_val_a.basetype, value_type)
         self.assertIs(meta_val_b.basetype, value_type)
@@ -140,9 +131,20 @@ class TestNcValue(TestCase):
         value = TEST_VALUES[1]
         value_type = type(value)
 
-        meta_val_a = noca.nc_value.value(value, "metadata_a")
+        meta_val_a = noca.nc_value.value(value, METADATAS[0])
 
         self.assertTrue(isinstance(meta_val_a, value_type))
         self.assertTrue(isinstance(meta_val_a, numbers.Real))
         self.assertTrue(isinstance(meta_val_a, noca.nc_value.NcValue))
         self.assertTrue(isinstance(meta_val_a, noca.nc_value.NcIntValue))
+
+    def test_metadata_concatenation(self):
+        """
+        Basic math operations on NcValues are added to the metadata.
+        """
+        value = TEST_VALUES[1]
+        meta_val_a = noca.nc_value.value(value, METADATAS[0])
+
+        meta_val_calc = (meta_val_a + 2) / 2
+
+        self.assertEqual(meta_val_calc.metadata, "({} + 2) / 2".format(METADATAS[0]))
