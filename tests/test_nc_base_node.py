@@ -111,6 +111,7 @@ class TestNcBaseNodeClass(TestCase):
 
             # Test node property
             self.assertEqual(noca_instance.node, TEST_TRANSFORM)
+            self.assertEqual(noca_instance.nodes, [TEST_TRANSFORM])
 
             # Test attrs property
             self.assertIsInstance(noca_instance.attrs, noca.NcAttrs)

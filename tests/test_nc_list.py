@@ -115,13 +115,8 @@ class TestNcListClass(TestCase):
     def test_noca_methods(self):
 
         # Test nodes property
-        self.assertListEqual(
-            self.nc_list.nodes,
-            TEST_NODES[:2]
-        )
+        self.assertEqual(self.nc_list.node, None)
+        self.assertListEqual(self.nc_list.nodes, TEST_NODES[:2])
 
         # Test get method to retrieve values
-        self.assertListEqual(
-            self.nc_list.get(),
-            [0, TEST_VALUE, 0]
-        )
+        self.assertListEqual(self.nc_list.get(), [0, TEST_VALUE, 0])

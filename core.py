@@ -1195,28 +1195,6 @@ class NcBaseNode(NcAtom):
                 raise StopIteration
             i += 1
 
-    def get_shapes(self, full=False):
-        """Convenience method to get shape nodes of self.node
-
-        Note:
-            Returned MObjects of shapes can can be used directly to create new NcNode instances!
-
-        Args:
-            full (bool): True returns full dag path, False returns shortest dag path
-
-        Returns:
-            shapes (list): List of MObjects of shapes.
-        """
-
-        shape_mobjs = om_util.get_shape_mobjs(self._node_mobj)
-
-        if full:
-            shapes = [om_util.get_long_name_of_mobj(mobj, full=True) for mobj in shape_mobjs]
-        else:
-            shapes = [om_util.get_name_of_mobj(mobj) for mobj in shape_mobjs]
-
-        return shapes
-
     @property
     def plugs(self):
         """Property to allow easy access to the Node-plugs.
@@ -1234,6 +1212,20 @@ class NcBaseNode(NcAtom):
             "{}.{}".format(self.node, attr) for attr in self.attrs_list
         ]
         return return_list
+
+    @property
+    def nodes(self):
+        """Property that returns node within list.
+
+        Note:
+            This property mostly exists to maintain consistency with NcList.
+            Even though nodes of a NcNode/NcAttrs instance will always be a list
+            of length 1 it might come in handy to match the property of NcLists!
+
+        Returns:
+            return_list (list): Name of Maya node this instance refers to, in a list.
+        """
+        return [self.node]
 
     def get(self):
         """Get the value of a NcNode/NcAttrs-attribute.
@@ -1272,6 +1264,28 @@ class NcBaseNode(NcAtom):
         LOG.debug("%s set (%s)" % (self.__class__.__name__, value))
 
         _unravel_and_set_or_connect_a_to_b(self, value)
+
+    def get_shapes(self, full=False):
+        """Convenience method to get shape nodes of self.node
+
+        Note:
+            Returned MObjects of shapes can can be used directly to create new NcNode instances!
+
+        Args:
+            full (bool): True returns full dag path, False returns shortest dag path
+
+        Returns:
+            shapes (list): List of MObjects of shapes.
+        """
+
+        shape_mobjs = om_util.get_shape_mobjs(self._node_mobj)
+
+        if full:
+            shapes = [om_util.get_long_name_of_mobj(mobj, full=True) for mobj in shape_mobjs]
+        else:
+            shapes = [om_util.get_name_of_mobj(mobj) for mobj in shape_mobjs]
+
+        return shapes
 
     def info(self):
         """Convenience method to see the status of _auto_unravel and _auto_consolidate."""
@@ -1682,6 +1696,7 @@ class NcNode(NcBaseNode):
             * attrs: Returns currently stored NcAttrs of this NcNode instance.
             * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
+            * nodes: Returns name of Maya node in scene in a list ([str]).
             * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
         Args:
@@ -1902,6 +1917,7 @@ class NcAttrs(NcBaseNode):
             * attrs: Returns currently stored NcAttrs of this NcNode instance.
             * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
+            * nodes: Returns name of Maya node in scene in a list ([str]).
             * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
         Args:
@@ -2105,6 +2121,25 @@ class NcList(NcAtom):
             copied_list (NcList): Deep copy of this NcList instance.
         """
         return NcList(copy.deepcopy(self._items))
+
+    @property
+    def node(self):
+        """Property to warn user about inappropriate access.
+
+        Note:
+            Only NcNode & NcAttrs allow to access their node via node-property.
+            Since user might not be aware of creating NcList instance: Give a
+            hint that NcList instances have a nodes-property instead.
+
+        Returns:
+            None
+        """
+        LOG.warn(
+            "Returned None for invalid node-property request from %s instance: %s. "
+            "Did you mean 'nodes'?" % (self.__class__.__name__, self)
+        )
+
+        return None
 
     @property
     def nodes(self):
