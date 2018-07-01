@@ -59,7 +59,7 @@ Example:
         # >>> AttributeError: 'int' object has no attribute 'metadata'
 """
 
-# Python modules
+# Python imports
 import re
 import copy
 
@@ -227,20 +227,21 @@ def _create_metadata_val_class(class_type):
         def _value(self):
             """Get the held value as an instance of the basetype.
 
+            Note:
+                This property is necessary; "self" in operations would cause loop!
+
             Returns:
                 value (basetype): Held value cast to its basetype.
             """
             return self.basetype(self)
 
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-        # All subsequent magic methods return a new NcValue! This is to
-        # preserve the origin of the values, even when used with another regular number!
-        # The property "_value" is necessary, otherwise it gets stuck in a loop!
-        # -> "_value" sticks the held value into its basetype-class to perform the calculation
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
         def __add__(self, other):
-            """Regular addition operator."""
+            """Regular addition operator.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("add", self, other)
             return_value = self._value + other
             return value(return_value, metadata=metadata, created_by_user=False)
@@ -250,13 +251,22 @@ def _create_metadata_val_class(class_type):
 
             Note:
                 Fall-back method in case regular addition is not defined & fails.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
             """
             metadata = _concatenate_metadata("add", other, self)
             return_value = other + self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __sub__(self, other):
-            """Regular subtraction operator."""
+            """Regular subtraction operator.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("sub", self, other)
             return_value = self._value - other
             return value(return_value, metadata=metadata, created_by_user=False)
@@ -266,13 +276,22 @@ def _create_metadata_val_class(class_type):
 
             Note:
                 Fall-back method in case regular subtraction is not defined & fails.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
             """
             metadata = _concatenate_metadata("sub", other, self)
             return_value = other - self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __mul__(self, other):
-            """Regular multiplication operator."""
+            """Regular multiplication operator.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("mul", self, other)
             return_value = self._value * other
             return value(return_value, metadata=metadata, created_by_user=False)
@@ -282,13 +301,22 @@ def _create_metadata_val_class(class_type):
 
             Note:
                 Fall-back method in case regular multiplication is not defined & fails.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
             """
             metadata = _concatenate_metadata("mul", other, self)
             return_value = other * self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __div__(self, other):
-            """Regular division operator."""
+            """Regular division operator.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("div", self, other)
             return_value = self._value / other
             return value(return_value, metadata=metadata, created_by_user=False)
@@ -298,49 +326,88 @@ def _create_metadata_val_class(class_type):
 
             Note:
                 Fall-back method in case regular division is not defined & fails.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
             """
             metadata = _concatenate_metadata("div", other, self)
             return_value = other / self._value
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __pow__(self, other):
-            """Power operator."""
+            """Power operator.
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("pow", self, other)
             return_value = self._value ** other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __eq__(self, other):
-            """Equality operator: =="""
+            """Equality operator: ==
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("eq", self, other)
             return_value = self._value == other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __ne__(self, other):
-            """Inequality operator: !="""
+            """Inequality operator: !=
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("ne", self, other)
             return_value = self._value != other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __gt__(self, other):
-            """Greater than operator: >"""
+            """Greater than operator: >
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("gt", self, other)
             return_value = self._value > other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __ge__(self, other):
-            """Greater equal operator: >="""
+            """Greater equal operator: >=
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("ge", self, other)
             return_value = self._value >= other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __lt__(self, other):
-            """Less than operator: <"""
+            """Less than operator: <
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("lt", self, other)
             return_value = self._value < other
             return value(return_value, metadata=metadata, created_by_user=False)
 
         def __le__(self, other):
-            """Less equal operator: <="""
+            """Less equal operator: <=
+
+            Returns:
+                new_value (NcValue): Result of calculation with concatenated
+                    metadata to preserve origin of values.
+            """
             metadata = _concatenate_metadata("le", self, other)
             return_value = self._value <= other
             return value(return_value, metadata=metadata, created_by_user=False)
@@ -376,7 +443,13 @@ def _concatenate_metadata(operator, input_a, input_b):
             # >>> val1 = cmds.getAttr('pCube1.tx')
             # >>> cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
     """
-    LOG.debug("_concatenate_metadata (%s, %s, %s)" % (operator, input_a, input_b))
+    LOG.debug(
+        "_concatenate_metadata (%s, %s, %s)" % (
+            str(operator),
+            str(input_a),
+            str(input_b)
+        )
+    )
 
     operator_data = lookup_table.METADATA_CONCATENATION_TABLE[operator]
     operator_symbol = operator_data.get("symbol")

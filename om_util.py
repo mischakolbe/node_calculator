@@ -139,7 +139,7 @@ def get_long_name_of_mobj(mobj, full=False):
         dag_path (str): DAG path to the given MObject.
     """
     if not isinstance(mobj, OpenMaya.MObject):
-        LOG.error("Given mobj %s is not an instance of OpenMaya.MObject" % (mobj))
+        LOG.error("Given mobj %s is not an instance of OpenMaya.MObject" % (str(mobj)))
 
     mdag_path = get_mdag_path(mobj)
     if mdag_path:
@@ -356,8 +356,8 @@ def set_mobj_attribute(mobj, attr, value):
     Todo:
         Should be OpenMaya API only! Check: austinjbaker.com/mplugs-setting-values
     """
-    dag_path = get_long_name_of_mobj(mobj)
-    cmds.setAttr("{}.{}".format(dag_path, attr), value)
+    plug = "{}.{}".format(get_long_name_of_mobj(mobj), attr)
+    cmds.setAttr(plug, value)
 
 
 def get_attr_of_mobj(mobj, attr):
@@ -373,8 +373,8 @@ def get_attr_of_mobj(mobj, attr):
     Returns:
         value (list, tuple, int, float, bool, str): Value of queried plug.
     """
-    path = get_long_name_of_mobj(mobj)
-    value = cmds.getAttr("{}.{}".format(path, attr))
+    plug = "{}.{}".format(get_long_name_of_mobj(mobj), attr)
+    value = cmds.getAttr(plug)
 
     return value
 
@@ -389,7 +389,7 @@ def is_valid_mplug(mplug):
         value (bool): True if given mplug actually is an MPlug instance.
     """
     if not isinstance(mplug, OpenMaya.MPlug):
-        LOG.error("Expected an MPlug, got %s of type %s" % (mplug, type(mplug)))
+        LOG.error("Expected an MPlug, got %s of type %s" % (str(mplug), type(mplug)))
         return False
     return True
 
@@ -548,7 +548,7 @@ def get_array_mplug_by_logical_index(mplug, index):
         return None
 
     if not mplug.isArray:
-        LOG.error("%s is not an array plug!" % (mplug))
+        LOG.error("%s is not an array plug!" % (str(mplug)))
 
     return mplug.elementByLogicalIndex(index)
 
@@ -576,12 +576,12 @@ def get_mplug_of_node_and_attr(node, attr_str):
             mplug = get_child_mplug(mplug, attr)
 
         if not mplug:
-            LOG.error("mplug %s.%s does not seem to exist!" % (node, attr_str))
+            LOG.error("mplug %s.%s does not seem to exist!" % (str(node), str(attr_str)))
         if index is not None:
             if not mplug.isArray:
                 LOG.error(
                     "mplug for %s.%s is supposed to have an index, "
-                    "but is not an array attr!" % (node, attr_str)
+                    "but is not an array attr!" % (str(node), str(attr_str))
                 )
             mplug = get_array_mplug_by_logical_index(mplug, index)
 
@@ -668,7 +668,7 @@ def split_attr_string(attr):
     matches = attr_pattern.findall(attr)
 
     if not matches:
-        LOG.error("Attr %s could not be broken down into components!" % (attr))
+        LOG.error("Attr %s could not be broken down into components!" % (str(attr)))
 
     cleaned_matches = []
     for attr, index in matches:
@@ -699,10 +699,10 @@ def split_node_string(node):
     matches = node_pattern.findall(node)
 
     if not matches:
-        LOG.error("Node %s could not be broken down into components!" % (node))
+        LOG.error("Node %s could not be broken down into components!" % (str(node)))
 
     if len(matches) > 1:
-        LOG.error("Node %s yielded multiple results. Should be singular result!" % (node))
+        LOG.error("Node %s yielded multiple results. Should be singular result!" % (str(node)))
 
     namespace, dag_path, node = matches[0]
 
