@@ -95,10 +95,8 @@ class TestLocator(TestCase):
         self.assertEqual(node.node, name)
 
         # Make sure transform was correctly created
-        transform_exists = cmds.objExists(name)
-        self.assertTrue(transform_exists)
-        transform_type = cmds.objectType(name)
-        self.assertEqual(transform_type, "transform")
+        self.assertTrue(cmds.objExists(name))
+        self.assertEqual(cmds.objectType(name), "transform")
 
         # Make sure transform has exactly one child (locator-shape)
         transform_children = cmds.listRelatives(name)
@@ -133,16 +131,39 @@ class TestTransform(TestCase):
 
 class TestCreateNode(TestCase):
 
-    def test_creation(self):
+    def test_transform_creation(self):
         """ Test node creation via noca-convenience function """
         name = "test"
-        node = noca.create_node("polySphere", name=name)
+        node = noca.create_node("transform", name=name)
 
         # Make sure noca-node refers to the correct Maya-node
         self.assertEqual(node.node, name)
 
-        # Make sure polySphere was correctly created
+        # Make sure transform was correctly created
         transform_exists = cmds.objExists(name)
         self.assertTrue(transform_exists)
         transform_type = cmds.objectType(name)
-        self.assertEqual(transform_type, "polySphere")
+        self.assertEqual(transform_type, "transform")
+
+        # Make sure transform has no children
+        transform_children = cmds.listRelatives(name)
+        self.assertIsNone(transform_children)
+
+    def test_mesh_creation(self):
+        """ Test node creation via noca-convenience function """
+        name = "test"
+        node = noca.create_node("mesh", name=name)
+
+        # Make sure noca-node refers to the correct Maya-node
+        self.assertEqual(node.node, name)
+
+        # Make sure transform was correctly created
+        transform_exists = cmds.objExists(name)
+        self.assertTrue(transform_exists)
+        transform_type = cmds.objectType(name)
+        self.assertEqual(transform_type, "transform")
+
+        # Make sure transform has one child: The mesh shape
+        transform_children = cmds.listRelatives(name)
+        self.assertEqual(len(transform_children), 1)
+        self.assertEqual(cmds.objectType(transform_children), "mesh")

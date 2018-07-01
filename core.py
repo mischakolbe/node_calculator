@@ -2,7 +2,8 @@
 
 :created: 03/04/2018
 :author: Mischa Kolbe <mischakolbe@gmail.com>
-:credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly, Adam Vanner, Niels Kleinheinz
+:credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly,
+          Adam Vanner, Niels Kleinheinz
 :version: 2.0.0
 
 
@@ -12,95 +13,62 @@ Supported operations:
         # basic math
         +, -, *, /, **
 
-        # condition
-        Op.condition(condition, if_part=False, else_part=True)
-
-        # length
-        Op.length(attr_a, attr_b=0)
+        # angle_between
+        Op.angle_between(vector_a, vector_b=[1, 0, 0])
 
         # average
         Op.average(*attrs)  # Any number of inputs possible
 
-        # dot-product
-        Op.dot(attr_a, attr_b=0, normalize=False)
-
-        # cross-product
-        Op.cross(attr_a, attr_b=0, normalize=False)
-
-        # vector-norm
-        Op.normalize_vector(in_vector, normalize=True)
-
-        # mult matrix
-        Op.mult_matrix(*attrs)  # Any number of inputs possible
-
-        # decomp matrix
-        Op.decompose_matrix(in_matrix)
-
-        # comp matrix
-        Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
-
         # blend
         Op.blend(attr_a, attr_b, blend_value=0.5)
-
-        # remap
-        Op.remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1)
-
-        # clamp
-        Op.clamp(attr_a, min_value=0, max_value=1)
 
         # choice
         Op.choice(*attrs, selector=1)  # Any number of inputs possible
 
-        # sin
-        Op.sin(attr)
+        # clamp
+        Op.clamp(attr_a, min_value=0, max_value=1)
 
-        # cos
-        Op.cos(attr)
+        # compose_matrix
+        Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
 
-        # tan
-        Op.tan(attr)
+        # condition
+        Op.condition(condition, if_part=False, else_part=True)
 
-        # asin
-        Op.asin(attr)
+        # cross
+        Op.cross(attr_a, attr_b=0, normalize=False)
 
-        # acos
-        Op.acos(attr)
+        # decompose_matrix
+        Op.decompose_matrix(in_matrix)
 
-        # atan
-        Op.atan(attr)
+        # dot product
+        Op.dot(attr_a, attr_b=0, normalize=False)
 
-        # sqrt
-        Op.sqrt(attr)
+        # inverse_matrix
+        Op.inverse_matrix(in_matrix)
 
-        # exp
-        Op.exp(attr)
+        # length
+        Op.length(attr_a, attr_b=0)
 
-        # ln
-        Op.ln(attr)
+        # matrix_distance
+        Op.matrix_distance(matrix_a, matrix_b)
 
-        # log2
-        Op.log2(attr)
+        # mult_matrix
+        Op.mult_matrix(*attrs)  # Any number of inputs possible
 
-        # log10
-        Op.log10(attr)
+        # normalize_vector
+        Op.normalize_vector(in_vector, normalize=True)
 
-        # pow
-        Op.pow(attr)
+        # point_matrix_mult
+        Op.point_matrix_mult(in_vector, in_matrix, vector_multiply=False)
 
-        # normalise
-        Op.normalise(attr)
+        # remap_value
+        Op.remap_value(attr_a, output_min=0, output_max=1, input_min=0, input_max=1, values=None)
 
-        # hypot
-        Op.hypot(attr)
+        # set_range
+        Op.set_range(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1)
 
-        # atan2
-        Op.atan2(attr)
-
-        # modulus
-        Op.modulus(attr)
-
-        # abs
-        Op.abs(attr)
+        # transpose_matrix
+        Op.transpose_matrix(in_matrix)
 
 
 Note:
@@ -316,7 +284,7 @@ def locator(name=None, **kwargs):
             a = noca.locator("myLoc")
             a.t = [1, 2, 3]
     """
-    return create_node(node_type="spaceLocator", name=name, **kwargs)
+    return create_node(node_type="locator", name=name, **kwargs)
 
 
 def create_node(node_type, name=None, **kwargs):
@@ -398,6 +366,149 @@ class OperatorMetaClass(object):
         super(OperatorMetaClass, self).__init__()
 
     @staticmethod
+    def angle_between(vector_a, vector_b=[1, 0, 0]):
+        """Create angleBetween-node to find the angle between 2 vectors
+
+        Args:
+            vector_a (NcNode, NcAttrs, int, float, list): Vector a to consider for angle
+            vector_b (NcNode, NcAttrs, int, float, list): Vector b to consider for angle
+
+        Returns:
+            NcNode: Instance with angleBetween-node and output-attribute(s)
+
+        Example:
+            Op.angle_between(
+                Op.point_matrix_mult(
+                    [1, 0, 0],
+                    Node("pCube1").worldMatrix,
+                    vector_multiply=True
+                ),
+                [1, 0, 0]
+            )
+        """
+        return _create_and_connect_node('angle_between', vector_a, vector_b)
+
+    @staticmethod
+    def average(*attrs):
+        """Create plusMinusAverage-node for averaging input attrs
+
+        Args:
+            attrs (NcNode, NcAttrs, string, list): Any number of inputs to be averaged
+
+        Returns:
+            NcNode: Instance with plusMinusAverage-node and output-attribute(s)
+
+        Example:
+            >>> Op.average(Node("pCube.t"), [1, 2, 3])
+        """
+        return _create_and_connect_node('average', *attrs)
+
+    @staticmethod
+    def blend(attr_a, attr_b, blend_value=0.5):
+        """Create blendColor-node
+
+        Args:
+            attr_a (NcNode, NcAttrs, str, int, float): Plug or value to blend from
+            attr_b (NcNode, NcAttrs, str, int, float): Plug or value to blend to
+            blend_value (NcNode, str, int, float): Plug or value defining blend-amount
+
+        Returns:
+            NcNode: Instance with blend-node and output-attributes
+
+        Example:
+            >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
+        """
+        return _create_and_connect_node('blend', attr_a, attr_b, blend_value)
+
+    @staticmethod
+    def choice(*inputs, **kwargs):
+        """Create choice-node to switch between various input attributes
+
+        Note:
+            Multi index input seems to also require one 'selector' per index.
+            So we package a copy of the same selector for each input.
+
+        Args:
+            One or many inputs (any type possible). Optional selector (s=node.attr).
+
+        Returns:
+            NcNode: Instance with choice-node and output-attribute(s)
+
+        Example:
+            option_a = Node("pCube1")
+            option_b = Node("pCube2")
+            driver_attr = Node("pSphere.tx")
+            choice_node_obj = Op.choice(option_a.tx, option_b.tx, selector=driver_attr)
+            Node("pTorus1").tx = choice_node_obj
+        """
+        choice_node_obj = _create_and_connect_node('choice', *inputs)
+        # Since this is a multi-attr node it's hard to filter out the selector keyword
+        # in a perfect manner. This should do fine though.
+        _unravel_and_set_or_connect_a_to_b(choice_node_obj.selector, kwargs.get("selector", 0))
+
+        return choice_node_obj
+
+    @staticmethod
+    def clamp(attr_a, min_value=0, max_value=1):
+        """Create clamp-node
+
+        Args:
+            attr_a (NcNode, NcAttrs, str, int, float): Input value
+            min_value (NcNode, NcAttrs, int, float, list): min-value for clamp-operation
+            max_value (NcNode, NcAttrs, int, float, list): max-value for clamp-operation
+
+        Returns:
+            NcNode: Instance with clamp-node and output-attribute(s)
+
+        Example:
+            >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
+        """
+        return _create_and_connect_node('clamp', attr_a, min_value, max_value)
+
+    @staticmethod
+    def compose_matrix(**kwargs):
+        """Create composeMatrix-node to assemble matrix from components (translation, rotation etc.)
+
+        Args:
+            kwargs: Possible kwargs described below (longName flags take precedence!)
+            translate (NcNode, NcAttrs, str, int, float): [t] translate for matrix composition
+            rotate (NcNode, NcAttrs, str, int, float): [r] rotate for matrix composition
+            scale (NcNode, NcAttrs, str, int, float): [s] scale for matrix composition
+            shear (NcNode, NcAttrs, str, int, float): [sh] shear for matrix composition
+            rotate_order (NcNode, NcAttrs, str, int, float): [ro] rotate_order for matrix composition
+            euler_rotation (NcNode, NcAttrs, bool): Apply Euler filter on rotations
+
+        Returns:
+            NcNode: Instance with composeMatrix-node and output-attribute(s)
+
+        Example:
+            in_a = Node('pCube1')
+            in_b = Node('pCube2')
+            decomp_a = Op.decompose_matrix(in_a.worldMatrix)
+            decomp_b = Op.decompose_matrix(in_b.worldMatrix)
+            Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
+        """
+
+        translate = kwargs.get("translate", kwargs.get("t", 0))
+        rotate = kwargs.get("rotate", kwargs.get("r", 0))
+        scale = kwargs.get("scale", kwargs.get("s", 1))
+        shear = kwargs.get("shear", kwargs.get("sh", 0))
+        rotate_order = kwargs.get("rotate_order", kwargs.get("ro", 0))
+        euler_rotation = kwargs.get("euler_rotation", True)
+
+        compose_matrix_node = _create_and_connect_node(
+            'compose_matrix',
+            translate,
+            rotate,
+            scale,
+            shear,
+            rotate_order,
+            euler_rotation
+        )
+
+        return compose_matrix_node
+
+    @staticmethod
     def condition(condition_node, if_part=False, else_part=True):
         """Set up condition-node.
 
@@ -446,21 +557,74 @@ class OperatorMetaClass(object):
         return Node(condition_node.node, condition_outputs[:max_dim])
 
     @staticmethod
-    def blend(attr_a, attr_b, blend_value=0.5):
-        """Create blendColor-node
+    def cross(attr_a, attr_b=0, normalize=False):
+        """Create vectorProduct-node for vector cross-multiplication
 
         Args:
-            attr_a (NcNode, NcAttrs, str, int, float): Plug or value to blend from
-            attr_b (NcNode, NcAttrs, str, int, float): Plug or value to blend to
-            blend_value (NcNode, str, int, float): Plug or value defining blend-amount
+            attr_a (NcNode, NcAttrs, str, int, float, list): Plug or value for vector A
+            attr_b (NcNode, NcAttrs, str, int, float, list): Plug or value for vector B
+            normalize (NcNode, NcAttrs, boolean): Whether resulting vector should be normalized
 
         Returns:
-            NcNode: Instance with blend-node and output-attributes
+            NcNode: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
+            >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
         """
-        return _create_and_connect_node('blend', attr_a, attr_b, blend_value)
+        return _create_and_connect_node('cross', attr_a, attr_b, normalize)
+
+    @staticmethod
+    def decompose_matrix(in_matrix):
+        """Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
+
+        Args:
+            in_matrix (NcNode, NcAttrs, string): one matrix attribute to be decomposed
+
+        Returns:
+            NcNode: Instance with decomposeMatrix-node and output-attribute(s)
+
+        Example:
+            driver = Node('pCube1')
+            driven = Node('pSphere1')
+            decomp = Op.decompose_matrix(driver.worldMatrix)
+            driven.t = decomp.outputTranslate
+            driven.r = decomp.outputRotate
+            driven.s = decomp.outputScale
+        """
+        return _create_and_connect_node('decompose_matrix', in_matrix)
+
+    @staticmethod
+    def dot(attr_a, attr_b=0, normalize=False):
+        """Create vectorProduct-node for vector dot-multiplication
+
+        Args:
+            attr_a (NcNode, NcAttrs, str, int, float, list): Plug or value for vector A
+            attr_b (NcNode, NcAttrs, str, int, float, list): Plug or value for vector B
+            normalize (NcNode, NcAttrs, boolean): Whether resulting vector should be normalized
+
+        Returns:
+            NcNode: Instance with vectorProduct-node and output-attribute(s)
+
+        Example:
+            >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
+        """
+        return _create_and_connect_node('dot', attr_a, attr_b, normalize)
+
+    @staticmethod
+    def inverse_matrix(in_matrix):
+        """Create inverseMatrix-node to invert the given matrix
+
+        Args:
+            in_matrix (NcNode, NcAttrs, str): Plug or value for in_matrix
+
+        Returns:
+            NcNode: Instance with inverseMatrix-node and output-attribute(s)
+
+        Example:
+            >>> Op.inverse_matrix(Node("pCube.worldMatrix"))
+        """
+
+        return _create_and_connect_node('inverse_matrix', in_matrix)
 
     @staticmethod
     def length(attr_a, attr_b=0):
@@ -495,133 +659,6 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('matrix_distance', matrix_a, matrix_b)
 
     @staticmethod
-    def clamp(attr_a, min_value=0, max_value=1):
-        """Create clamp-node
-
-        Args:
-            attr_a (NcNode, NcAttrs, str, int, float): Input value
-            min_value (NcNode, NcAttrs, int, float, list): min-value for clamp-operation
-            max_value (NcNode, NcAttrs, int, float, list): max-value for clamp-operation
-
-        Returns:
-            NcNode: Instance with clamp-node and output-attribute(s)
-
-        Example:
-            >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
-        """
-        return _create_and_connect_node('clamp', attr_a, min_value, max_value)
-
-    @staticmethod
-    def remap(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1):
-        """Create setRange-node
-
-        Args:
-            attr_a (NcNode, NcAttrs, str, int, float): Input value
-            min_value (NcNode, NcAttrs, int, float, list): min-value for remap-operation
-            max_value (NcNode, NcAttrs, int, float, list): max-value for remap-operation
-            old_min_value (NcNode, NcAttrs, int, float, list): old min-value for remap-operation
-            old_max_value (NcNode, NcAttrs, int, float, list): old max-value for remap-operation
-
-        Returns:
-            NcNode: Instance with setRange-node and output-attribute(s)
-
-        Example:
-            >>> Op.remap(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
-        """
-        return _create_and_connect_node(
-            'remap', attr_a, min_value, max_value, old_min_value, old_max_value
-        )
-
-    @staticmethod
-    def dot(attr_a, attr_b=0, normalize=False):
-        """Create vectorProduct-node for vector dot-multiplication
-
-        Args:
-            attr_a (NcNode, NcAttrs, str, int, float, list): Plug or value for vector A
-            attr_b (NcNode, NcAttrs, str, int, float, list): Plug or value for vector B
-            normalize (NcNode, NcAttrs, boolean): Whether resulting vector should be normalized
-
-        Returns:
-            NcNode: Instance with vectorProduct-node and output-attribute(s)
-
-        Example:
-            >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
-        """
-        return _create_and_connect_node('dot', attr_a, attr_b, normalize)
-
-    @staticmethod
-    def cross(attr_a, attr_b=0, normalize=False):
-        """Create vectorProduct-node for vector cross-multiplication
-
-        Args:
-            attr_a (NcNode, NcAttrs, str, int, float, list): Plug or value for vector A
-            attr_b (NcNode, NcAttrs, str, int, float, list): Plug or value for vector B
-            normalize (NcNode, NcAttrs, boolean): Whether resulting vector should be normalized
-
-        Returns:
-            NcNode: Instance with vectorProduct-node and output-attribute(s)
-
-        Example:
-            >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
-        """
-        return _create_and_connect_node('cross', attr_a, attr_b, normalize)
-
-    @staticmethod
-    def normalize_vector(in_vector, normalize=True):
-        """Create vectorProduct-node to normalize the given vector
-
-        Args:
-            in_vector (NcNode, NcAttrs, str, int, float, list): Plug or value for vector A
-            normalize (NcNode, NcAttrs, boolean): Whether resulting vector should be normalized
-
-        Returns:
-            NcNode: Instance with vectorProduct-node and output-attribute(s)
-
-        Example:
-            >>> Op.normalize_vector(Node("pCube.t"))
-        """
-        # Making normalize a flag allows the user to connect attributes to it
-        return _create_and_connect_node('normalize_vector', in_vector, normalize)
-
-    @staticmethod
-    def average(*attrs):
-        """Create plusMinusAverage-node for averaging input attrs
-
-        Args:
-            attrs (NcNode, NcAttrs, string, list): Any number of inputs to be averaged
-
-        Returns:
-            NcNode: Instance with plusMinusAverage-node and output-attribute(s)
-
-        Example:
-            >>> Op.average(Node("pCube.t"), [1, 2, 3])
-        """
-        return _create_and_connect_node('average', *attrs)
-
-    @staticmethod
-    def angle_between(vector_a, vector_b=[1, 0, 0]):
-        """Create angleBetween-node to find the angle between 2 vectors
-
-        Args:
-            vector_a (NcNode, NcAttrs, int, float, list): Vector a to consider for angle
-            vector_b (NcNode, NcAttrs, int, float, list): Vector b to consider for angle
-
-        Returns:
-            NcNode: Instance with angleBetween-node and output-attribute(s)
-
-        Example:
-            Op.angle_between(
-                Op.point_matrix_mult(
-                    [1, 0, 0],
-                    Node("pCube1").worldMatrix,
-                    vector_multiply=True
-                ),
-                [1, 0, 0]
-            )
-        """
-        return _create_and_connect_node('angle_between', vector_a, vector_b)
-
-    @staticmethod
     def mult_matrix(*attrs):
         """Create multMatrix-node for multiplying matrices
 
@@ -644,99 +681,21 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('mult_matrix', *attrs)
 
     @staticmethod
-    def decompose_matrix(in_matrix):
-        """Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
+    def normalize_vector(in_vector, normalize=True):
+        """Create vectorProduct-node to normalize the given vector
 
         Args:
-            in_matrix (NcNode, NcAttrs, string): one matrix attribute to be decomposed
+            in_vector (NcNode, NcAttrs, str, int, float, list): Plug or value for vector A
+            normalize (NcNode, NcAttrs, boolean): Whether resulting vector should be normalized
 
         Returns:
-            NcNode: Instance with decomposeMatrix-node and output-attribute(s)
+            NcNode: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
-            driver = Node('pCube1')
-            driven = Node('pSphere1')
-            decomp = Op.decompose_matrix(driver.worldMatrix)
-            driven.t = decomp.outputTranslate
-            driven.r = decomp.outputRotate
-            driven.s = decomp.outputScale
+            >>> Op.normalize_vector(Node("pCube.t"))
         """
-        return _create_and_connect_node('decompose_matrix', in_matrix)
-
-    @staticmethod
-    def compose_matrix(**kwargs):
-        """Create composeMatrix-node to assemble matrix from components (translation, rotation etc.)
-
-        Args:
-            kwargs: Possible kwargs described below (longName flags take precedence!)
-            translate (NcNode, NcAttrs, str, int, float): [t] translate for matrix composition
-            rotate (NcNode, NcAttrs, str, int, float): [r] rotate for matrix composition
-            scale (NcNode, NcAttrs, str, int, float): [s] scale for matrix composition
-            shear (NcNode, NcAttrs, str, int, float): [sh] shear for matrix composition
-            rotate_order (NcNode, NcAttrs, str, int, float): [ro] rotate_order for matrix composition
-            euler_rotation (NcNode, NcAttrs, bool): Apply Euler filter on rotations
-
-        Returns:
-            NcNode: Instance with composeMatrix-node and output-attribute(s)
-
-        Example:
-            in_a = Node('pCube1')
-            in_b = Node('pCube2')
-            decomp_a = Op.decompose_matrix(in_a.worldMatrix)
-            decomp_b = Op.decompose_matrix(in_b.worldMatrix)
-            Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
-        """
-
-        translate = kwargs.get("translate", kwargs.get("t", 0))
-        rotate = kwargs.get("rotate", kwargs.get("r", 0))
-        scale = kwargs.get("scale", kwargs.get("s", 1))
-        shear = kwargs.get("shear", kwargs.get("sh", 0))
-        rotate_order = kwargs.get("rotate_order", kwargs.get("ro", 0))
-        euler_rotation = kwargs.get("euler_rotation", True)
-
-        compose_matrix_node = _create_and_connect_node(
-            'compose_matrix',
-            translate,
-            rotate,
-            scale,
-            shear,
-            rotate_order,
-            euler_rotation
-        )
-
-        return compose_matrix_node
-
-    @staticmethod
-    def inverse_matrix(in_matrix):
-        """Create inverseMatrix-node to invert the given matrix
-
-        Args:
-            in_matrix (NcNode, NcAttrs, str): Plug or value for in_matrix
-
-        Returns:
-            NcNode: Instance with inverseMatrix-node and output-attribute(s)
-
-        Example:
-            >>> Op.inverse_matrix(Node("pCube.worldMatrix"))
-        """
-
-        return _create_and_connect_node('inverse_matrix', in_matrix)
-
-    @staticmethod
-    def transpose_matrix(in_matrix):
-        """Create transposeMatrix-node to transpose the given matrix
-
-        Args:
-            in_matrix (NcNode, NcAttrs, str): Plug or value for in_matrix
-
-        Returns:
-            NcNode: Instance with transposeMatrix-node and output-attribute(s)
-
-        Example:
-            >>> Op.transpose_matrix(Node("pCube.worldMatrix"))
-        """
-
-        return _create_and_connect_node('transpose_matrix', in_matrix)
+        # Making normalize a flag allows the user to connect attributes to it
+        return _create_and_connect_node('normalize_vector', in_vector, normalize)
 
     @staticmethod
     def point_matrix_mult(in_vector, in_matrix, vector_multiply=False):
@@ -768,32 +727,95 @@ class OperatorMetaClass(object):
         return created_node
 
     @staticmethod
-    def choice(*inputs, **kwargs):
-        """Create choice-node to switch between various input attributes
-
-        Note:
-            Multi index input seems to also require one 'selector' per index.
-            So we package a copy of the same selector for each input.
+    def remap_value(attr_a, output_min=0, output_max=1, input_min=0, input_max=1, values=None):
+        """Create remapValue-node
 
         Args:
-            One or many inputs (any type possible). Optional selector (s=node.attr).
+            attr_a (NcNode, NcAttrs, str, int, float): Input value
+            output_min (NcNode, NcAttrs, int, float, list): min-value
+            output_max (NcNode, NcAttrs, int, float, list): max-value
+            input_min (NcNode, NcAttrs, int, float, list): old min-value
+            input_max (NcNode, NcAttrs, int, float, list): old max-value
+            values (list): List of tuples (value_Position, value_FloatValue, value_Interp)
 
         Returns:
-            NcNode: Instance with choice-node and output-attribute(s)
+            NcNode: Instance with remapValue-node and output-attribute(s)
 
         Example:
-            option_a = Node("pCube1")
-            option_b = Node("pCube2")
-            driver_attr = Node("pSphere.tx")
-            choice_node_obj = Op.choice(option_a.tx, option_b.tx, selector=driver_attr)
-            Node("pTorus1").tx = choice_node_obj
+            >>> Op.remap_value(Node("pCube.t"), values=[(0.1, .2, 0), (0.4, 0.3)])
         """
-        choice_node_obj = _create_and_connect_node('choice', *inputs)
-        # Since this is a multi-attr node it's hard to filter out the selector keyword
-        # in a perfect manner. This should do fine though.
-        _unravel_and_set_or_connect_a_to_b(choice_node_obj.selector, kwargs.get("selector", 0))
 
-        return choice_node_obj
+        created_node = _create_and_connect_node(
+            'remap_value', attr_a, output_min, output_max, input_min, input_max
+        )
+
+        for index, value_data in enumerate(values or []):
+            # value_Position, value_FloatValue, value_Interp
+            # "x-axis", "y-axis", interpolation
+
+            if not isinstance(value_data, (list, tuple)):
+                LOG.error(
+                    "The values-flag for remap_value requires a list of tuples! "
+                    "Got %s instead." % (str(values))
+                )
+
+            elif len(value_data) == 2:
+                pos, val = value_data
+                interp = 1
+
+            elif len(value_data) == 3:
+                pos, val, interp = value_data
+
+            else:
+                LOG.error(
+                    "The values-flag for remap_value requires a list of tuples "
+                    "of length 2 or 3! Got %s instead." % (str(values))
+                )
+
+            # Set these attributes directly to avoid unnecessary unravelling.
+            _traced_set_attr(
+                "{}.value[{}]".format(created_node.node, index),
+                (pos, val, interp)
+            )
+
+        return created_node
+
+    @staticmethod
+    def set_range(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1):
+        """Create setRange-node
+
+        Args:
+            attr_a (NcNode, NcAttrs, str, int, float): Input value
+            min_value (NcNode, NcAttrs, int, float, list): min-value
+            max_value (NcNode, NcAttrs, int, float, list): max-value
+            old_min_value (NcNode, NcAttrs, int, float, list): old min-value
+            old_max_value (NcNode, NcAttrs, int, float, list): old max-value
+
+        Returns:
+            NcNode: Instance with setRange-node and output-attribute(s)
+
+        Example:
+            >>> Op.set_range(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
+        """
+        return _create_and_connect_node(
+            'set_range', attr_a, min_value, max_value, old_min_value, old_max_value
+        )
+
+    @staticmethod
+    def transpose_matrix(in_matrix):
+        """Create transposeMatrix-node to transpose the given matrix
+
+        Args:
+            in_matrix (NcNode, NcAttrs, str): Plug or value for in_matrix
+
+        Returns:
+            NcNode: Instance with transposeMatrix-node and output-attribute(s)
+
+        Example:
+            >>> Op.transpose_matrix(Node("pCube.worldMatrix"))
+        """
+
+        return _create_and_connect_node('transpose_matrix', in_matrix)
 
 
 class Op(object):
@@ -1660,6 +1682,8 @@ class NcNode(NcBaseNode):
                 auto_consolidate = node._auto_consolidate
         else:
             node_mobj = om_util.get_mobj(node)
+            if node_mobj is None:
+                LOG.error("%s does not exist! NcNode initialization failed." % node)
 
         # Using __dict__, because the setattr & getattr methods are overridden!
         self.__dict__["_node_mobj"] = node_mobj
@@ -1675,17 +1699,6 @@ class NcNode(NcBaseNode):
             auto_consolidate = True
         self.__dict__["_auto_unravel"] = auto_unravel
         self.__dict__["_auto_consolidate"] = auto_consolidate
-
-    def __unicode__(self):
-        """
-        For example for cmds.setAttr(NcNode-instance)
-
-        TODO: NEEDED?! WTF do I do with unicode?!... actually useful or just dumb?
-            Maybe for node AND attrs it can always return the maya node...
-        """
-        return_value = self.node
-
-        return return_value
 
     def __getattr__(self, name):
         """Get a new NcAttrs instance with the MObject this NcNode points to and
@@ -1882,33 +1895,6 @@ class NcAttrs(NcBaseNode):
         """
         return self._holder_node._auto_consolidate
 
-    def __unicode__(self):
-        """
-        TODO: FIGURE OUT WHAT TO DO WITH THIS!
-
-        For example for cmds.setAttr(NcAttrs-instance)
-
-        MAYBE PUT THIS INTO BASENODE CLASS?!
-
-
-        Using the __unicode__ method in NcAttrs class somehow doesn't work well
-        with the __getitem__ method together. Still don't know why...
-
-        To make cmds.setAttr(a2.attrs, 1) work:
-        - Specifically returning a unicode/str in attrs-@property of NcNode class works.
-        - Commenting out __getitem__ method in NcAttrs class works, too but throws this error:
-            # Error: Problem calling __apiobject__ method of passed object #
-            # Error: attribute of type 'NcAttrs' is not callable #
-        """
-        if len(self.attrs_list) == 0:
-            return_value = self.node
-        elif len(self.attrs_list) == 1:
-            return_value = "{}.{}".format(self.node, self.attrs_list[0])
-        else:
-            return_value = "{}, {}".format(self.node, self.attrs_list)
-
-        return return_value
-
     def __getattr__(self, name):
         """Get a new NcAttrs instance with the requested attr concatenated onto existing attr(s).
 
@@ -2028,13 +2014,6 @@ class NcList(NcAtom):
             string (str): String of concatenated class-type, node and attrs.
         """
         return "{}({})".format(self.__class__.__name__, self._items)
-
-    def __unicode__(self):
-        """
-        TODO: FIGURE IT OUT!!!
-        For example for running highlighted NcList-instance
-        """
-        return str(self._items)
 
     def __getitem__(self, index):
         """Get stored item at given index.
@@ -2696,7 +2675,8 @@ def _traced_create_node(node_type, **kwargs):
     """Create a Maya node and add it to the _traced_nodes if Tracer is active
 
     Note:
-        This is simply an overloaded cmds.createNode(node_type, **kwargs).
+        This is simply an overloaded cmds.createNode(node_type, **kwargs). It
+        includes the cmds.parent-command if parenting flags are given.
 
         If Tracer is active: Created nodes are associated with a variable.
         If they are referred to later on in the NodeCalculator statement, the
@@ -2704,62 +2684,95 @@ def _traced_create_node(node_type, **kwargs):
 
     Args:
         node_type (str): Type of the Maya node that should be created.
-        **kwargs: cmds.createNode-flags
+        **kwargs: cmds.createNode & cmds.parent flags
 
     Returns:
         new_node (str): Name of newly created Maya node.
     """
 
     # Make sure a sensible name is in the kwargs
-    kwargs["name"] = kwargs.get("name", node_type)
+    name = kwargs.pop("name", node_type)
 
-    # The spaceLocator command does not support a parent flag. Pop it from kwargs
-    parent = kwargs.pop("parent", None)
-
-    if node_type == "spaceLocator":
-        new_node = cmds.spaceLocator(**kwargs)[0]
-    else:
-        new_node = cmds.ls(cmds.createNode(node_type, **kwargs), long=True)[0]
-
-    # Parent after node creation since spaceLocator does not support parent-flag
+    # Separate the parent command flags from the createNode/spaceLocator kwargs.
+    parent = kwargs.pop("parent", None) or kwargs.pop("p", None)
+    parent_kwargs = {}
     if parent:
         if isinstance(parent, NcBaseNode):
             parent = parent.node
-        cmds.parent(new_node, parent)
+        for parent_flag in lookup_table.PARENT_FLAGS:
+            if parent_flag in kwargs:
+                parent_kwargs[parent_flag] = kwargs.pop(parent_flag)
+    if "s" in parent_kwargs:
+        LOG.warn(
+            "The 's'-flag was used for creation of {}. Please use 'shared' or "
+            "'shape' flag to avoid ambiguity! Used 's' for 'shape' "
+            "in cmds.parent command!".format(node_type)
+        )
+
+    # Create new node
+    new_node = cmds.createNode(node_type, **kwargs)
+
+    # If the newly created node is a shape: Get its transform for consistency.
+    # The NodeCalculator gives easy access to shapes via get_shapes()
+    new_node_is_shape = cmds.objectType(new_node, isAType="shape")
+    if new_node_is_shape:
+        new_node = cmds.listRelatives(new_node, parent=True)[0]
+    new_node = cmds.rename(new_node, name)
+
+    # Parent after node creation
+    if parent:
+        new_node = cmds.parent(new_node, parent, **parent_kwargs)[0]
 
     # Add creation command and new node to traced nodes, if Tracer is active
     if NcAtom._is_tracing:
+        # Add the newly created node to the tracer. Use the mobj for non-ambiguity
         node_variable = NcAtom._get_next_variable_name()
+        tracer_mobj = TracerMObject(new_node, node_variable)
+        NcAtom._add_to_traced_nodes(tracer_mobj)
 
-        # Creating a spaceLocator is a special case (no type or parent-flag)
-        if node_type == "spaceLocator":
-            joined_kwargs = _join_cmds_kwargs(**kwargs)
-            command = [
-                "{var} = cmds.spaceLocator({kwargs})[0]".format(
-                    var=node_variable,
-                    kwargs=joined_kwargs
-                )
-            ]
-            if parent:
-                command.append("cmds.parent({}, {})".format(new_node, parent))
-
-        # Any non-locator node only requires a createNode command.
-        else:
-            # If given: Add the parent back into the kwargs for non-locator nodes.
-            if parent:
-                kwargs["parent"] = parent
-            joined_kwargs = _join_cmds_kwargs(**kwargs)
-            command = "{var} = cmds.createNode('{op}', {kwargs})".format(
+        # Add the node createNode command to the command stack
+        if not new_node_is_shape:
+            # Add the name-kwarg back in, if the new node isn't a shape
+            kwargs["name"] = name
+        joined_kwargs = _join_cmds_kwargs(**kwargs)
+        if joined_kwargs:
+            joined_kwargs = ", {}".format(joined_kwargs)
+        command = [
+            "{var} = cmds.createNode('{op}'{kwargs})".format(
                 var=node_variable,
                 op=node_type,
                 kwargs=joined_kwargs
             )
+        ]
+
+        # If shape was created: Add getting its parent and renaming it to command stack
+        if new_node_is_shape:
+            command.append(
+                "{var} = cmds.listRelatives({var}, parent=True)[0]".format(
+                    var=node_variable,
+                )
+            )
+            command.append(
+                "{var} = cmds.rename({var}, '{name}')".format(
+                    var=node_variable,
+                    name=name
+                )
+            )
+
+        # Add the parent command to the command stack
+        if parent:
+            joined_parent_kwargs = _join_cmds_kwargs(**parent_kwargs)
+            if joined_parent_kwargs:
+                joined_parent_kwargs = ", {}".format(joined_parent_kwargs)
+            command.append(
+                "cmds.parent({var}, '{parent}'{kwargs})".format(
+                    var=node_variable,
+                    parent=parent,
+                    kwargs=joined_parent_kwargs,
+                )
+            )
 
         NcAtom._add_to_command_stack(command)
-
-        # Add the newly created node to the tracer. Use the mobj for non-ambiguity
-        tracer_mobj = TracerMObject(new_node, node_variable)
-        NcAtom._add_to_traced_nodes(tracer_mobj)
 
     return new_node
 
@@ -2805,6 +2818,8 @@ def _traced_set_attr(plug, value=None, **kwargs):
     # Set plug to value
     if value is None:
         cmds.setAttr(plug, edit=True, **kwargs)
+    elif isinstance(value, (list, tuple)):
+        cmds.setAttr(plug, *value, edit=True, **kwargs)
     else:
         cmds.setAttr(plug, value, edit=True, **kwargs)
 
@@ -2829,14 +2844,28 @@ def _traced_set_attr(plug, value=None, **kwargs):
             if isinstance(value, nc_value.NcValue):
                 value = value.metadata
 
+            unpack_value_operator = ""
+            if isinstance(value, (list, tuple)):
+                unpack_value_operator = "*"
             if joined_kwargs:
                 # If both value and kwargs were given
                 NcAtom._add_to_command_stack(
-                    "cmds.setAttr({}, {}, edit=True, {})".format(plug, value, joined_kwargs)
+                    "cmds.setAttr({}, {}{}, edit=True, {})".format(
+                        plug,
+                        unpack_value_operator,
+                        value,
+                        joined_kwargs,
+                    )
                 )
             else:
                 # If only a value was given
-                NcAtom._add_to_command_stack("cmds.setAttr({}, {})".format(plug, value))
+                NcAtom._add_to_command_stack(
+                    "cmds.setAttr({}, {}{})".format(
+                        plug,
+                        unpack_value_operator,
+                        value,
+                    )
+                )
         else:
             if joined_kwargs:
                 # If only kwargs were given
@@ -2975,7 +3004,7 @@ def _unravel_item_as_list(item):
     Returns:
         unravelled_item (list): List consistent of values or MPlugs
     """
-    LOG.debug("_unravel_item_as_list (%s)" % (item))
+    LOG.debug("_unravel_item_as_list (%s)" % (str(item)))
 
     unravelled_item = _unravel_item(item)
 
@@ -3000,7 +3029,7 @@ def _unravel_item(item):
     Returns:
         value (MPlug, NcValue, int, float, list): MPlug or value
     """
-    LOG.debug("_unravel_item (%s)" % (item))
+    LOG.debug("_unravel_item (%s)" % (str(item)))
 
     if isinstance(item, NcList):
         return _unravel_nc_list(item)
@@ -3019,7 +3048,7 @@ def _unravel_item(item):
 
     else:
         LOG.error(
-            "_unravel_item can't unravel %s of type %s" % (item, type(item))
+            "_unravel_item can't unravel %s of type %s" % (str(item), type(item))
         )
 
 
@@ -3032,7 +3061,7 @@ def _unravel_nc_list(nc_list):
     Returns:
         value (list): List of unravelled NcList-items.
     """
-    LOG.debug("_unravel_nc_list (%s)" % (nc_list))
+    LOG.debug("_unravel_nc_list (%s)" % (str(nc_list)))
 
     # An NcList is basically just a list; redirect to _unravel_list
     return _unravel_list(nc_list._items)
@@ -3047,7 +3076,7 @@ def _unravel_list(list_instance):
     Returns:
         unravelled_list (list): List of unravelled items.
     """
-    LOG.debug("_unravel_list (%s)" % (list_instance))
+    LOG.debug("_unravel_list (%s)" % (str(list_instance)))
 
     unravelled_list = []
 
@@ -3069,7 +3098,7 @@ def _unravel_base_node_instance(base_node_instance):
         return_value (MPlug, str): MPlug of the Maya attribute the given
             NcNode/NcAttrs refers to or name of node, if no attrs are defined.
     """
-    LOG.debug("_unravel_base_node_instance (%s)" % (base_node_instance))
+    LOG.debug("_unravel_base_node_instance (%s)" % (str(base_node_instance)))
 
     # If there are no attributes specified on the given NcNode/NcAttrs: return node name
     if len(base_node_instance.attrs_list) == 0:
@@ -3104,7 +3133,7 @@ def _unravel_str(str_instance):
         return_value (MPlug, None): MPlug of the Maya attribute, None if given
             string doesn't refer to a valid Maya plug in the scene.
     """
-    LOG.debug("_unravel_str (%s)" % (str_instance))
+    LOG.debug("_unravel_str (%s)" % (str(str_instance)))
 
     node, attr = _split_plug_into_node_and_attr(str_instance)
     return _unravel_plug(node, attr)
@@ -3125,7 +3154,7 @@ def _unravel_plug(node, attr):
         return_value (MPlug, list): MPlug of the Maya attribute, list of MPlugs
             if a parent attribute was unravelled to its child attributes.
     """
-    LOG.debug("_unravel_plug (%s, %s)" % (node, attr))
+    LOG.debug("_unravel_plug (%s, %s)" % (str(node), str(attr)))
 
     return_value = om_util.get_mplug_of_node_and_attr(node, attr)
 
@@ -3155,7 +3184,7 @@ def _split_plug_into_node_and_attr(plug):
         node, attr = plug.split(".", 1)
         return (node, attr)
 
-    LOG.error("Given plug %s could not be split into node and attr parts!" % (plug))
+    LOG.error("Given plug %s could not be split into node and attr parts!" % (str(plug)))
     return None
 
 
@@ -3219,16 +3248,16 @@ class Tracer(object):
         # Print executed commands on separate lines
         if self.cheers_love:
             # A bit of nerd-fun...
-            print("~~~~~~~~~~~~~~~~ The cavalry's here: ~~~~~~~~~~~~~~~~")
+            print("~~~~~~~~~~~~~~~~~~ The cavalry's here: ~~~~~~~~~~~~~~~~~~")
             for item in NcAtom._executed_commands_stack:
                 print(item)
-            print("~~~~~~ The world could always use more heroes! ~~~~~~")
+            print("~~~~~~~~ The world could always use more heroes! ~~~~~~~~")
 
         elif self.pprint_trace:
-            print("~~~~~~~~~ NodeCalculator command-stack: ~~~~~~~~~")
+            print("~~~~~~~~~~~~~ NodeCalculator command-stack: ~~~~~~~~~~~~~")
             for item in NcAtom._executed_commands_stack:
                 print(item)
-            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         NcAtom._is_tracing = False
 

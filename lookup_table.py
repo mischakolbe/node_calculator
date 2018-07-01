@@ -7,28 +7,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# Available operations in dnMathOps-node (Order important; corresponds with node-index)
-DN_MATH_OPERATORS = [
-    # "sin", "cos", "tan",
-    # "asin", "acos", "atan",
-    # "sqrt", "exp",
-    # "ln", "log2", "log10",
-    # "pow",
-    # "normalise",
-    # "hypot",
-    # "atan2",
-    # "modulus",
-    # "abs",
-]
-
-# Available operations in dnMinMax-node (Order important; corresponds with node-index)
-DN_MIN_MAX_OPERATORS = [
-    # "min", "max",
-    # "min_abs", "max_abs",
-    # "abs_min_abs", "abs_max_abs",
-]
-
 # All attribute types that can be created by the NodeCalculator and their default creation values
 DEFAULT_ATTR_FLAGS = {
     # General settings - Applies to ALL attribute types!
@@ -208,6 +186,19 @@ METADATA_CONCATENATION_TABLE = {
 }
 
 
+# All cmds.parent command flags
+PARENT_FLAGS = [
+    "a", "absolute",
+    "add", "addObject",
+    "nc", "noConnections",
+    "nis", "noInvScale",
+    "r", "relative",
+    "rm", "removeObject",
+    "s", "shape",
+    "w", "world",
+]
+
+
 # Dict of all available operations: used node-type, inputs, outputs, etc.
 OPERATOR_LOOKUP_TABLE = {}
 
@@ -252,51 +243,15 @@ class OperatorLookupTableMetaClass(object):
         global OPERATOR_LOOKUP_TABLE
 
         OPERATOR_LOOKUP_TABLE = {
-            "blend": {
-                "node": "blendColors",
+            "angle_between": {
+                "node": "angleBetween",
                 "inputs": [
-                    ["color1R", "color1G", "color1B"],
-                    ["color2R", "color2G", "color2B"],
-                    ["blender"],
+                    ["vector1X", "vector1Y", "vector1Z"],
+                    ["vector2X", "vector2Y", "vector2Z"],
                 ],
-                "output": ["outputR", "outputG", "outputB"],
+                "output": ["angle"],
             },
-            "length": {
-                "node": "distanceBetween",
-                "inputs": [
-                    ["point1X", "point1Y", "point1Z"],
-                    ["point2X", "point2Y", "point2Z"],
-                ],
-                "output": ["distance"],
-            },
-            "matrix_distance": {
-                "node": "distanceBetween",
-                "inputs": [
-                    ["inMatrix1"],
-                    ["inMatrix2"],
-                ],
-                "output": ["distance"],
-            },
-            "clamp": {
-                "node": "clamp",
-                "inputs": [
-                    ["inputR", "inputG", "inputB"],
-                    ["minR", "minG", "minB"],
-                    ["maxR", "maxG", "maxB"],
-                ],
-                "output": ["outputR", "outputG", "outputB"],
-            },
-            "remap": {
-                "node": "setRange",
-                "inputs": [
-                    ["valueX", "valueY", "valueZ"],
-                    ["minX", "minY", "minZ"],
-                    ["maxX", "maxY", "maxZ"],
-                    ["oldMinX", "oldMinY", "oldMinZ"],
-                    ["oldMaxX", "oldMaxY", "oldMaxZ"],
-                ],
-                "output": ["outValueX", "outValueY", "outValueZ"],
-            },
+
             "average": {
                 "node": "plusMinusAverage",
                 "inputs": [
@@ -310,24 +265,51 @@ class OperatorLookupTableMetaClass(object):
                 "output": ["output3Dx", "output3Dy", "output3Dz"],
                 "operation": 3,
             },
-            "angle_between": {
-                "node": "angleBetween",
+
+            "blend": {
+                "node": "blendColors",
                 "inputs": [
-                    ["vector1X", "vector1Y", "vector1Z"],
-                    ["vector2X", "vector2Y", "vector2Z"],
+                    ["color1R", "color1G", "color1B"],
+                    ["color2R", "color2G", "color2B"],
+                    ["blender"],
                 ],
-                "output": ["angle"],
+                "output": ["outputR", "outputG", "outputB"],
             },
-            "mult_matrix": {
-                "node": "multMatrix",
+
+            "choice": {
+                "node": "choice",
                 "inputs": [
                     [
-                        "matrixIn[{multi_index}]"
+                        "input[{multi_index}]",
                     ],
                 ],
                 "is_multi_index": True,
-                "output": ["matrixSum"],
+                "output": ["output"],
             },
+
+            "clamp": {
+                "node": "clamp",
+                "inputs": [
+                    ["inputR", "inputG", "inputB"],
+                    ["minR", "minG", "minB"],
+                    ["maxR", "maxG", "maxB"],
+                ],
+                "output": ["outputR", "outputG", "outputB"],
+            },
+
+            "compose_matrix": {
+                "node": "composeMatrix",
+                "inputs": [
+                    ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
+                    ["inputRotateX", "inputRotateY", "inputRotateZ"],
+                    ["inputScaleX", "inputScaleY", "inputScaleZ"],
+                    ["inputShearX", "inputShearY", "inputShearZ"],
+                    ["inputRotateOrder"],
+                    ["useEulerRotation"],
+                ],
+                "output": ["outputMatrix"],
+            },
+
             "decompose_matrix": {
                 "node": "decomposeMatrix",
                 "inputs": [
@@ -341,18 +323,7 @@ class OperatorLookupTableMetaClass(object):
                 ],
                 "output_is_predetermined": True,
             },
-            "compose_matrix": {
-                "node": "composeMatrix",
-                "inputs": [
-                    ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
-                    ["inputRotateX", "inputRotateY", "inputRotateZ"],
-                    ["inputScaleX", "inputScaleY", "inputScaleZ"],
-                    ["inputShearX", "inputShearY", "inputShearZ"],
-                    ["inputRotateOrder"],
-                    ["useEulerRotation"],
-                ],
-                "output": ["outputMatrix"],
-            },
+
             "inverse_matrix": {
                 "node": "inverseMatrix",
                 "inputs": [
@@ -360,13 +331,46 @@ class OperatorLookupTableMetaClass(object):
                 ],
                 "output": ["outputMatrix"],
             },
-            "transpose_matrix": {
-                "node": "transposeMatrix",
+
+            "length": {
+                "node": "distanceBetween",
                 "inputs": [
-                    ["inputMatrix"],
+                    ["point1X", "point1Y", "point1Z"],
+                    ["point2X", "point2Y", "point2Z"],
                 ],
-                "output": ["outputMatrix"],
+                "output": ["distance"],
             },
+
+            "matrix_distance": {
+                "node": "distanceBetween",
+                "inputs": [
+                    ["inMatrix1"],
+                    ["inMatrix2"],
+                ],
+                "output": ["distance"],
+            },
+
+            "mult_matrix": {
+                "node": "multMatrix",
+                "inputs": [
+                    [
+                        "matrixIn[{multi_index}]"
+                    ],
+                ],
+                "is_multi_index": True,
+                "output": ["matrixSum"],
+            },
+
+            "normalize_vector": {
+                "node": "vectorProduct",
+                "inputs": [
+                    ["input1X", "input1Y", "input1Z"],
+                    ["normalizeOutput"],
+                ],
+                "output": ["outputX", "outputY", "outputZ"],
+                "operation": 0,
+            },
+
             "point_matrix_mult": {
                 "node": "pointMatrixMult",
                 "inputs": [
@@ -376,25 +380,38 @@ class OperatorLookupTableMetaClass(object):
                 ],
                 "output": ["outputX", "outputY", "outputZ"],
             },
-            "choice": {
-                "node": "choice",
+
+            "remap_value": {
+                "node": "remapValue",
                 "inputs": [
-                    [
-                        "input[{multi_index}]",
-                    ],
+                    ["inputValue"],
+                    ["outputMin"],
+                    ["outputMax"],
+                    ["inputMin"],
+                    ["inputMax"],
                 ],
-                "is_multi_index": True,
-                "output": ["output"],
+                "output": ["outValue"],
             },
-            "normalize_vector": {
-                "node": "vectorProduct",
+
+            "set_range": {
+                "node": "setRange",
                 "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["normalizeOutput"],
+                    ["valueX", "valueY", "valueZ"],
+                    ["minX", "minY", "minZ"],
+                    ["maxX", "maxY", "maxZ"],
+                    ["oldMinX", "oldMinY", "oldMinZ"],
+                    ["oldMaxX", "oldMaxY", "oldMaxZ"],
                 ],
-                "output": ["outputX", "outputY", "outputZ"],
-                "operation": 0,
-            }
+                "output": ["outValueX", "outValueY", "outValueZ"],
+            },
+
+            "transpose_matrix": {
+                "node": "transposeMatrix",
+                "inputs": [
+                    ["inputMatrix"],
+                ],
+                "output": ["outputMatrix"],
+            },
         }
 
         # Fill OPERATOR_LOOKUP_TABLE with condition operations
@@ -455,34 +472,19 @@ class OperatorLookupTableMetaClass(object):
                 "operation": i + 1,
             }
 
-        # Fill OPERATOR_LOOKUP_TABLE with dnMinMax operations
-        for i, dn_min_max_operator in enumerate(DN_MIN_MAX_OPERATORS):
-            OPERATOR_LOOKUP_TABLE[dn_min_max_operator] = {
-                "node": "dnMinMax",
-                "inputs": [
-                    [
-                        "input3D[{multi_index}].input3D0",
-                        "input3D[{multi_index}].input3D1",
-                        "input3D[{multi_index}].input3D2"
-                    ],
-                ],
-                "is_multi_index": True,
-                "output": ["output3D0", "output3D1", "output3D2"],
-                "operation": i,
-            }
-
-        # Fill OPERATOR_LOOKUP_TABLE with dnMath operations
-        for i, dn_math_operator in enumerate(DN_MATH_OPERATORS):
-            OPERATOR_LOOKUP_TABLE[dn_math_operator] = {
-                "node": "dnMathOps",
-                "inputs": [
-                    ["inFloatX", "inFloatY", "inFloatZ"],
-                ],
-                "output": ["outFloatX", "outFloatY", "outFloatZ"],
-                "operation": i,
-            }
-
 
 class OperatorLookupTable(object):
     """Create OPERATOR_LOOKUP_TABLE from OperatorLookupTableMetaClass"""
     __metaclass__ = OperatorLookupTableMetaClass
+
+
+# Little snippet to update the docString of core.py with all the available Operators
+# basic_ops = [
+#     "add", "sub",
+#     "div", "mul",
+#     "pow",
+#     "le", "eq", "ge", "gt", "lt", "ne",
+# ]
+# for op in sorted(OPERATOR_LOOKUP_TABLE.keys()):
+#     if op not in basic_ops:
+#         print(op)

@@ -147,8 +147,12 @@ def value(value, metadata=None, created_by_user=True):
     # Retrieve the basetype of NcValues, to make a new value of the same basetype
     if isinstance(value, NcValue):
         value_type = value.basetype
+        if metadata is None:
+            metadata = value.metadata
     else:
         value_type = type(value)
+        if metadata is None:
+            metadata = value
 
     # Construct the class name out of the type of the given value
     class_name = "Nc{}Value".format(value_type.__name__.capitalize())
@@ -168,8 +172,6 @@ def value(value, metadata=None, created_by_user=True):
 
     # Create a new instance of the specified type with the given value and metadata
     return_value = NewNcValueClass(value)
-    if metadata is None:
-        metadata = value
     return_value.metadata = metadata
     return_value.created_by_user = created_by_user
 
