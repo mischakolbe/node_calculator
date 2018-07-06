@@ -825,14 +825,14 @@ class Op(object):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# NcAtom
+# NcBaseClass
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class NcAtom(object):
+class NcBaseClass(object):
     """Base class for NcLists & NcBaseNode (therefore indirectly NcNode & NcAttrs).
 
     Note:
         NcNode, NcAttrs and NcList are the "building blocks" of NodeCalculator calculations.
-        Having NcAtom as their common parent class makes sure the overloaded operators
+        Having NcBaseClass as their common parent class makes sure the overloaded operators
         apply to each of these "building blocks".
     """
 
@@ -846,7 +846,7 @@ class NcAtom(object):
     _traced_values = None
 
     def __init__(self):
-        super(NcAtom, self).__init__()
+        super(NcBaseClass, self).__init__()
 
     def __pos__(self):
         """Leading plus signs are ignored
@@ -1147,7 +1147,7 @@ class NcAtom(object):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NcBaseNode
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class NcBaseNode(NcAtom):
+class NcBaseNode(NcBaseClass):
     """Base class for NcNode and NcAttrs.
 
     Note:
@@ -1166,7 +1166,7 @@ class NcBaseNode(NcAtom):
             auto_unravel (bool): Whether attrs of this instance should be unravelled.
             auto_consolidate (bool): Whether attrs of this instance should be consolidated.
         """
-        super(NcAtom, self).__init__()
+        super(NcBaseClass, self).__init__()
 
         self.__dict__["_holder_node"] = None
         self.__dict__["_held_attrs"] = None
@@ -1981,8 +1981,8 @@ class NcAttrs(NcBaseNode):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NcList
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class NcList(NcAtom):
-    """NcList is a list with overloaded operators (due to inheritance from NcAtom).
+class NcList(NcBaseClass):
+    """NcList is a list with overloaded operators (due to inheritance from NcBaseClass).
 
     Note:
         NcList has the following keywords:
@@ -2758,11 +2758,11 @@ def _traced_create_node(node_type, **kwargs):
         new_node = cmds.parent(new_node, parent, **parent_kwargs)[0]
 
     # Add creation command and new node to traced nodes, if Tracer is active
-    if NcAtom._is_tracing:
+    if NcBaseClass._is_tracing:
         # Add the newly created node to the tracer. Use the mobj for non-ambiguity
-        node_variable = NcAtom._get_next_variable_name()
+        node_variable = NcBaseClass._get_next_variable_name()
         tracer_mobj = TracerMObject(new_node, node_variable)
-        NcAtom._add_to_traced_nodes(tracer_mobj)
+        NcBaseClass._add_to_traced_nodes(tracer_mobj)
 
         # Add the node createNode command to the command stack
         if not new_node_is_shape:
@@ -2805,7 +2805,7 @@ def _traced_create_node(node_type, **kwargs):
                 )
             )
 
-        NcAtom._add_to_command_stack(command)
+        NcBaseClass._add_to_command_stack(command)
 
     return new_node
 
@@ -2823,17 +2823,17 @@ def _traced_add_attr(node, **kwargs):
     cmds.addAttr(node, **kwargs)
 
     # If commands are traced...
-    if NcAtom._is_tracing:
+    if NcBaseClass._is_tracing:
 
         # If node is already part of the traced nodes: Use its variable instead
-        node_variable = NcAtom._get_tracer_variable_for_node(node)
+        node_variable = NcBaseClass._get_tracer_variable_for_node(node)
         node = node_variable if node_variable else "'{}'".format(node)
 
         # Join any given kwargs so they can be passed on to the addAttr-command
         joined_kwargs = _join_cmds_kwargs(**kwargs)
 
         # Add the addAttr-command to the command stack
-        NcAtom._add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
+        NcBaseClass._add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
 
 
 def _traced_set_attr(plug, value=None, **kwargs):
@@ -2857,11 +2857,11 @@ def _traced_set_attr(plug, value=None, **kwargs):
         cmds.setAttr(plug, value, edit=True, **kwargs)
 
     # If commands are traced...
-    if NcAtom._is_tracing:
+    if NcBaseClass._is_tracing:
 
         # ...look for the node of the given attribute...
         node, attr = _split_plug_into_node_and_attr(plug)
-        node_variable = NcAtom._get_tracer_variable_for_node(node)
+        node_variable = NcBaseClass._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
             plug = "{} + '.{}'".format(node_variable, attr)
@@ -2880,7 +2880,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
             unpack_operator = "*" if isinstance(value, (list, tuple)) else ""
             if joined_kwargs:
                 # If both value and kwargs were given
-                NcAtom._add_to_command_stack(
+                NcBaseClass._add_to_command_stack(
                     "cmds.setAttr({}, {}{}, edit=True, {})".format(
                         plug,
                         unpack_operator,
@@ -2890,13 +2890,13 @@ def _traced_set_attr(plug, value=None, **kwargs):
                 )
             else:
                 # If only a value was given
-                NcAtom._add_to_command_stack(
+                NcBaseClass._add_to_command_stack(
                     "cmds.setAttr({}, {}{})".format(plug, unpack_operator, value)
                 )
         else:
             if joined_kwargs:
                 # If only kwargs were given
-                NcAtom._add_to_command_stack(
+                NcBaseClass._add_to_command_stack(
                     "cmds.setAttr({}, edit=True, {})".format(plug, joined_kwargs)
                 )
             else:
@@ -2931,16 +2931,16 @@ def _traced_get_attr(plug):
     else:
         return_value = plug
 
-    if NcAtom._is_tracing:
-        value_name = NcAtom._get_next_value_name()
+    if NcBaseClass._is_tracing:
+        value_name = NcBaseClass._get_next_value_name()
 
         return_value = nc_value.value(return_value, metadata=value_name, created_by_user=False)
 
-        NcAtom._add_to_traced_values(return_value)
+        NcBaseClass._add_to_traced_values(return_value)
 
         # ...look for the node of the given attribute...
         node, attr = _split_plug_into_node_and_attr(plug)
-        node_variable = NcAtom._get_tracer_variable_for_node(node)
+        node_variable = NcBaseClass._get_tracer_variable_for_node(node)
         if node_variable:
             # ...if it is already part of the traced nodes: Use its variable instead
             plug = "{} + '.{}'".format(node_variable, attr)
@@ -2950,9 +2950,9 @@ def _traced_get_attr(plug):
 
         # Add the getAttr-command to the command stack
         if list_of_tuples_returned:
-            NcAtom._add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(value_name, plug))
+            NcBaseClass._add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(value_name, plug))
         else:
-            NcAtom._add_to_command_stack("{} = cmds.getAttr({})".format(value_name, plug))
+            NcBaseClass._add_to_command_stack("{} = cmds.getAttr({})".format(value_name, plug))
 
     return return_value
 
@@ -2994,7 +2994,7 @@ def _traced_connect_attr(plug_a, plug_b):
     cmds.connectAttr(plug_a, plug_b, force=True)
 
     # If commands are traced...
-    if NcAtom._is_tracing:
+    if NcBaseClass._is_tracing:
 
         # Format both command arguments correctly & replace nodes with
         # variables, if they are part of the traced nodes!
@@ -3003,7 +3003,7 @@ def _traced_connect_attr(plug_a, plug_b):
 
             # Look for the node of the current attribute...
             node, attr = _split_plug_into_node_and_attr(plug)
-            node_variable = NcAtom._get_tracer_variable_for_node(node)
+            node_variable = NcBaseClass._get_tracer_variable_for_node(node)
             if node_variable:
                 # ...if it is already part of the traced nodes: Use its variable instead...
                 formatted_attr = "{} + '.{}'".format(node_variable, attr)
@@ -3013,7 +3013,7 @@ def _traced_connect_attr(plug_a, plug_b):
             formatted_args.append(formatted_attr)
 
         # Add the connectAttr-command to the command stack
-        NcAtom._add_to_command_stack(
+        NcBaseClass._add_to_command_stack(
             "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_args)
         )
 
@@ -3246,19 +3246,19 @@ class Tracer(object):
         self.cheers_love = cheers_love
 
     def __enter__(self):
-        """with-statement "start method". Sets up NcAtom class variables for tracing.
+        """with-statement "start method". Sets up NcBaseClass class variables for tracing.
 
         Note:
             The returned variable is what X in "with noca.Tracer() as X" will be.
 
         Returns:
-            NcAtom._executed_commands_stack (list): List of all executed commands.
+            NcBaseClass._executed_commands_stack (list): List of all executed commands.
         """
-        NcAtom._is_tracing = bool(self.trace)
+        NcBaseClass._is_tracing = bool(self.trace)
 
-        NcAtom._initialize_trace_variables()
+        NcBaseClass._initialize_trace_variables()
 
-        return NcAtom._executed_commands_stack
+        return NcBaseClass._executed_commands_stack
 
     def __exit__(self, exc_type, value, traceback):
         """with-statement "end method". Print executed commands during tracing, if desired."""
@@ -3270,23 +3270,23 @@ class Tracer(object):
 
         # Print executed commands as list
         if self.print_trace:
-            print("NodeCalculator command-stack:", NcAtom._executed_commands_stack)
+            print("NodeCalculator command-stack:", NcBaseClass._executed_commands_stack)
 
         # Print executed commands on separate lines
         if self.cheers_love:
             # A bit of nerd-fun...
             print("~~~~~~~~~~~~~~~~~~ The cavalry's here: ~~~~~~~~~~~~~~~~~~")
-            for item in NcAtom._executed_commands_stack:
+            for item in NcBaseClass._executed_commands_stack:
                 print(item)
-            print("~~~~~~~~ The world could always use more heroes! ~~~~~~~~")
+            print("~~ You know... The world could always use more heroes! ~~")
 
         elif self.pprint_trace:
             print("~~~~~~~~~~~~~ NodeCalculator command-stack: ~~~~~~~~~~~~~")
-            for item in NcAtom._executed_commands_stack:
+            for item in NcBaseClass._executed_commands_stack:
                 print(item)
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-        NcAtom._is_tracing = False
+        NcBaseClass._is_tracing = False
 
 
 class TracerMObject(object):

@@ -61,7 +61,7 @@ def _test_condition_op(operator):
         false_value = 2
 
         # Run noca operation
-        bool_operator_func = getattr(noca.NcAtom, "__{}__".format(operator))
+        bool_operator_func = getattr(noca.NcBaseClass, "__{}__".format(operator))
         condition_node = bool_operator_func(self.a.tx, condition_value)
         result = noca.Op.condition(condition_node, self.b.tx, false_value)
         self.c.t = result
@@ -149,7 +149,7 @@ def _test_regular_op(operator):
         # This assignment is necessary because closure argument can't be used directly.
         true_operator = operator
         try:
-            noca_operator_func = getattr(noca.NcAtom, "__{}__".format(true_operator))
+            noca_operator_func = getattr(noca.NcBaseClass, "__{}__".format(true_operator))
         except AttributeError:
             noca_operator_func = getattr(noca.Op, true_operator)
 
