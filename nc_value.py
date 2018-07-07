@@ -59,7 +59,10 @@ Example:
         # >>> AttributeError: 'int' object has no attribute 'metadata'
 """
 
+
+# IMPORTS ---
 # Python imports
+import os
 import re
 import copy
 
@@ -70,27 +73,22 @@ from . import logger
 from . import lookup_table
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SETUP LOGGER
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SETUP LOGGER ---
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
 LOG = logger.log
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# CLEAN GLOBALS (useful for dev work!)
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# CLEAN GLOBALS (useful for dev work!) ---
 # NcValue-types stay in globals() even when reloaded. Avoids restarting Maya.
-globals_copy = copy.copy(globals())
-for key, value in globals_copy.iteritems():
-    if key.startswith("Nc") and key.endswith("Value"):
-        del globals()[key]
+if os.environ.get("MAYA_DEV"):
+    globals_copy = copy.copy(globals())
+    for key, value in globals_copy.iteritems():
+        if key.startswith("Nc") and key.endswith("Value"):
+            del globals()[key]
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# BASIC FUNCTIONALITY
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BASIC FUNCTIONALITY ---
 def value(value, metadata=None, created_by_user=True):
     """Create a new value with metadata of appropriate NcValue-type.
 
@@ -113,12 +111,12 @@ def value(value, metadata=None, created_by_user=True):
         - An instance of <NcListValue> inherits from <list>
 
     Args:
-        value (bool, int, float, list, dict, ...): Value of any type
-        metadata (bool, int, float, list, ...): Any data that should be attached to this value
+        value (any type): Value of any type
+        metadata (any type): Any data that should be attached to this value
         created_by_user (bool): Whether this value was created by the user or via script
 
     Returns:
-        return_value (class-instance): New instance of appropriate NcValue-class
+        class-instance: New instance of appropriate NcValue-class
             Read Notes for details.
 
     Examples:
@@ -178,9 +176,7 @@ def value(value, metadata=None, created_by_user=True):
     return return_value
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# NODE CALCULATOR VALUE CLASS CREATIONS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# NODE CALCULATOR VALUE CLASS CREATIONS ---
 class NcValue(object):
     """BaseClass inherited by all NcValue-classes that are created on the fly.
 
@@ -198,11 +194,11 @@ def _create_metadata_val_class(class_type):
         Check docString of value function for more details.
 
     Args:
-        class_type (builtin-type): Type for which a new NcValue-class should be created
+        class_type (any builtin-type): Type for which a new NcValue-class should be created
 
     Returns:
-        NcValueClass (class of appropriate type): New class constructor for a
-            NcValue class of appropriate type to match given class_type
+        NcValueClass: New class constructor for a NcValue class of appropriate
+            type to match given class_type
     """
 
     # Can't inherit bool (TypeError: 'bool' not acceptable base type). Redirect to integer!
@@ -219,7 +215,7 @@ def _create_metadata_val_class(class_type):
             """Convenience property to access the base type easily.
 
             Returns:
-                class_type (builtin-type): Type which this class is derived from.
+                builtin-type: Type which this class is derived from.
             """
             return class_type
 
@@ -231,7 +227,7 @@ def _create_metadata_val_class(class_type):
                 This property is necessary; "self" in operations would cause loop!
 
             Returns:
-                value (basetype): Held value cast to its basetype.
+                builtin-type: Held value cast to its basetype.
             """
             return self.basetype(self)
 
@@ -239,8 +235,8 @@ def _create_metadata_val_class(class_type):
             """Regular addition operator.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("add", self, other)
             return_value = self._value + other
@@ -253,8 +249,8 @@ def _create_metadata_val_class(class_type):
                 Fall-back method in case regular addition is not defined & fails.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("add", other, self)
             return_value = other + self._value
@@ -264,8 +260,8 @@ def _create_metadata_val_class(class_type):
             """Regular subtraction operator.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("sub", self, other)
             return_value = self._value - other
@@ -278,8 +274,8 @@ def _create_metadata_val_class(class_type):
                 Fall-back method in case regular subtraction is not defined & fails.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("sub", other, self)
             return_value = other - self._value
@@ -289,8 +285,8 @@ def _create_metadata_val_class(class_type):
             """Regular multiplication operator.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("mul", self, other)
             return_value = self._value * other
@@ -303,8 +299,8 @@ def _create_metadata_val_class(class_type):
                 Fall-back method in case regular multiplication is not defined & fails.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("mul", other, self)
             return_value = other * self._value
@@ -314,8 +310,8 @@ def _create_metadata_val_class(class_type):
             """Regular division operator.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("div", self, other)
             return_value = self._value / other
@@ -328,8 +324,8 @@ def _create_metadata_val_class(class_type):
                 Fall-back method in case regular division is not defined & fails.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("div", other, self)
             return_value = other / self._value
@@ -339,8 +335,8 @@ def _create_metadata_val_class(class_type):
             """Power operator.
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("pow", self, other)
             return_value = self._value ** other
@@ -350,8 +346,8 @@ def _create_metadata_val_class(class_type):
             """Equality operator: ==
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("eq", self, other)
             return_value = self._value == other
@@ -361,8 +357,8 @@ def _create_metadata_val_class(class_type):
             """Inequality operator: !=
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("ne", self, other)
             return_value = self._value != other
@@ -372,8 +368,8 @@ def _create_metadata_val_class(class_type):
             """Greater than operator: >
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("gt", self, other)
             return_value = self._value > other
@@ -383,8 +379,8 @@ def _create_metadata_val_class(class_type):
             """Greater equal operator: >=
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("ge", self, other)
             return_value = self._value >= other
@@ -394,8 +390,8 @@ def _create_metadata_val_class(class_type):
             """Less than operator: <
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("lt", self, other)
             return_value = self._value < other
@@ -405,8 +401,8 @@ def _create_metadata_val_class(class_type):
             """Less equal operator: <=
 
             Returns:
-                new_value (NcValue): Result of calculation with concatenated
-                    metadata to preserve origin of values.
+                NcValue: Result of calculation with concatenated metadata to
+                    preserve origin of values.
             """
             metadata = _concatenate_metadata("le", self, other)
             return_value = self._value <= other
@@ -423,11 +419,11 @@ def _concatenate_metadata(operator, input_a, input_b):
 
     Args:
         operator (str): Name of the operator sign to be used for concatenation
-        input_a (NcValue, int, float, bool): First part of the operation
-        input_b (NcValue, int, float, bool): Second part of the operation
+        input_a (NcValue or int or float or bool): First part of the operation
+        input_b (NcValue or int or float or bool): Second part of the operation
 
     Returns:
-        return_metadata (str): Concatenated metadata for performed operation.
+        str: Concatenated metadata for performed operation.
 
     Examples:
         ::

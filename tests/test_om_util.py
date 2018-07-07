@@ -130,11 +130,11 @@ class TestTracerClass(TestCase):
         # Test name retrieving of MObjects
         self.assertEqual(om_util.get_name_of_mobj(test_node_mobj), self.node_name)
         self.assertEqual(
-            om_util.get_long_name_of_mobj(test_node_mobj, full=False),
+            om_util.get_dag_path_of_mobj(test_node_mobj, full=False),
             self.node_name
         )
         self.assertEqual(
-            om_util.get_long_name_of_mobj(test_node_mobj, full=True),
+            om_util.get_dag_path_of_mobj(test_node_mobj, full=True),
             "|{}|{}".format(self.group_name, self.node_name)
         )
 
@@ -228,24 +228,24 @@ class TestTracerClass(TestCase):
         self.assertEqual(array_mplug_elements_as_str, expected_array_plugs)
 
         # Test array mplug access via pysical index
-        mplug_by_index = str(om_util.get_array_mplug_by_physical_index(parent_plug, 0))
+        mplug_by_index = str(om_util.get_array_mplug_by_index(parent_plug, 0, physical=True))
         expected_plug = "{}.{}[0]".format(self.test_operator, parent_attr)
         self.assertEqual(mplug_by_index, expected_plug)
-        mplug_by_index = str(om_util.get_array_mplug_by_physical_index(parent_plug, 1))
+        mplug_by_index = str(om_util.get_array_mplug_by_index(parent_plug, 1, physical=True))
         expected_plug = "{}.{}[3]".format(self.test_operator, parent_attr)
         self.assertEqual(mplug_by_index, expected_plug)
-        mplug_by_index = om_util.get_array_mplug_by_physical_index(parent_plug, 2)
+        mplug_by_index = om_util.get_array_mplug_by_index(parent_plug, 2, physical=True)
         expected_plug = None
         self.assertEqual(mplug_by_index, expected_plug)
 
         # Test array mplug access via logical index
-        mplug_by_index = str(om_util.get_array_mplug_by_logical_index(parent_plug, 0))
+        mplug_by_index = str(om_util.get_array_mplug_by_index(parent_plug, 0, physical=False))
         expected_plug = "{}.{}[0]".format(self.test_operator, parent_attr)
         self.assertEqual(mplug_by_index, expected_plug)
-        mplug_by_index = str(om_util.get_array_mplug_by_logical_index(parent_plug, 1))
+        mplug_by_index = str(om_util.get_array_mplug_by_index(parent_plug, 1, physical=False))
         expected_plug = "{}.{}[1]".format(self.test_operator, parent_attr)
         self.assertEqual(mplug_by_index, expected_plug)
-        mplug_by_index = str(om_util.get_array_mplug_by_logical_index(parent_plug, 3))
+        mplug_by_index = str(om_util.get_array_mplug_by_index(parent_plug, 3, physical=False))
         expected_plug = "{}.{}[3]".format(self.test_operator, parent_attr)
         self.assertEqual(mplug_by_index, expected_plug)
 
@@ -264,3 +264,42 @@ class TestTracerClass(TestCase):
             "{}.{}.input3D{}".format(self.test_operator, array_attr, var) for var in "xyz"
         ]
         self.assertEqual([str(var) for var in child_mplugs], expected_child_plugs)
+
+    def test_speed(self):
+        """Test speed advantage of om_util functions over cmds equivalent"""
+
+        # TODO: Write speed tests
+        pass
+        # import timeit
+        # import node_calculator.core as noca
+        # reload(noca)
+
+        # num_iterations = 10000
+        # node = "A"
+
+        # def maya_parent():
+        #     return cmds.listRelatives(node, parent=True)[0]
+
+
+        # def noca_parent():
+        #     return noca.om_util.get_parent(node)
+
+
+        # print timeit.timeit("maya_parent()", setup="from __main__ import maya_parent", number=num_iterations)
+        # print timeit.timeit("noca_parent()", setup="from __main__ import noca_parent", number=num_iterations)
+
+
+        # print "*"*60
+
+
+        # def maya_parents():
+        #     return cmds.listRelatives(node, allParents=True)
+
+        # print timeit.timeit("maya_parents()", setup="from __main__ import maya_parents", number=num_iterations)
+
+
+        # # node = noca.om_util.get_mobj(node)
+        # def noca_parents():
+        #     return noca.om_util.get_parents(node)
+
+        # print timeit.timeit("noca_parents()", setup="from __main__ import noca_parents", number=num_iterations)

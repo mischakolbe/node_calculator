@@ -15,9 +15,7 @@ Notes:
 """
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# IMPORTS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# IMPORTS ---
 # Python imports
 import re
 
@@ -29,25 +27,21 @@ from maya import cmds
 from . import logger
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SETUP LOGGER
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# SETUP LOGGER ---
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.DEBUG)
 LOG = logger.log
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# MOBJECT
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# MOBJECT ---
 def get_mobj(node):
     """Get the MObject of the given node.
 
     Args:
-        node (MObject, MDagPath, str): Maya node requested as an MObject.
+        node (MObject or MDagPath or str): Maya node requested as an MObject.
 
     Returns:
-        mobj (MObject): MObject instance that is a reference to the given node.
+        MObject: MObject instance that is a reference to the given node.
     """
 
     if isinstance(node, OpenMaya.MObject):
@@ -70,7 +64,7 @@ def get_name_of_mobj(mobj):
         mobj (MObject): MObject whose name is requested.
 
     Returns:
-        node_name (str): Name of given MObject.
+        str: Name of given MObject.
     """
     node_fn = OpenMaya.MFnDependencyNode(mobj)
     node_name = node_fn.name()
@@ -82,10 +76,10 @@ def get_shape_mobjs(mobj):
     """Get the shape MObjects of a given MObject.
 
     Args:
-        mobj (MObject, MDagPath, str): MObject whose shapes are requested.
+        mobj (MObject or MDagPath or str): MObject whose shapes are requested.
 
     Returns:
-        return_shape_mobjs (list): List of MObjects of the shapes of given MObject.
+        list: List of MObjects of the shapes of given MObject.
     """
     if not isinstance(mobj, OpenMaya.MObject):
         mobj = get_mobj(mobj)
@@ -113,17 +107,17 @@ def is_instanced(node):
     """Check if a Maya node is instantiated.
 
     Args:
-        node (MObject, MDagPath, str): Node to be checked if it's instantiated.
+        node (MObject or MDagPath or str): Node to be checked if it's instantiated.
 
     Returns:
-        is_instanced (bool): Whether given node is instantiated.
+        bool: Whether given node is instantiated.
     """
     mdag_path = get_mdag_path(node)
     is_instanced = mdag_path.isInstanced()
     return is_instanced
 
 
-def get_long_name_of_mobj(mobj, full=False):
+def get_dag_path_of_mobj(mobj, full=False):
     """Get the dag path of an MObject. Either partial or full.
 
     Note:
@@ -132,15 +126,12 @@ def get_long_name_of_mobj(mobj, full=False):
         describe the given MObject. "Full" always gives the entire DAG path.
 
     Args:
-        mobj (MObject, MDagPath, str): Node whose long name is requested.
+        mobj (MObject or MDagPath or str): Node whose long name is requested.
         full (bool): Return either the entire or partial DAG path. See Notes.
 
     Returns:
-        dag_path (str): DAG path to the given MObject.
+        str: DAG path to the given MObject.
     """
-    if not isinstance(mobj, OpenMaya.MObject):
-        LOG.error("Given mobj %s is not an instance of OpenMaya.MObject" % (str(mobj)))
-
     mdag_path = get_mdag_path(mobj)
     if mdag_path:
         if full:
@@ -160,11 +151,11 @@ def get_node_type(node, api_type=False):
         More versatile version of cmds.nodeType()
 
     Args:
-        node (MObject, MDagPath, str): Node whose type should be queried.
+        node (MObject or MDagPath or str): Node whose type should be queried.
         api_type (bool): Return Maya API type.
 
     Returns:
-        node_type (str): Type of Maya node
+        str: Type of Maya node
     """
     mobj = get_mobj(node)
 
@@ -183,7 +174,7 @@ def get_all_mobjs_of_type(dependency_node_type):
         dependency_node_type (OpenMaya.MFn): OpenMaya.MFn-type.
 
     Returns:
-        return_list (list): List of MObjects of matching type.
+        list: List of MObjects of matching type.
 
     Example:
 
@@ -213,17 +204,19 @@ def rename_mobj(mobj, name):
     dag_modifier.renameNode(mobj, name)
     dag_modifier.doIt()
 
+    return get_name_of_mobj(mobj)
+
 
 def get_selected_nodes_as_mobjs():
     """Get all currently selected nodes in the scene as MObjects.
 
     Returns:
-        mobjs (list): List of MObjects of the selected nodes in the Maya scene.
+        list: List of MObjects of the selected nodes in the Maya scene.
     """
     mobjs = []
 
     selection_list = OpenMaya.MGlobal.getActiveSelectionList()
-    if selection_list.length() > 0:
+    if selection_list.length():
 
         iterator = OpenMaya.MItSelectionList(selection_list, OpenMaya.MFn.kDagNode)
         while not iterator.isDone():
@@ -256,22 +249,20 @@ def select_mobjs(mobjs):
 
     select_list = []
     for mobj in mobjs:
-        select_list.append(get_long_name_of_mobj(mobj))
+        select_list.append(get_dag_path_of_mobj(mobj))
 
     cmds.select(select_list)
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# MDAG
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# MDAG ---
 def get_mdag_path(mobj):
     """Get an MDagPath from the given mobj.
 
     Args:
-        mobj (MObject, MDagPath, str): MObject to get MDagPath for.
+        mobj (MObject or MDagPath or str): MObject to get MDagPath for.
 
     Returns:
-        mdag_path (MDagPath): MDagPath of the given mobj.
+        MDagPath: MDagPath of the given mobj.
     """
     if isinstance(mobj, OpenMaya.MDagPath):
         return mobj
@@ -289,13 +280,12 @@ def get_mfn_dag_node(node):
     """Get an MFnDagNode of the given node.
 
     Args:
-        node (MObject, MDagPath, str): Node to get MFnDagNode for.
+        node (MObject or MDagPath or str): Node to get MFnDagNode for.
 
     Returns:
-        mfn_dag_node (MFnDagNode): MFnDagNode of the given node.
+        MFnDagNode: MFnDagNode of the given node.
     """
-    mobj = get_mobj(node)
-    mfn_dag_node = OpenMaya.MFnDagNode(mobj)
+    mfn_dag_node = OpenMaya.MFnDagNode(get_mobj(node))
 
     return mfn_dag_node
 
@@ -304,19 +294,14 @@ def get_parents(node):
     """Get parents of the given node.
 
     Args:
-        node (MObject, MDagPath, str): Node whose list of parents is queried.
+        node (MObject or MDagPath or str): Node whose list of parents is queried.
 
     Returns:
-        parents (list): Name of parents in an ascending list: First parent first.
+        list: Name of parents in an ascending list: First parent first.
     """
-    parents = []
-    current_parent = get_parent(node)
-
-    # get parent hierarchy recursively because parentCount seems to be broken
-    # Change when parentCount is fixed, since a group "world" would break it!
-    while current_parent != "world":
-        parents.append(current_parent)
-        current_parent = get_parent(current_parent)
+    # Getting the parents from splitting the long name string is faster than
+    # using the .parent() method recursively.
+    parents = list(reversed(get_dag_path_of_mobj(node, full=True).split("|")[1:-1]))
 
     return parents
 
@@ -328,10 +313,10 @@ def get_parent(node):
         More versatile version of cmds.listRelatives(node, parent=True)[0]
 
     Args:
-        node (MObject, MDagPath, str): Node to get parent of.
+        node (MObject or MDagPath or str): Node to get parent of.
 
     Returns:
-        parent (str): Name of node's parent.
+        str: Name of node's parent.
     """
     mfn_dag_node = get_mfn_dag_node(node)
 
@@ -339,9 +324,7 @@ def get_parent(node):
     return parent
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# MPLUG
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# MPLUG ---
 def set_mobj_attribute(mobj, attr, value):
     """Set attribute on given MObject to the given value.
 
@@ -349,14 +332,14 @@ def set_mobj_attribute(mobj, attr, value):
         Basically cmds.setAttr() that works with MObjects.
 
     Args:
-        mobj (MObject, MDagPath, str): Node whose attribute should be set.
+        mobj (MObject or MDagPath or str): Node whose attribute should be set.
         attr (str): Name of attribute.
-        value (int, float, bool, str): Value plug should be set to.
+        value (int or float or bool or str): Value plug should be set to.
 
     Todo:
         Should be OpenMaya API only! Check: austinjbaker.com/mplugs-setting-values
     """
-    plug = "{}.{}".format(get_long_name_of_mobj(mobj), attr)
+    plug = "{}.{}".format(get_dag_path_of_mobj(mobj), attr)
     cmds.setAttr(plug, value)
 
 
@@ -367,13 +350,13 @@ def get_attr_of_mobj(mobj, attr):
         Basically cmds.getAttr() that works with MObjects.
 
     Args:
-        mobj (MObject, MDagPath, str): Node whose attribute should be queried.
+        mobj (MObject or MDagPath or str): Node whose attribute should be queried.
         attr (str): Name of attribute.
 
     Returns:
-        value (list, tuple, int, float, bool, str): Value of queried plug.
+        list or tuple or int or float or bool or str: Value of queried plug.
     """
-    plug = "{}.{}".format(get_long_name_of_mobj(mobj), attr)
+    plug = "{}.{}".format(get_dag_path_of_mobj(mobj), attr)
     value = cmds.getAttr(plug)
 
     return value
@@ -383,10 +366,10 @@ def is_valid_mplug(mplug):
     """Check whether given mplug is a valid MPlug.
 
     Args:
-        mplug (MObject, MPlug, MDagPath, str): Item to check whether it's an MPlug.
+        mplug (MObject or MPlug or MDagPath or str): Item to check whether it's an MPlug.
 
     Returns:
-        value (bool): True if given mplug actually is an MPlug instance.
+        bool: True if given mplug actually is an MPlug instance.
     """
     if not isinstance(mplug, OpenMaya.MPlug):
         LOG.error("Expected an MPlug, got %s of type %s" % (str(mplug), type(mplug)))
@@ -404,7 +387,7 @@ def get_parent_mplug(mplug):
         mplug (MPlug): MPlug whose parent MPlug to get.
 
     Returns:
-        mplug_parent (MPlug, None): Parent MPlug or None if that doesn't exist.
+        MPlug or None: Parent MPlug or None if that doesn't exist.
     """
     if not is_valid_mplug(mplug):
         return None
@@ -428,7 +411,7 @@ def get_child_mplug(mplug, child):
         child (str): Name of the child plug
 
     Returns:
-        mplug_child (MPlug, None): Child MPlug or None if that doesn't exist.
+        MPlug or None: Child MPlug or None if that doesn't exist.
     """
     if not is_valid_mplug(mplug):
         return None
@@ -452,7 +435,7 @@ def get_child_mplugs(mplug):
         mplug (MPlug): MPlug whose child MPlugs to get.
 
     Returns:
-        child_plugs (list): List of child MPlugs.
+        list: List of child MPlugs.
     """
     if not is_valid_mplug(mplug):
         return None
@@ -477,7 +460,7 @@ def get_array_mplug_elements(mplug):
         mplug (MPlug): MPlug whose array element MPlugs to get.
 
     Returns:
-        array_elements (list): List of array element MPlugs.
+        list: List of array element MPlugs.
     """
     if not is_valid_mplug(mplug):
         return None
@@ -493,44 +476,20 @@ def get_array_mplug_elements(mplug):
     return array_elements
 
 
-def get_array_mplug_by_physical_index(mplug, index):
-    """Get array element MPlug of the given mplug by its physical index.
+def get_array_mplug_by_index(mplug, index, physical=True):
+    """Get array element MPlug of given mplug by its physical or logical index.
 
     Note:
         .input3D -> .input3D[3]
 
+        PHYSICAL INDEX:
         This function will NOT create a plug if it doesn't exist! Therefore
         this function is particularly useful for iteration through the element
         plugs of an array plug.
 
         The index can range from 0 to numElements() - 1.
 
-    Args:
-        mplug (MPlug): MPlug whose array element MPlug to get.
-        index (int): Physical index of array element plug.
-
-    Returns:
-        return_mplug (MPlug): MPlug at the requested physical index.
-    """
-    if not is_valid_mplug(mplug):
-        return None
-
-    return_mplug = None
-
-    if mplug.isArray:
-        num_elements = mplug.evaluateNumElements()
-        if num_elements > index:
-            return_mplug = mplug.elementByPhysicalIndex(index)
-
-    return return_mplug
-
-
-def get_array_mplug_by_logical_index(mplug, index):
-    """Get array element MPlug of the given mplug by its logical index.
-
-    Note:
-        .input3D -> .input3D[3]
-
+        LOGICAL INDEX:
         Maya will create a plug at the requested index if it doesn't exist.
         This function is therefore very useful to reliably get an array element
         MPlug, even if that particular index doesn't necessarily already exist.
@@ -539,29 +498,44 @@ def get_array_mplug_by_logical_index(mplug, index):
 
     Args:
         mplug (MPlug): MPlug whose array element MPlug to get.
-        index (int): Logical index of array element plug.
+        index (int): Index of array element plug.
+        physical (bool): Look for element at physical index. If set to False it
+            will look for the logical index!
 
     Returns:
-        return_mplug (MPlug): MPlug at the requested logical index.
+        MPlug or None: MPlug at the requested index.
     """
     if not is_valid_mplug(mplug):
         return None
 
-    if not mplug.isArray:
-        LOG.error("%s is not an array plug!" % (str(mplug)))
+    return_mplug = None
 
-    return mplug.elementByLogicalIndex(index)
+    if not mplug.isArray:
+        LOG.warn("%s is not an array plug!" % (str(mplug)))
+        return return_mplug
+
+    if physical:
+        # Look for physical index
+        num_elements = mplug.evaluateNumElements()
+        if num_elements > index:
+            return_mplug = mplug.elementByPhysicalIndex(index)
+
+    else:
+        # Look for logical index
+        return_mplug = mplug.elementByLogicalIndex(index)
+
+    return return_mplug
 
 
 def get_mplug_of_node_and_attr(node, attr_str):
     """Get an MPlug to the given node & attr combination.
 
     Args:
-        node (MObject, MDagPath, str): Node whose attribute should be queried.
+        node (MObject or MDagPath or str): Node whose attribute should be queried.
         attr_str (str): Name of attribute.
 
     Returns:
-        mplug (MPlug, None): MPlug of given node.attr or None if that doesn't exist.
+        MPlug or None: MPlug of given node.attr or None if that doesn't exist.
     """
     mobj = get_mobj(node)
 
@@ -583,7 +557,7 @@ def get_mplug_of_node_and_attr(node, attr_str):
                     "mplug for %s.%s is supposed to have an index, "
                     "but is not an array attr!" % (str(node), str(attr_str))
                 )
-            mplug = get_array_mplug_by_logical_index(mplug, index)
+            mplug = get_array_mplug_by_index(mplug, index, physical=False)
 
     return mplug
 
@@ -596,7 +570,7 @@ def get_mplug_of_mobj(mobj, attr):
         attr (str): Name of attribute on node.
 
     Returns:
-        mplug (MPlug): MPlug of the given node/attr combination.
+        MPlug: MPlug of the given node/attr combination.
     """
     node_mfn_dep_node = OpenMaya.MFnDependencyNode(mobj)
 
@@ -612,10 +586,10 @@ def get_mplug_of_plug(plug):
     """Get the MPlug to any given plug.
 
     Args:
-        plug (MPlug, str): Name of plug; "name.attr"
+        plug (MPlug or str): Name of plug; "name.attr"
 
     Returns:
-        mplug (MPlug): MPlug of the requested plug.
+        MPlug: MPlug of the requested plug.
     """
     if isinstance(plug, OpenMaya.MPlug):
         return plug
@@ -637,7 +611,7 @@ def split_plug_string(plug):
         plug (str): Name of plug; "name.attr"
 
     Returns:
-        return_value (tuple): Tuples of elements that make up plug;
+        tuple: Tuple of elements that make up plug;
             (namespace, dag_path, node, attrs)
     """
     node, attr = plug.split(".", 1)
@@ -661,7 +635,7 @@ def split_attr_string(attr):
         attr (str): Name of attribute.
 
     Returns:
-        cleaned_matches (list): List of tuples of (attribute, attribute-index)
+        list: List of tuples of the form (attribute, attribute-index)
     """
     attr_pattern = re.compile(r"(\w+)(?:\[(\d+)\])?\.?")
 
@@ -692,7 +666,7 @@ def split_node_string(node):
         node (str): Name of Maya node, potentially including namespace & dagPath.
 
     Returns:
-        return_value (tuple): Tuple of (namespace, dag_path, node)
+        tuple: Tuple of the form (namespace, dag_path, node)
     """
     node_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)")
 

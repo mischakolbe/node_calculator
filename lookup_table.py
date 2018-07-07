@@ -4,9 +4,7 @@
 """
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# GLOBALS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# GLOBALS ---
 # All attribute types that can be created by the NodeCalculator and their default creation values
 DEFAULT_ATTR_FLAGS = {
     # General settings - Applies to ALL attribute types!
@@ -203,9 +201,7 @@ PARENT_FLAGS = [
 OPERATOR_LOOKUP_TABLE = {}
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# OPERATORS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# OPERATORS ---
 class OperatorLookupTableMetaClass(object):
     """Base class for NodeCalculator operators:
     Everything that goes beyond basic operators (+-*/)
@@ -479,12 +475,13 @@ class OperatorLookupTable(object):
 
 
 # Little snippet to update the docString of core.py with all the available Operators
-# basic_ops = [
-#     "add", "sub",
-#     "div", "mul",
-#     "pow",
-#     "le", "eq", "ge", "gt", "lt", "ne",
-# ]
-# for op in sorted(OPERATOR_LOOKUP_TABLE.keys()):
-#     if op not in basic_ops:
-#         print(op)
+if __name__ == "__main__":
+    basic_ops = [
+        "add", "sub",
+        "div", "mul",
+        "pow",
+        "le", "eq", "ge", "gt", "lt", "ne",
+    ]
+    for op in sorted(OPERATOR_LOOKUP_TABLE.keys()):
+        if op not in basic_ops:
+            print(op)
