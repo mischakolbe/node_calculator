@@ -7,6 +7,7 @@ Unit tests for noca.om_util
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
 import unittest
+import timeit
 
 # Third party imports
 from maya import cmds
@@ -269,37 +270,87 @@ class TestTracerClass(TestCase):
         """Test speed advantage of om_util functions over cmds equivalent"""
 
         # TODO: Write speed tests
-        pass
-        # import timeit
-        # import node_calculator.core as noca
-        # reload(noca)
 
-        # num_iterations = 10000
-        # node = "A"
+        num_iterations = 1000
+        node = self.test_node
+        mobj = om_util.get_mobj(self.test_node)
 
-        # def maya_parent():
-        #     return cmds.listRelatives(node, parent=True)[0]
+        # Test speed of get_parent
+        def maya_get_parent():
+            return cmds.listRelatives(node, parent=True)[0]
 
+        def noca_get_parent():
+            return om_util.get_parent(mobj)
+        self.assertEqual(maya_get_parent(), noca_get_parent())
+        maya_time = timeit.timeit(maya_get_parent, number=num_iterations)
+        noca_time = timeit.timeit(noca_get_parent, number=num_iterations)
+        self.assertLess(noca_time, maya_time)
 
-        # def noca_parent():
-        #     return noca.om_util.get_parent(node)
+        # Test speed of get_parents
+        def maya_get_parents():
+            return cmds.listRelatives(node, allParents=True)
 
+        def noca_get_parents():
+            return om_util.get_parents(mobj)
+        self.assertEqual(maya_get_parents(), noca_get_parents())
+        maya_time = timeit.timeit(maya_get_parents, number=num_iterations)
+        noca_time = timeit.timeit(noca_get_parents, number=num_iterations)
+        self.assertLess(noca_time, maya_time)
 
-        # print timeit.timeit("maya_parent()", setup="from __main__ import maya_parent", number=num_iterations)
-        # print timeit.timeit("noca_parent()", setup="from __main__ import noca_parent", number=num_iterations)
+        # Test speed of get_dag_path_of_mobj
+        def maya_get_dag_path():
+            return cmds.ls(node, long=True)
 
+        def noca_get_dag_path():
+            return om_util.get_dag_path_of_mobj(mobj, full=True)
+        self.assertEqual(maya_get_dag_path()[0], noca_get_dag_path())
+        maya_time = timeit.timeit(maya_get_dag_path, number=num_iterations)
+        noca_time = timeit.timeit(noca_get_dag_path, number=num_iterations)
+        self.assertLess(noca_time, maya_time)
 
-        # print "*"*60
+        # Test speed of get_node_type
+        def maya_get_node_type():
+            return cmds.objectType(node)
 
+        def noca_get_node_type():
+            return om_util.get_node_type(mobj, api_type=False)
+        self.assertEqual(maya_get_node_type(), noca_get_node_type())
+        maya_time = timeit.timeit(maya_get_node_type, number=num_iterations)
+        noca_time = timeit.timeit(noca_get_node_type, number=num_iterations)
+        self.assertLess(noca_time, maya_time)
 
-        # def maya_parents():
-        #     return cmds.listRelatives(node, allParents=True)
+        # # Test speed of rename_mobj
+        # # THIS IS CURRENTLY SLOWER THAN CMDS!!
+        # def maya_rename():
+        #     return cmds.rename(node, node)
 
-        # print timeit.timeit("maya_parents()", setup="from __main__ import maya_parents", number=num_iterations)
+        # def noca_rename():
+        #     return om_util.rename_mobj(mobj, node)
+        # self.assertEqual(maya_rename(), noca_rename())
+        # maya_time = timeit.timeit(maya_rename, number=num_iterations)
+        # noca_time = timeit.timeit(noca_rename, number=num_iterations)
+        # self.assertLess(noca_time, maya_time)
 
+        # # Test speed of set_mobj_attribute
+        # # THIS IS CURRENTLY SLOWER THAN CMDS!!
+        # def maya_set_attr():
+        #     return cmds.setAttr(node + ".tx", 1)
 
-        # # node = noca.om_util.get_mobj(node)
-        # def noca_parents():
-        #     return noca.om_util.get_parents(node)
+        # def noca_set_attr():
+        #     return om_util.set_mobj_attribute(mobj, "tx", 1)
+        # self.assertEqual(maya_set_attr(), noca_set_attr())
+        # maya_time = timeit.timeit(maya_set_attr, number=num_iterations)
+        # noca_time = timeit.timeit(noca_set_attr, number=num_iterations)
+        # self.assertLess(noca_time, maya_time)
 
-        # print timeit.timeit("noca_parents()", setup="from __main__ import noca_parents", number=num_iterations)
+        # # Test speed of get_node_type
+        # # THIS IS CURRENTLY SLOWER THAN CMDS!!
+        # def maya_get_attr():
+        #     return cmds.getAttr(node + ".tx")
+
+        # def noca_get_attr():
+        #     return om_util.get_attr_of_mobj(mobj, "tx")
+        # self.assertEqual(maya_get_attr(), noca_get_attr())
+        # maya_time = timeit.timeit(maya_get_attr, number=num_iterations)
+        # noca_time = timeit.timeit(noca_get_attr, number=num_iterations)
+        # self.assertLess(noca_time, maya_time)
