@@ -1,13 +1,12 @@
-"""Various lookup tables used in the NodeCalculator initialization and evaluation.
+"""Various lookup tables used in the NodeCalculator initialization & evaluation.
 
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 """
 
 
 # GLOBALS ---
-# All attribute types that can be created by the NodeCalculator and their default creation values
+# Default attr-creation flags - Applies to creation of ALL attribute types
 DEFAULT_ATTR_FLAGS = {
-    # General settings - Applies to ALL attribute types!
     "keyable": True,
 }
 
@@ -98,8 +97,9 @@ ATTR_TYPES = {
     },
 
     # All dataType attributes. From Maya docs:
-    # "In most cases the -dt version will not display in the attribute editor as
-    # it is an atomic type and you are not allowed to change individual parts of it."
+    # "In most cases the -dt version will not display in the attribute editor
+    # as it is an atomic type and you are not allowed to change individual
+    # parts of it."
     "string": {
         "data_type": "dataType",
     },
@@ -224,17 +224,17 @@ class OperatorLookupTableMetaClass(object):
         """Fill OPERATOR_LOOKUP_TABLE-dictionary with all available operations.
 
         Note:
-            OPERATOR_LOOKUP_TABLE is a dict that holds the data for each available operation:
+            OPERATOR_LOOKUP_TABLE holds the data for each available operation:
             the necessary node-type, its inputs, outputs, etc.
-            This unified data enables to abstract node creation, connection, etc.
+            This unified data enables to abstract node creation, connection, ...
 
             possible flags:
             - node: Type of Maya node necessary
             - inputs: input attributes (list of lists)
             - output: output attributes (list)
-            - is_multi_index: does node take any number of input attributes (array attr)
+            - is_multi_index: any number of input attrs possible? (array attr)
             - operation: set operation-attr for different modes of a node
-            - output_is_predetermined: should output attrs ALWAYS be given in full?
+            - output_is_predetermined: should always ALL output attrs be added?
         """
         global OPERATOR_LOOKUP_TABLE
 
@@ -418,9 +418,9 @@ class OperatorLookupTableMetaClass(object):
                     ["firstTerm"],
                     ["secondTerm"],
                 ],
-                # The condition node is a special case!
-                # It gets created during the magic-method-comparison and fully connected after
-                # being passed on to the condition()-method in this OperatorMetaClass
+                # The condition node is a special case! It gets created during
+                # the magic-method-comparison and fully connected after being
+                # passed on to the condition()-method in this OperatorMetaClass
                 "output": [
                     None
                 ],
@@ -474,7 +474,7 @@ class OperatorLookupTable(object):
     __metaclass__ = OperatorLookupTableMetaClass
 
 
-# Little snippet to update the docString of core.py with all the available Operators
+# Little helper to print all available Operators for the core.py-docString
 if __name__ == "__main__":
     basic_ops = [
         "add", "sub",

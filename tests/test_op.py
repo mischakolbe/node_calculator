@@ -205,7 +205,6 @@ class TestOperatorsMeta(type):
             # Skip operators that need an individual test
             if operator in IRREGULAR_OPERATORS:
                 continue
-
             if data["node"] == "condition":
                 op_test_name = "test_{}".format(operator)
                 _dict[op_test_name] = _test_condition_op(operator)

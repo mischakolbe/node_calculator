@@ -43,7 +43,6 @@ def get_mobj(node):
     Returns:
         MObject: MObject instance that is a reference to the given node.
     """
-
     if isinstance(node, OpenMaya.MObject):
         return node
 
@@ -107,7 +106,7 @@ def is_instanced(node):
     """Check if a Maya node is instantiated.
 
     Args:
-        node (MObject or MDagPath or str): Node to be checked if it's instantiated.
+        node (MObject or MDagPath or str): Node to check if it's instantiated.
 
     Returns:
         bool: Whether given node is instantiated.
@@ -218,7 +217,10 @@ def get_selected_nodes_as_mobjs():
     selection_list = OpenMaya.MGlobal.getActiveSelectionList()
     if selection_list.length():
 
-        iterator = OpenMaya.MItSelectionList(selection_list, OpenMaya.MFn.kDagNode)
+        iterator = OpenMaya.MItSelectionList(
+            selection_list,
+            OpenMaya.MFn.kDagNode
+        )
         while not iterator.isDone():
             mobj = iterator.getDependNode()
             mobjs.append(mobj)
@@ -241,7 +243,10 @@ def select_mobjs(mobjs):
         m_selection_list = OpenMaya.MSelectionList()
         for mobj in mobjs:
             m_selection_list.add(mobj)
-        OpenMaya.MGlobal.setActiveSelectionList(m_selection_list, OpenMaya.MGlobal.kReplaceList)
+        OpenMaya.MGlobal.setActiveSelectionList(
+            m_selection_list,
+            OpenMaya.MGlobal.kReplaceList
+        )
         return m_selection_list
     """
     if not isinstance(mobjs, (list, tuple)):
@@ -294,14 +299,17 @@ def get_parents(node):
     """Get parents of the given node.
 
     Args:
-        node (MObject or MDagPath or str): Node whose list of parents is queried.
+        node (MObject or MDagPath or str): Node whose list of parents is queried
 
     Returns:
         list: Name of parents in an ascending list: First parent first.
     """
     # Getting the parents from splitting the long name string is faster than
     # using the .parent() method recursively.
-    parents = list(reversed(get_dag_path_of_mobj(node, full=True).split("|")[1:-1]))
+    parents = list(reversed(
+        # Slice off empty first string and node itself from the full dag path
+        get_dag_path_of_mobj(node, full=True).split("|")[1:-1]
+    ))
 
     return parents
 
@@ -336,10 +344,10 @@ def set_mobj_attribute(mobj, attr, value):
         attr (str): Name of attribute.
         value (int or float or bool or str): Value plug should be set to.
 
-    Todo:
-        Should be OpenMaya API only! Check: austinjbaker.com/mplugs-setting-values
+    TODO:
+        Use OpenMaya API only! Check: austinjbaker.com/mplugs-setting-values
     """
-    plug = "{}.{}".format(get_dag_path_of_mobj(mobj), attr)
+    plug = "{0}.{1}".format(get_dag_path_of_mobj(mobj), attr)
     cmds.setAttr(plug, value)
 
 
@@ -350,13 +358,13 @@ def get_attr_of_mobj(mobj, attr):
         Basically cmds.getAttr() that works with MObjects.
 
     Args:
-        mobj (MObject or MDagPath or str): Node whose attribute should be queried.
+        mobj (MObject or MDagPath or str): Node whose attr should be queried.
         attr (str): Name of attribute.
 
     Returns:
         list or tuple or int or float or bool or str: Value of queried plug.
     """
-    plug = "{}.{}".format(get_dag_path_of_mobj(mobj), attr)
+    plug = "{0}.{1}".format(get_dag_path_of_mobj(mobj), attr)
     value = cmds.getAttr(plug)
 
     return value
@@ -366,13 +374,15 @@ def is_valid_mplug(mplug):
     """Check whether given mplug is a valid MPlug.
 
     Args:
-        mplug (MObject or MPlug or MDagPath or str): Item to check whether it's an MPlug.
+        mplug (MObject or MPlug or MDagPath or str): Potential MPlug.
 
     Returns:
         bool: True if given mplug actually is an MPlug instance.
     """
     if not isinstance(mplug, OpenMaya.MPlug):
-        LOG.error("Expected an MPlug, got %s of type %s" % (str(mplug), type(mplug)))
+        LOG.error(
+            "Expected an MPlug, got %s of type %s" % (str(mplug), type(mplug))
+        )
         return False
     return True
 
@@ -531,7 +541,7 @@ def get_mplug_of_node_and_attr(node, attr_str):
     """Get an MPlug to the given node & attr combination.
 
     Args:
-        node (MObject or MDagPath or str): Node whose attribute should be queried.
+        node (MObject or MDagPath or str): Node whose attr should be queried.
         attr_str (str): Name of attribute.
 
     Returns:
@@ -550,7 +560,9 @@ def get_mplug_of_node_and_attr(node, attr_str):
             mplug = get_child_mplug(mplug, attr)
 
         if not mplug:
-            LOG.error("mplug %s.%s does not seem to exist!" % (str(node), str(attr_str)))
+            LOG.error(
+                "mplug %s.%s doesn't seem to exist!" % (str(node), str(attr_str))
+            )
         if index is not None:
             if not mplug.isArray:
                 LOG.error(
@@ -577,7 +589,8 @@ def get_mplug_of_mobj(mobj, attr):
     mplug = None
 
     if node_mfn_dep_node.hasAttribute(attr):
-        mplug = node_mfn_dep_node.findPlug(attr, False)  # attr, wantNetworkedPlug
+        # findPlug-flags: (attr, wantNetworkedPlug)
+        mplug = node_mfn_dep_node.findPlug(attr, False)
 
     return mplug
 
@@ -623,7 +636,7 @@ def split_plug_string(plug):
 
 
 def split_attr_string(attr):
-    """Split string referring to an attribute on a Maya node into its separate elements.
+    """Split string referring to an attr on a Maya node into its elements.
 
     Note:
         "attr_a[attr_a_index].attr_b[attr_b_index]. ..." ->
@@ -642,7 +655,9 @@ def split_attr_string(attr):
     matches = attr_pattern.findall(attr)
 
     if not matches:
-        LOG.error("Attr %s could not be broken down into components!" % (str(attr)))
+        LOG.error(
+            "Attr %s could not be broken down into components!" % (str(attr))
+        )
 
     cleaned_matches = []
     for attr, index in matches:
@@ -663,7 +678,7 @@ def split_node_string(node):
         (namespace, dag_path, node)
 
     Args:
-        node (str): Name of Maya node, potentially including namespace & dagPath.
+        node (str): Name of Maya node, potentially with namespace & dagPath.
 
     Returns:
         tuple: Tuple of the form (namespace, dag_path, node)
@@ -673,10 +688,15 @@ def split_node_string(node):
     matches = node_pattern.findall(node)
 
     if not matches:
-        LOG.error("Node %s could not be broken down into components!" % (str(node)))
+        LOG.error(
+            "Node %s could not be broken down into components!" % (str(node))
+        )
 
     if len(matches) > 1:
-        LOG.error("Node %s yielded multiple results. Should be singular result!" % (str(node)))
+        LOG.error(
+            "Node %s yielded multiple results. "
+            "Should be singular result!" % (str(node))
+        )
 
     namespace, dag_path, node = matches[0]
 

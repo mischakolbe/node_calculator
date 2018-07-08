@@ -171,8 +171,8 @@ class TestNcBaseNodeClass(TestCase):
         self.assertEqual(self.attrs_multi_attr.plugs, multi_plug)
 
         # Test info method to print auto_consolidate and auto_unravel state exists
-        self.node_mesh.info()
-        self.attrs_multi_attr.info()
+        self.node_mesh.auto_state()
+        self.attrs_multi_attr.auto_state()
 
         # Test to_py_node method to easily retrieve a PyNode instance
         self.assertIsInstance(self.node_mesh.to_py_node(), pm.nodetypes.Transform)

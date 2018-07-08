@@ -1,4 +1,4 @@
-"""Module for values of base types (int, float, ...) that allow storing metadata.
+"""Module for values of base types (int, float, ...) that can store metadata.
 
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 
@@ -44,8 +44,8 @@ Note:
 
         # >>> val1 = cmds.getAttr('pCube1.tx')
         # >>> cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
-        # Note that the printed trace contains the correct calculation including
-        # the value-variable "val1".
+        # Note that the printed trace contains the correct calculation
+        # including the value-variable "val1".
 
 Example:
     ::
@@ -98,14 +98,14 @@ def value(value, metadata=None, created_by_user=True):
         - A value of type <int> will become a <NcIntValue>
         - A value of type <float> will become a <NcFloatValue>
         - A value of type <list> will become a <NcListValue>
-        The first time a certain NcValue class is required (meaning: if it's not
-        in the globals yet) the function _create_metadata_val_class is called to
-        create and add the necessary class to the globals.
+        The first time a certain NcValue class is required (meaning: if it's
+        not in the globals yet) the function _create_metadata_val_class is
+        called to create and add the necessary class to the globals.
         Any subsequent time that particular NcValue class is needed, the
         existing class constructor in the globals is used.
 
-        The reason for all this is that each created NcValue class is an instance
-        of the appropriate base type. For example:
+        The reason for all this is that each created NcValue class is an
+        instance of the appropriate base type. For example:
         - An instance of <NcIntValue> inherits from <int>
         - An instance of <NcFloatValue> inherits from <float>
         - An instance of <NcListValue> inherits from <list>
@@ -113,7 +113,7 @@ def value(value, metadata=None, created_by_user=True):
     Args:
         value (any type): Value of any type
         metadata (any type): Any data that should be attached to this value
-        created_by_user (bool): Whether this value was created by the user or via script
+        created_by_user (bool): Whether this value was created manually
 
     Returns:
         class-instance: New instance of appropriate NcValue-class
@@ -142,7 +142,8 @@ def value(value, metadata=None, created_by_user=True):
             # >>> <type 'list'>
     """
 
-    # Retrieve the basetype of NcValues, to make a new value of the same basetype
+    # Retrieve the basetype of NcValues, to make a new value of same basetype
+    # This avoids making NcValues of NcValues of NcValues of ...
     if isinstance(value, NcValue):
         value_type = value.basetype
         if metadata is None:
@@ -153,7 +154,7 @@ def value(value, metadata=None, created_by_user=True):
             metadata = value
 
     # Construct the class name out of the type of the given value
-    class_name = "Nc{}Value".format(value_type.__name__.capitalize())
+    class_name = "Nc{0}Value".format(value_type.__name__.capitalize())
 
     # If the necessary class type already exists in the globals: Return it
     if class_name in globals():
@@ -163,12 +164,12 @@ def value(value, metadata=None, created_by_user=True):
     else:
         NewNcValueClass = _create_metadata_val_class(value_type)
 
-        # Setting __name__ sets the class name so it's not "NewNcValueClass" for all types!
+        # Set the class name so it's not "NewNcValueClass" for all types!
         NewNcValueClass.__name__ = class_name
         # Add the new type to the globals
         globals()[class_name] = NewNcValueClass
 
-    # Create a new instance of the specified type with the given value and metadata
+    # Create a new instance of the specified type with given value & metadata
     return_value = NewNcValueClass(value)
     return_value.metadata = metadata
     return_value.created_by_user = created_by_user
@@ -194,15 +195,16 @@ def _create_metadata_val_class(class_type):
         Check docString of value function for more details.
 
     Args:
-        class_type (any builtin-type): Type for which a new NcValue-class should be created
+        class_type (any builtin-type): Type to create a new NcValue-class for.
 
     Returns:
         NcValueClass: New class constructor for a NcValue class of appropriate
             type to match given class_type
     """
 
-    # Can't inherit bool (TypeError: 'bool' not acceptable base type). Redirect to integer!
+    # Can't inherit bool (TypeError: 'bool' not acceptable base type).
     if class_type is bool:
+        # Redirect bool to integer!
         class_type = int
 
     class NcValueClass(class_type, NcValue):
@@ -224,7 +226,7 @@ def _create_metadata_val_class(class_type):
             """Get the held value as an instance of the basetype.
 
             Note:
-                This property is necessary; "self" in operations would cause loop!
+                This property exists, because "self" in operations causes loop!
 
             Returns:
                 builtin-type: Held value cast to its basetype.
@@ -239,22 +241,22 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("add", self, other)
-            return_value = self._value + other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value + other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __radd__(self, other):
             """Reflected addition operator.
 
             Note:
-                Fall-back method in case regular addition is not defined & fails.
+                Fall-back method in case regular addition isn't defined & fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("add", other, self)
-            return_value = other + self._value
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = other + self._value
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __sub__(self, other):
             """Regular subtraction operator.
@@ -264,22 +266,22 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("sub", self, other)
-            return_value = self._value - other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value - other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __rsub__(self, other):
             """Reflected subtraction operator.
 
             Note:
-                Fall-back method in case regular subtraction is not defined & fails.
+                Fall-back method in case regular sub isn't defined & fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("sub", other, self)
-            return_value = other - self._value
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = other - self._value
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __mul__(self, other):
             """Regular multiplication operator.
@@ -289,22 +291,22 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("mul", self, other)
-            return_value = self._value * other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value * other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __rmul__(self, other):
             """Reflected multiplication operator.
 
             Note:
-                Fall-back method in case regular multiplication is not defined & fails.
+                Fall-back method in case regular mult isn't defined & fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("mul", other, self)
-            return_value = other * self._value
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = other * self._value
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __div__(self, other):
             """Regular division operator.
@@ -314,22 +316,22 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("div", self, other)
-            return_value = self._value / other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value / other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __rdiv__(self, other):
             """Reflected division operator.
 
             Note:
-                Fall-back method in case regular division is not defined & fails.
+                Fall-back method in case regular division isn't defined & fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("div", other, self)
-            return_value = other / self._value
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = other / self._value
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __pow__(self, other):
             """Power operator.
@@ -339,8 +341,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("pow", self, other)
-            return_value = self._value ** other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value ** other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __eq__(self, other):
             """Equality operator: ==
@@ -350,8 +352,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("eq", self, other)
-            return_value = self._value == other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value == other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __ne__(self, other):
             """Inequality operator: !=
@@ -361,8 +363,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("ne", self, other)
-            return_value = self._value != other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value != other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __gt__(self, other):
             """Greater than operator: >
@@ -372,8 +374,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("gt", self, other)
-            return_value = self._value > other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value > other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __ge__(self, other):
             """Greater equal operator: >=
@@ -383,8 +385,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("ge", self, other)
-            return_value = self._value >= other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value >= other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __lt__(self, other):
             """Less than operator: <
@@ -394,8 +396,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("lt", self, other)
-            return_value = self._value < other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value < other
+            return value(val, metadata=metadata, created_by_user=False)
 
         def __le__(self, other):
             """Less equal operator: <=
@@ -405,8 +407,8 @@ def _create_metadata_val_class(class_type):
                     preserve origin of values.
             """
             metadata = _concatenate_metadata("le", self, other)
-            return_value = self._value <= other
-            return value(return_value, metadata=metadata, created_by_user=False)
+            val = self._value <= other
+            return value(val, metadata=metadata, created_by_user=False)
 
     return NcValueClass
 
@@ -466,11 +468,11 @@ def _concatenate_metadata(operator, input_a, input_b):
 
         # Add parenthesis to inputs that contain any characters not in pattern
         if associative_pattern.sub('', str(input_a)):
-            input_a = "({})".format(input_a)
+            input_a = "({0})".format(input_a)
         if associative_pattern.sub('', str(input_b)):
-            input_b = "({})".format(input_b)
+            input_b = "({0})".format(input_b)
 
     # Concatenate the return metadata
-    return_metadata = "{} {} {}".format(input_a, operator_symbol, input_b)
+    return_metadata = "{0} {1} {2}".format(input_a, operator_symbol, input_b)
 
     return return_metadata

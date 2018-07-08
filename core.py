@@ -8,19 +8,19 @@
 
 
 Note:
-    In any comment/docString of the NodeCalculator I try to adhere to the convention:
-    * node: Unique name of a Maya node in the scene (dagPath if non-unique name)
+    In any comment/docString of the NodeCalculator I use this convention:
+    * node: Name of a Maya node in the scene (dagPath if name isn't unique)
     * attr/attribute: Attribute on a Maya node in the scene
     * plug: Combination of node and attribute; node.attr
 
-    NcNode and NcAttrs instances provide these keywords (DO NOT USE AS ATTR NAMES!):
+    NcNode and NcAttrs instances provide these keywords:
     * attrs: Returns currently stored NcAttrs of this NcNode instance.
-    * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+    * attrs_list: Returns list of stored attrs: [attr, ...] (list of strings).
     * node: Returns name of Maya node in scene (str).
     * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
     NcList instances provide these keywords:
-    * nodes: Returns all Maya nodes within the list: [node, ...] (list of strings)
+    * nodes: Returns Maya nodes inside NcList: [node, ...] (list of strings)
 
 
 Example:
@@ -118,15 +118,15 @@ from . import logger
 from . import lookup_table
 from . import om_util
 from . import nc_value
-if os.environ.get("MAYA_DEV"):
-    reload(logger)
-    reload(lookup_table)
-    reload(om_util)
-    reload(nc_value)
+# if os.environ.get("MAYA_DEV"):
+reload(logger)
+reload(lookup_table)
+reload(om_util)
+reload(nc_value)
 
 
 # CONSTANTS ---
-NODE_NAME_PREFIX = "nc"  # Common prefix for all nodes created by nodeCalculator
+NODE_NAME_PREFIX = "nc"  # Common prefix for all nodes created by NodeCalculator
 STANDARD_SEPARATOR_NICENAME = "________"
 STANDARD_SEPARATOR_VALUE = "________"
 GLOBAL_AUTO_CONSOLIDATE = True
@@ -157,10 +157,12 @@ class Node(object):
         that can then be involved in a NodeCalculator calculation.
 
     Args:
-        item (bool or int or float or str or list or tuple): Maya node, value, list of nodes, etc.
-        attrs (str or list or tuple): String or list of strings that are an attribute on this node
-        auto_unravel (bool): Whether or not this instance should be unravelled if possible
-        auto_consolidate (bool): Whether or not this instance should be consolidated if possible
+        item (bool or int or float or str or list or tuple): Maya node, value,
+            list of nodes, etc.
+        attrs (str or list or tuple): String or list of strings that are an
+            attribute on this node
+        auto_unravel (bool): Should attrs of NcNode tried to be unravelled
+        auto_consolidate (bool): Should attrs of NcNode tried to be consolidated
 
     Returns:
         NcNode or NcList or NcValue: Instance with given args.
@@ -168,56 +170,62 @@ class Node(object):
     Example:
         ::
 
-            Node("pCube.tx") -> NcNode instance with pCube1 as node and tx in its NcAttrs instance
-            Node([1, "pCube"]) -> NcList instance with value 1 and NcNode with pCube1
-            Node(1) -> NcIntValue instance with value 1
+            Node("pCube.tx")
+            >>>> NcNode instance with pCube1 as node and tx as attr
+            Node("pCube", "tx")
+            >>>> NcNode instance with pCube1 as node and tx as attr
+            Node("pCube", ["tx"])
+            >>>> NcNode instance with pCube1 as node and tx as attr
+
+            Node([1, "pCube"])
+            >>>> NcList instance with value 1 and NcNode with pCube1
+
+            Node(1)
+            >>>> NcIntValue instance with value 1
     """
 
-    def __new__(cls, item, attrs=None, auto_unravel=None, auto_consolidate=None, *args, **kwargs):
-        if args:
-            LOG.warn("unrecognized args: %s" % (str(args)))
-        if kwargs:
-            LOG.warn("unrecognized kwargs: %s" % (str(kwargs)))
-
-        # Redirect plain values right away to a nc_value
+    def __new__(cls, item, attrs=None, auto_unravel=None, auto_consolidate=None):
+        # Redirect plain values to a nc_value
         if isinstance(item, numbers.Real):
-            LOG.info("Node: Redirecting to NcValue(%s)" % (str(item)))
+            LOG.debug("Node: Redirecting to NcValue(%s)" % (str(item)))
             return nc_value.value(item)
 
-        # Redirect lists or tuples right away to a NcList
+        # Redirect lists or tuples to a NcList
         if isinstance(item, (list, tuple)):
-            LOG.info("Node: Redirecting to NcList(%s)" % (str(item)))
+            LOG.debug("Node: Redirecting to NcList(%s)" % (str(item)))
             return NcList(item)
 
-        # Redirect NcAttrs right away to a new NcNode
+        # Redirect NcAttrs to a new NcNode
         if isinstance(item, NcAttrs):
-            LOG.info("Node: Redirecting to NcNode(%s)" % (str(item)))
-            # If auto_unravel/auto_consolidate are not specifically given: Use item settings!
+            LOG.debug("Node: Redirecting to NcNode(%s)" % (str(item)))
+            # If auto_unravel flag wasn't specified: Use item settings!
             if auto_unravel is None:
                 auto_unravel = item._auto_unravel
+            # If auto_consolidate flag wasn't specified: Use item settings!
             if auto_consolidate is None:
                 auto_consolidate = item._auto_consolidate
             return NcNode(item._node_mobj, item, auto_unravel, auto_consolidate)
 
-        LOG.info("Node: Redirecting to NcNode(%s)" % (str(item)))
-        # If auto_unravel/auto_consolidate are not specifically given: Turn them on!
+        # Redirect anything else to a new NcNode
+        LOG.debug("Node: Redirecting to NcNode(%s)" % (str(item)))
+        # If auto_unravel/auto_consolidate flags weren't specified: Use globals
         if auto_unravel is None:
-            auto_unravel = True
+            auto_unravel = GLOBAL_AUTO_UNRAVEL
         if auto_consolidate is None:
-            auto_consolidate = True
+            auto_consolidate = GLOBAL_AUTO_CONSOLIDATE
 
         return NcNode(item, attrs, auto_unravel, auto_consolidate)
 
     def __init__(self, *args, **kwargs):
         """
-        The init of this abstract class must not do anything: The init of the
-        class it got redirected to must take care of this!
+        The init of this abstract class must not do anything. The Node-class
+        only serves to redirect to the appropriate type based on the given args!
         """
         pass
 
 
 def transform(name=None, **kwargs):
-    """Convenience function to create a transform as a NcNode
+    """Convenience function to create a Maya transform node as an NcNode
 
     Args:
         name (str): Name of transform instance that will be created
@@ -235,7 +243,7 @@ def transform(name=None, **kwargs):
 
 
 def locator(name=None, **kwargs):
-    """Convenience function to create a locator as a NcNode
+    """Convenience function to create a Maya locator node as an NcNode
 
     Args:
         name (str): Name of locator instance that will be created
@@ -253,7 +261,7 @@ def locator(name=None, **kwargs):
 
 
 def create_node(node_type, name=None, **kwargs):
-    """Convenience function to create a new node of given type as a NcNode
+    """Convenience function to create a new node of given type as an NcNode
 
     Args:
         node_type (str): Type of Maya node to be created
@@ -278,8 +286,8 @@ def set_global_auto_unravel(state):
     """Set the global auto unravel state.
 
     Note:
-        Auto unravel tries to break up parent attributes into its child attributes:
-        "t" becomes ["tx", "ty", "tz"].
+        Auto unravel breaks up a parent attr into its child attrs:
+        "translate" becomes ["translateX", "translateY", "translateZ"].
 
         This behaviour is desired in most cases for the node calculator to work.
         But in some cases the user might want to prevent this. For example: When
@@ -298,11 +306,12 @@ def set_global_auto_consolidate(state):
     """Set the global auto consolidate state.
 
     Note:
-        Auto consolidate tries to combine full sets of child attributes into the parent attribute:
-        ["tx", "ty", "tz"] becomes "t".
+        Auto consolidate combines a full set of child attrs to their parent attr:
+        ["translateX", "translateY", "translateZ"] becomes "translate".
 
-        Consolidating plugs is preferable: it will make your node graph cleaner and
-        easier to read. However: Using parent plugs can sometimes cause update-issues!
+        Consolidating plugs is preferable: it will make your node graph cleaner
+        and easier to read.
+        However: Using parent plugs can sometimes cause update issues on attrs!
 
     Args:
         state (bool): State auto consolidate should be set to
@@ -313,28 +322,30 @@ def set_global_auto_consolidate(state):
 
 # OPERATORS ---
 class OperatorMetaClass(object):
-    """Base class for NodeCalculator operators: Everything that goes beyond basic math (+-*/)
+    """MetaClass for NodeCalculator operators that go beyond basic math (+-*/).
 
     Note:
-        A meta-class was used, so methods of this class can be created on the fly
-        in the __init__ method. Additionally; it ensures this to be a singleton class.
+        A meta-class was used to ensure the "Op"-class to be a singleton class.
+        Some methods are created on the fly in the __init__ method.
     """
 
     def __init__(self, name, bases, body):
-        """Operator-class constructor
+        """OperatorMetaClass-class constructor
 
         Note:
-            name, bases, body are necessary for metaClass to work properly
+            name, bases, body are necessary for __metaclass__ to work properly
         """
         super(OperatorMetaClass, self).__init__()
 
     @staticmethod
     def angle_between(vector_a, vector_b=[1, 0, 0]):
-        """Create angleBetween-node to find the angle between 2 vectors
+        """Create angleBetween-node to find the angle between 2 vectors.
 
         Args:
-            vector_a (NcNode or NcAttrs or int or float or list): Vector a to consider for angle
-            vector_b (NcNode or NcAttrs or int or float or list): Vector b to consider for angle
+            vector_a (NcNode or NcAttrs or int or float or list): Vector to
+                consider for angle between
+            vector_b (NcNode or NcAttrs or int or float or list): Vector to
+                consider for angle between
 
         Returns:
             NcNode: Instance with angleBetween-node and output-attribute(s)
@@ -353,10 +364,10 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def average(*attrs):
-        """Create plusMinusAverage-node for averaging input attrs
+        """Create plusMinusAverage-node for averaging input attrs.
 
         Args:
-            attrs (NcNode or NcAttrs or string or list): Any number of inputs to be averaged
+            attrs (NcNode or NcAttrs or string or list): Inputs to be averaged
 
         Returns:
             NcNode: Instance with plusMinusAverage-node and output-attribute(s)
@@ -368,12 +379,15 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def blend(attr_a, attr_b, blend_value=0.5):
-        """Create blendColor-node
+        """Create blendColor-node.
 
         Args:
-            attr_a (NcNode or NcAttrs or str or int or float): Plug or value to blend from
-            attr_b (NcNode or NcAttrs or str or int or float): Plug or value to blend to
-            blend_value (NcNode or str or int or float): Plug or value defining blend-amount
+            attr_a (NcNode or NcAttrs or str or int or float): Plug or value to
+                blend from
+            attr_b (NcNode or NcAttrs or str or int or float): Plug or value to
+                blend to
+            blend_value (NcNode or str or int or float): Plug or value defining
+                blend-amount
 
         Returns:
             NcNode: Instance with blend-node and output-attributes
@@ -385,40 +399,48 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def choice(*inputs, **kwargs):
-        """Create choice-node to switch between various input attributes
+        """Create choice-node to switch between various input attributes.
 
         Note:
             Multi index input seems to also require one 'selector' per index.
             So we package a copy of the same selector for each input.
 
         Args:
-            One or many inputs (any type possible). Optional selector (s=node.attr).
+            inputs (list): Any number of input values or plugs
+            kwargs (dict): Optional "selector" keyword for selector-attr on
+                choice node.
 
         Returns:
             NcNode: Instance with choice-node and output-attribute(s)
 
         Example:
-            option_a = Node("pCube1")
-            option_b = Node("pCube2")
-            driver_attr = Node("pSphere.tx")
-            choice_node_obj = Op.choice(option_a.tx, option_b.tx, selector=driver_attr)
-            Node("pTorus1").tx = choice_node_obj
+            option_a = Node("pCube1.tx")
+            option_b = Node("pCube2.tx")
+            switch_attr = Node("pSphere1").add_bool("optionSwitch")
+            choice_node = Op.choice(option_a, option_b, selector=switch_attr)
+            Node("pTorus1").tx = choice_node
         """
         choice_node_obj = _create_and_connect_node('choice', *inputs)
-        # Since this is a multi-attr node it's hard to filter out the selector keyword
-        # in a perfect manner. This should do fine though.
-        _unravel_and_set_or_connect_a_to_b(choice_node_obj.selector, kwargs.get("selector", 0))
+
+        # Since this is a multi-attr node it's hard to filter out the selector
+        # keyword in a perfect manner. This should do fine though.
+        _unravel_and_set_or_connect_a_to_b(
+            choice_node_obj.selector,
+            kwargs.get("selector", 0)
+        )
 
         return choice_node_obj
 
     @staticmethod
     def clamp(attr_a, min_value=0, max_value=1):
-        """Create clamp-node
+        """Create clamp-node.
 
         Args:
             attr_a (NcNode or NcAttrs or str or int or float): Input value
-            min_value (NcNode or NcAttrs or int or float or list): min-value for clamp-operation
-            max_value (NcNode or NcAttrs or int or float or list): max-value for clamp-operation
+            min_value (NcNode or NcAttrs or int or float or list): min-value
+                for clamp-operation
+            max_value (NcNode or NcAttrs or int or float or list): max-value
+                for clamp-operation
 
         Returns:
             NcNode: Instance with clamp-node and output-attribute(s)
@@ -430,16 +452,17 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def compose_matrix(**kwargs):
-        """Create composeMatrix-node to assemble matrix from components (translation, rotation etc)
+        """Create composeMatrix-node to assemble matrix from transforms.
 
         Args:
-            kwargs (dict): Possible kwargs described below (longName flags take precedence!)
-            translate (NcNode or NcAttrs or str or int or float): [t] translate for matrix composition
-            rotate (NcNode or NcAttrs or str or int or float): [r] rotate for matrix composition
-            scale (NcNode or NcAttrs or str or int or float): [s] scale for matrix composition
-            shear (NcNode or NcAttrs or str or int or float): [sh] shear for matrix composition
-            rotate_order (NcNode or NcAttrs or str or int or float): [ro] rot-order for matrix composition
-            euler_rotation (NcNode or NcAttrs or bool): Apply Euler filter on rotations
+            kwargs (dict): Possible kwargs below. longName flags take
+                precedence over the short names in [brackets]!
+            translate (NcNode or NcAttrs or str or int or float): [t] translate
+            rotate (NcNode or NcAttrs or str or int or float): [r] rotate
+            scale (NcNode or NcAttrs or str or int or float): [s] scale
+            shear (NcNode or NcAttrs or str or int or float): [sh] shear
+            rotate_order (NcNode or NcAttrs or str or int): [ro] rot-order
+            euler_rotation (NcNode or NcAttrs or bool): Euler rot or quaternion
 
         Returns:
             NcNode: Instance with composeMatrix-node and output-attribute(s)
@@ -477,56 +500,66 @@ class OperatorMetaClass(object):
 
         Note:
             condition_node must be a NcNode-instance of a Maya condition node.
-            This NcNode-object gets automatically created by the overloaded
-            comparison-operators of the NcNode-class and should not require manual setup!
-            Simply use the usual comparison operators (==, >, <=, etc.) in the first argument.
+            An appropriate NcNode-object gets automatically created when
+            NodeCalculator objects are used in comparisons (==, >, >=, <, <=).
+            Simply use comparison operators in the first argument (see example).
 
         Args:
-            condition_node (NcNode): Condition-statement. NcNode is automatically created (see Note)
-            if_part (NcNode or NcAttrs or str or int or float): Value/plug if condition is true
-            else_part (NcNode or NcAttrs or str or int or float): Value/plug if condition is false
+            condition_node (NcNode): Condition-statement. See note and example.
+            if_part (NcNode or NcAttrs or str or int or float): Value/plug that
+                is returned if the condition evaluates to true.
+            else_part (NcNode or NcAttrs or str or int or float): Value/plug
+                that is returned if the condition evaluates to false.
 
         Returns:
             NcNode: Instance with condition-node and outColor-attributes
 
         Example:
             ::
-
-                Op.condition(Node("pCube1.tx") >= 2, Node("pCube2.ty")+2, 5 - 1234567890)
-                            |    condition-part    |   "if true"-part   |  "else"-part  |
+                condition_node = Node("pCube1.tx") >= 2
+                pass_on_if_true = Node("pCube2.ty") + 2
+                pass_on_if_false = 5 - Node("pCube2.tz").get()
+                Op.condition(condition_node, pass_on_if_true, pass_on_if_false)
+                            |condition-part| "if true"-part | "if false"-part |
         """
         # Make sure condition_node is of expected Node-type!
-        # condition_node was created during comparison of NcNode-object(s)
         if not isinstance(condition_node, NcNode):
             LOG.error("%s isn't NcNode-instance." % (str(condition_node)))
         if cmds.objectType(condition_node.node) != "condition":
             LOG.error("%s isn't of type condition." % (str(condition_node)))
 
-        condition_inputs = [
+        # Determine how many attrs were given & need to be connected
+        max_dim = max([
+            len(_unravel_item_as_list(part)) for part in [if_part, else_part]
+        ])
+
+        # Connect the given if/else parts to the condition node
+        cond_input_attrs = [
             ["colorIfTrueR", "colorIfTrueG", "colorIfTrueB"],
             ["colorIfFalseR", "colorIfFalseG", "colorIfFalseB"],
         ]
-        condition_outputs = ["outColorR", "outColorG", "outColorB"]
-
-        max_dim = max([len(_unravel_item_as_list(x)) for x in [if_part, else_part]])
-
-        for condition_node_input, obj_to_connect in zip(condition_inputs, [if_part, else_part]):
-            condition_node_input_list = [
-                (condition_node.node + "." + x) for x in condition_node_input[:max_dim]
+        node_name = condition_node.node
+        for input_attrs, part in zip(cond_input_attrs, [if_part, else_part]):
+            condition_input_list = [
+                "{0}.{1}".format(node_name, attr) for attr in input_attrs[:max_dim]
             ]
 
-            _unravel_and_set_or_connect_a_to_b(condition_node_input_list, obj_to_connect)
+            _unravel_and_set_or_connect_a_to_b(condition_input_list, part)
 
-        return Node(condition_node.node, condition_outputs[:max_dim])
+        # Return new NcNode instance with condition node and its output attrs.
+        cond_output_attrs = ["outColorR", "outColorG", "outColorB"]
+        return_value = NcNode(node_name, cond_output_attrs[:max_dim])
+        return return_value
 
     @staticmethod
     def cross(attr_a, attr_b=0, normalize=False):
-        """Create vectorProduct-node for vector cross-multiplication
+        """Create vectorProduct-node for vector cross-multiplication.
 
         Args:
-            attr_a (NcNode or NcAttrs or str or int or float or list): Plug or value for vector A
-            attr_b (NcNode or NcAttrs or str or int or float or list): Plug or value for vector B
-            normalize (NcNode or NcAttrs or boolean): Whether resulting vector should be normalized
+            attr_a (NcNode or NcAttrs or str or int or float or list): Vector A
+            attr_b (NcNode or NcAttrs or str or int or float or list): Vector B
+            normalize (NcNode or NcAttrs or boolean): Whether resulting vector
+                should be normalized
 
         Returns:
             NcNode: Instance with vectorProduct-node and output-attribute(s)
@@ -538,10 +571,10 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def decompose_matrix(in_matrix):
-        """Create decomposeMatrix-node to disassemble matrix into components (t, rot, etc.)
+        """Create decomposeMatrix-node to disassemble matrix into transforms.
 
         Args:
-            in_matrix (NcNode or NcAttrs or string): one matrix attribute to be decomposed
+            in_matrix (NcNode or NcAttrs or string): matrix attr to decompose
 
         Returns:
             NcNode: Instance with decomposeMatrix-node and output-attribute(s)
@@ -558,12 +591,13 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def dot(attr_a, attr_b=0, normalize=False):
-        """Create vectorProduct-node for vector dot-multiplication
+        """Create vectorProduct-node for vector dot-multiplication.
 
         Args:
-            attr_a (NcNode or NcAttrs or str or int or float or list): Plug or value for vector A
-            attr_b (NcNode or NcAttrs or str or int or float or list): Plug or value for vector B
-            normalize (NcNode or NcAttrs or boolean): Whether resulting vector should be normalized
+            attr_a (NcNode or NcAttrs or str or int or float or list): Vector A
+            attr_b (NcNode or NcAttrs or str or int or float or list): Vector B
+            normalize (NcNode or NcAttrs or boolean): Whether resulting vector
+                should be normalized
 
         Returns:
             NcNode: Instance with vectorProduct-node and output-attribute(s)
@@ -575,10 +609,10 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def inverse_matrix(in_matrix):
-        """Create inverseMatrix-node to invert the given matrix
+        """Create inverseMatrix-node to invert the given matrix.
 
         Args:
-            in_matrix (NcNode or NcAttrs or str): Plug or value for in_matrix
+            in_matrix (NcNode or NcAttrs or str): Matrix to invert
 
         Returns:
             NcNode: Instance with inverseMatrix-node and output-attribute(s)
@@ -591,11 +625,11 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def length(attr_a, attr_b=0):
-        """Create distanceBetween-node
+        """Create distanceBetween-node to measure length between given points.
 
         Args:
-            attr_a (NcNode or NcAttrs or str or int or float): Plug or value for point A
-            attr_b (NcNode or NcAttrs or str or int or float): Plug or value for point B
+            attr_a (NcNode or NcAttrs or str or int or float): Start point
+            attr_b (NcNode or NcAttrs or str or int or float): End point
 
         Returns:
             NcNode: Instance with distanceBetween-node and distance-attribute
@@ -606,12 +640,12 @@ class OperatorMetaClass(object):
         return _create_and_connect_node('length', attr_a, attr_b)
 
     @staticmethod
-    def matrix_distance(matrix_a, matrix_b):
-        """Create distanceBetween-node hooked up to inMatrix attrs
+    def matrix_distance(matrix_a, matrix_b=None):
+        """Create distanceBetween-node to measure dist between transformMatrices.
 
         Args:
-            matrix_a (NcNode or NcAttrs or str): Matrix Plug
-            matrix_b (NcNode or NcAttrs or str): Matrix Plug
+            matrix_a (NcNode or NcAttrs or str): Matrix that defines start point
+            matrix_b (NcNode or NcAttrs or str): Matrix that defines end point
 
         Returns:
             NcNode: Instance with distanceBetween-node and distance-attribute
@@ -619,6 +653,8 @@ class OperatorMetaClass(object):
         Example:
             >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
         """
+        if matrix_b is None:
+            return _create_and_connect_node('matrix_distance', matrix_a)
         return _create_and_connect_node('matrix_distance', matrix_a, matrix_b)
 
     @staticmethod
@@ -626,20 +662,20 @@ class OperatorMetaClass(object):
         """Create multMatrix-node for multiplying matrices
 
         Args:
-            attrs (NcNode or NcAttrs or string or list): Any number of matrix inputs to be multiplied
+            attrs (NcNode or NcAttrs or string or list): Matrices to multiply
 
         Returns:
             NcNode: Instance with multMatrix-node and output-attribute(s)
 
         Example:
-            out = Node('pSphere')
             matrix_mult = Op.mult_matrix(
                 Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
             )
             decomp = Op.decompose_matrix(matrix_mult)
-            out.t = decomp.outputTranslate
-            out.r = decomp.outputRotate
-            out.s = decomp.outputScale
+            out = Node('pSphere')
+            out.translate = decomp.outputTranslate
+            out.rotate = decomp.outputRotate
+            out.scale = decomp.outputScale
         """
         return _create_and_connect_node('mult_matrix', *attrs)
 
@@ -648,8 +684,8 @@ class OperatorMetaClass(object):
         """Create vectorProduct-node to normalize the given vector
 
         Args:
-            in_vector (NcNode or NcAttrs or str or int or float or list): Plug or value for vector A
-            normalize (NcNode or NcAttrs or boolean): Whether resulting vector should be normalized
+            in_vector (NcNode or NcAttrs or str or int or float or list): Vector
+            normalize (NcNode or NcAttrs or boolean): Turn normalize on/off
 
         Returns:
             NcNode: Instance with vectorProduct-node and output-attribute(s)
@@ -658,16 +694,22 @@ class OperatorMetaClass(object):
             >>> Op.normalize_vector(Node("pCube.t"))
         """
         # Making normalize a flag allows the user to connect attributes to it
-        return _create_and_connect_node('normalize_vector', in_vector, normalize)
+        return_value = _create_and_connect_node(
+            'normalize_vector',
+            in_vector,
+            normalize
+        )
+        return return_value
 
     @staticmethod
     def point_matrix_mult(in_vector, in_matrix, vector_multiply=False):
         """Create pointMatrixMult-node to transpose the given matrix
 
         Args:
-            in_vector (NcNode or NcAttrs or str or int or float or list): Plug or value for in_vector
-            in_matrix (NcNode or NcAttrs or str): Plug or value for in_matrix
-            vector_multiply (NcNode or NcAttrs or str or int or bool): Plug or value for vector_multiply
+            in_vector (NcNode or NcAttrs or str or int or float or list): Vector
+            in_matrix (NcNode or NcAttrs or str): Matrix
+            vector_multiply (NcNode or NcAttrs or str or int or bool): Whether
+                vector multiplication should be performed.
 
         Returns:
             NcNode: Instance with pointMatrixMult-node and output-attribute(s)
@@ -690,8 +732,15 @@ class OperatorMetaClass(object):
         return created_node
 
     @staticmethod
-    def remap_value(attr_a, output_min=0, output_max=1, input_min=0, input_max=1, values=None):
-        """Create remapValue-node
+    def remap_value(
+            attr_a,
+            output_min=0,
+            output_max=1,
+            input_min=0,
+            input_max=1,
+            values=None
+    ):
+        """Create remapValue-node to remap the given input.
 
         Args:
             attr_a (NcNode or NcAttrs or str or int or float): Input value
@@ -699,7 +748,9 @@ class OperatorMetaClass(object):
             output_max (NcNode or NcAttrs or int or float or list): max-value
             input_min (NcNode or NcAttrs or int or float or list): old min-value
             input_max (NcNode or NcAttrs or int or float or list): old max-value
-            values (list): List of tuples (value_Position, value_FloatValue, value_Interp)
+            values (list): List of tuples in the following form;
+                (value_Position, value_FloatValue, value_Interp)
+                The value interpolation element is optional & defaults to linear!
 
         Returns:
             NcNode: Instance with remapValue-node and output-attribute(s)
@@ -737,7 +788,7 @@ class OperatorMetaClass(object):
 
             # Set these attributes directly to avoid unnecessary unravelling.
             _traced_set_attr(
-                "{}.value[{}]".format(created_node.node, index),
+                "{0}.value[{1}]".format(created_node.node, index),
                 (pos, val, interp)
             )
 
@@ -745,14 +796,14 @@ class OperatorMetaClass(object):
 
     @staticmethod
     def set_range(attr_a, min_value=0, max_value=1, old_min_value=0, old_max_value=1):
-        """Create setRange-node
+        """Create setRange-node to remap the given input attr to a new min/max.
 
         Args:
             attr_a (NcNode or NcAttrs or str or int or float): Input value
-            min_value (NcNode or NcAttrs or int or float or list): min-value
-            max_value (NcNode or NcAttrs or int or float or list): max-value
-            old_min_value (NcNode or NcAttrs or int or float or list): old min-value
-            old_max_value (NcNode or NcAttrs or int or float or list): old max-value
+            min_value (NcNode or NcAttrs or int or float or list): new min
+            max_value (NcNode or NcAttrs or int or float or list): new max
+            old_min_value (NcNode or NcAttrs or int or float or list): old min
+            old_max_value (NcNode or NcAttrs or int or float or list): old max
 
         Returns:
             NcNode: Instance with setRange-node and output-attribute(s)
@@ -760,13 +811,19 @@ class OperatorMetaClass(object):
         Example:
             >>> Op.set_range(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
         """
-        return _create_and_connect_node(
-            'set_range', attr_a, min_value, max_value, old_min_value, old_max_value
+        return_value = _create_and_connect_node(
+            'set_range',
+            attr_a,
+            min_value,
+            max_value,
+            old_min_value,
+            old_max_value
         )
+        return return_value
 
     @staticmethod
     def transpose_matrix(in_matrix):
-        """Create transposeMatrix-node to transpose the given matrix
+        """Create transposeMatrix-node to transpose the given matrix.
 
         Args:
             in_matrix (NcNode or NcAttrs or str): Plug or value for in_matrix
@@ -782,34 +839,39 @@ class OperatorMetaClass(object):
 
 
 class Op(object):
-    """Create Operator-class from OperatorMetaClass (check its docString for details)"""
+    """Create Operator-class from OperatorMetaClass.
+
+    Note:
+        Check docString of OperatorMetaClass for details.
+    """
     __metaclass__ = OperatorMetaClass
 
 
 # NcBaseClass ---
 class NcBaseClass(object):
-    """Base class for NcLists & NcBaseNode (therefore indirectly NcNode & NcAttrs).
+    """Base class for NcLists & NcBaseNode (hence indirectly NcNode & NcAttrs).
 
     Note:
-        NcNode, NcAttrs and NcList are the "building blocks" of NodeCalculator calculations.
-        Having NcBaseClass as their common parent class makes sure the overloaded operators
-        apply to each of these "building blocks".
+        NcNode, NcAttrs and NcList are the "building blocks" of NodeCalculator
+        calculations. Having NcBaseClass as their common parent class makes
+        sure the overloaded operators apply to each of these "building blocks".
     """
 
-    # Class variable; Whether Tracer is active or not
+    # Class variables:
+    # Whether Tracer is active or not; Use "with noca.Tracer():" to trace!
     _is_tracing = False
-    # Class variable; Executed Maya commands the NodeCalculator keeps track of, if Tracer is active
+    # Maya commands the NodeCalculator executed within "with noca.Tracer():"
     _executed_commands_stack = []
-    # Class variable; Created Maya nodes the NodeCalculator keeps track of, if Tracer is active
+    # Maya nodes the NodeCalculator created within "with noca.Tracer():"
     _traced_nodes = None
-    # Class variable; Queried values the NodeCalculator keeps track of, if Tracer is active
+    # Values the NodeCalculator queried within "with noca.Tracer():"
     _traced_values = None
 
     def __init__(self):
         super(NcBaseClass, self).__init__()
 
     def __pos__(self):
-        """Leading plus signs are ignored
+        """Leading plus signs are ignored, since they are redundant.
 
         Example:
             >>> + Node("pCube1.ty")
@@ -819,7 +881,7 @@ class NcBaseClass(object):
         pass
 
     def __neg__(self):
-        """Leading minus sign multiplies by -1
+        """Leading minus sign multiplies by -1.
 
         Example:
             >>> - Node("pCube1.ty")
@@ -830,7 +892,7 @@ class NcBaseClass(object):
         return result
 
     def __add__(self, other):
-        """Regular addition operator.
+        """Regular addition operator for NodeCalculator objects.
 
         Example:
             >>> Node("pCube1.ty") + 4
@@ -842,7 +904,7 @@ class NcBaseClass(object):
         return _create_and_connect_node("add", self, other)
 
     def __radd__(self, other):
-        """Reflected addition operator.
+        """Reflected addition operator for NodeCalculator objects.
 
         Note:
             Fall-back method in case regular addition is not defined & fails.
@@ -850,22 +912,26 @@ class NcBaseClass(object):
         Example:
             >>> 4 + Node("pCube1.ty")
         """
-        LOG.debug("%s __radd__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __radd__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("add", other, self)
 
     def __sub__(self, other):
-        """Regular subtraction operator.
+        """Regular subtraction operator for NodeCalculator objects.
 
         Example:
             >>> Node("pCube1.ty") - 4
         """
-        LOG.debug("%s __sub__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __sub__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("sub", self, other)
 
     def __rsub__(self, other):
-        """Reflected subtraction operator.
+        """Reflected subtraction operator for NodeCalculator objects.
 
         Note:
             Fall-back method in case regular subtraction is not defined & fails.
@@ -873,22 +939,26 @@ class NcBaseClass(object):
         Example:
             >>> 4 - Node("pCube1.ty")
         """
-        LOG.debug("%s __rsub__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __rsub__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("sub", other, self)
 
     def __mul__(self, other):
-        """Regular multiplication operator.
+        """Regular multiplication operator for NodeCalculator objects.
 
         Example:
             >>> Node("pCube1.ty") * 4
         """
-        LOG.debug("%s __mul__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __mul__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("mul", self, other)
 
     def __rmul__(self, other):
-        """Reflected multiplication operator.
+        """Reflected multiplication operator for NodeCalculator objects.
 
         Note:
             Fall-back method in case regular multiplication is not defined & fails.
@@ -896,22 +966,26 @@ class NcBaseClass(object):
         Example:
             >>> 4 * Node("pCube1.ty")
         """
-        LOG.debug("%s __rmul__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __rmul__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("mul", other, self)
 
     def __div__(self, other):
-        """Regular division operator.
+        """Regular division operator for NodeCalculator objects.
 
         Example:
             >>> Node("pCube1.ty") / 4
         """
-        LOG.debug("%s __div__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __div__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("div", self, other)
 
     def __rdiv__(self, other):
-        """Reflected division operator.
+        """Reflected division operator for NodeCalculator objects.
 
         Note:
             Fall-back method in case regular division is not defined & fails.
@@ -919,77 +993,93 @@ class NcBaseClass(object):
         Example:
             >>> 4 / Node("pCube1.ty")
         """
-        LOG.debug("%s __rdiv__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __rdiv__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("div", other, self)
 
     def __pow__(self, other):
-        """Regular power operator.
+        """Regular power operator for NodeCalculator objects.
 
         Example:
             >>> Node("pCube1.ty") ** 4
         """
-        LOG.debug("%s __pow__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __pow__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return _create_and_connect_node("pow", self, other)
 
     def __eq__(self, other):
-        """Equality operator: ==
+        """Equality operator for NodeCalculator objects: ==
 
         Returns:
             NcNode: Instance of a newly created Maya condition-node
         """
-        LOG.debug("%s __eq__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __eq__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return self._compare(other, "eq")
 
     def __ne__(self, other):
-        """Inequality operator: !=
+        """Inequality operator for NodeCalculator objects: !=
 
         Returns:
             NcNode: Instance of a newly created Maya condition-node
         """
-        LOG.debug("%s __ne__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __ne__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return self._compare(other, "ne")
 
     def __gt__(self, other):
-        """Greater than operator: >
+        """Greater than operator for NodeCalculator objects: >
 
         Returns:
             NcNode: Instance of a newly created Maya condition-node
         """
-        LOG.debug("%s __gt__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __gt__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return self._compare(other, "gt")
 
     def __ge__(self, other):
-        """Greater equal operator: >=
+        """Greater equal operator for NodeCalculator objects: >=
 
         Returns:
             NcNode: Instance of a newly created Maya condition-node
         """
-        LOG.debug("%s __ge__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __ge__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return self._compare(other, "ge")
 
     def __lt__(self, other):
-        """Less than operator: <
+        """Less than operator for NodeCalculator objects: <
 
         Returns:
             NcNode: Instance of a newly created Maya condition-node
         """
-        LOG.debug("%s __lt__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __lt__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return self._compare(other, "lt")
 
     def __le__(self, other):
-        """Less equal operator: <=
+        """Less equal operator for NodeCalculator objects: <=
 
         Returns:
             NcNode: Instance of a newly created Maya condition-node
         """
-        LOG.debug("%s __le__ (%s, %s)" % (self.__class__.__name__, str(self), str(other)))
+        LOG.debug(
+            "%s __le__ (%s, %s)" % (self.__class__.__name__, str(self), str(other))
+        )
 
         return self._compare(other, "le")
 
@@ -997,7 +1087,7 @@ class NcBaseClass(object):
         """Create a Maya condition node, set to the correct operation-type.
 
         Args:
-            other (NcNode or int or float): Attr or value to compare self-attrs with
+            other (NcNode or int or float): Compare self-attrs with other
             operator (string): Operation type available in Maya condition-nodes
 
         Returns:
@@ -1017,17 +1107,17 @@ class NcBaseClass(object):
 
     @classmethod
     def _flush_command_stack(cls):
-        """Reset the class-variable _executed_commands_stack to an empty list."""
+        """Reset class-variable _executed_commands_stack to an empty list."""
         cls._executed_commands_stack = []
 
     @classmethod
     def _flush_traced_nodes(cls):
-        """Reset the class-variable _traced_nodes to an empty list."""
+        """Reset class-variable _traced_nodes to an empty list."""
         cls._traced_nodes = []
 
     @classmethod
     def _flush_traced_values(cls):
-        """Reset the class-variable _traced_values to an empty list."""
+        """Reset class-variable _traced_values to an empty list."""
         cls._traced_values = []
 
     @classmethod
@@ -1035,7 +1125,7 @@ class NcBaseClass(object):
         """Add a command to the class-variable _executed_commands_stack
 
         Args:
-            command (str or list): Maya command-string or list of Maya command-strings
+            command (str or list): String or list of strings of Maya command(s)
         """
         if isinstance(command, (list, tuple)):
             cls._executed_commands_stack.extend(command)
@@ -1047,7 +1137,8 @@ class NcBaseClass(object):
         """Add a node to the class-variable _traced_nodes
 
         Args:
-            node (TracerMObject): MObject with metadata. Check docString of TracerMObject
+            node (TracerMObject): MObject with metadata. Check docString of
+                TracerMObject for more detail!
         """
         cls._traced_nodes.append(node)
 
@@ -1061,7 +1152,8 @@ class NcBaseClass(object):
         Returns:
             str: Next available variable name.
         """
-        variable_name = "{}{}".format(VARIABLE_BASE_NAME, len(cls._traced_nodes) + 1)
+        next_variable_index = len(cls._traced_nodes) + 1
+        variable_name = "{0}{1}".format(VARIABLE_BASE_NAME, next_variable_index)
         return variable_name
 
     @classmethod
@@ -1086,7 +1178,7 @@ class NcBaseClass(object):
         """Add a value to the class-variable _traced_values
 
         Args:
-            value (NcValue): Value (int, float, ...) with metadata. Check docString of NcValue.
+            value (NcValue): Value with metadata. Check docString of NcValue.
         """
         cls._traced_values.append(value)
 
@@ -1100,7 +1192,8 @@ class NcBaseClass(object):
         Returns:
             str: Next available value name.
         """
-        value_name = "{}{}".format(VALUE_BASE_NAME, len(cls._traced_values) + 1)
+        next_value_index = len(cls._traced_values) + 1
+        value_name = "{0}{1}".format(VALUE_BASE_NAME, next_value_index)
         return value_name
 
 
@@ -1121,8 +1214,8 @@ class NcBaseNode(NcBaseClass):
             docString of set_global_auto_consolidate & set_global_auto_unravel!
 
         Args:
-            auto_unravel (bool): Whether attrs of this instance should be unravelled.
-            auto_consolidate (bool): Whether attrs of this instance should be consolidated.
+            auto_unravel (bool): Should attrs of this instance be unravelled.
+            auto_consolidate (bool): Should attrs of this instance be consolidated.
         """
         super(NcBaseClass, self).__init__()
 
@@ -1143,24 +1236,29 @@ class NcBaseNode(NcBaseClass):
         """Readable format of NcBaseNode instance.
 
         Note:
-            For example invoked by using print(NcNode or NcAttrs instance) in Maya
+            For example invoked by using print() in Maya.
 
         Returns:
             str: String of concatenated node and attrs.
 
         """
-        return "(Node: {}, Attrs: {})".format(self.node, self.attrs_list)
+        return "(Node: {0}, Attrs: {1})".format(self.node, self.attrs_list)
 
     def __repr__(self):
         """Unambiguous format of NcBaseNode instance.
 
         Note:
-            For example invoked by running highlighted NcNode or NcAttrs instance in Maya
+            For example invoked by running highlighted code in Maya.
 
         Returns:
             str: String of concatenated class-type, node and attrs.
         """
-        return "{}({}, {})".format(self.__class__.__name__, self.node, self.attrs_list)
+        return_value = "{0}({1}, {2})".format(
+            self.__class__.__name__,
+            self.node,
+            self.attrs_list
+        )
+        return return_value
 
     def __iter__(self):
         """Generator to iterate over list of attributes.
@@ -1183,7 +1281,7 @@ class NcBaseNode(NcBaseClass):
         """Property to allow easy access to the Node-plugs.
 
         Note:
-            I refer to "node.attr" as a "plug"!
+            A "plug" stands for "node.attr"!
 
         Returns:
             list: List of plugs. Empty list if no attributes are defined!
@@ -1192,7 +1290,7 @@ class NcBaseNode(NcBaseClass):
             return []
 
         return_list = [
-            "{}.{}".format(self.node, attr) for attr in self.attrs_list
+            "{0}.{1}".format(self.node, attr) for attr in self.attrs_list
         ]
         return return_list
 
@@ -1241,8 +1339,9 @@ class NcBaseNode(NcBaseClass):
             Similar to a cmds.setAttr().
 
         Args:
-            value (NcNode or NcAttrs or str or int or float or list or tuple): Connect
-                attribute to this value (=object) or set attribute to this value/array
+            value (NcNode or NcAttrs or str or int or float or list or tuple):
+                Connect attribute to this value (=plug)
+                or set attribute to this value/array.
         """
         LOG.debug("%s set (%s)" % (self.__class__.__name__, str(value)))
 
@@ -1251,11 +1350,8 @@ class NcBaseNode(NcBaseClass):
     def get_shapes(self, full=False):
         """Convenience method to get shape nodes of self.node
 
-        Note:
-            Returned MObjects of shapes can can be used directly to create new NcNode instances!
-
         Args:
-            full (bool): True returns full dag path, False returns shortest dag path
+            full (bool): Return full or shortest dag path
 
         Returns:
             list: List of MObjects of shapes.
@@ -1263,22 +1359,42 @@ class NcBaseNode(NcBaseClass):
 
         shape_mobjs = om_util.get_shape_mobjs(self._node_mobj)
 
-        if full:
-            shapes = [om_util.get_dag_path_of_mobj(mobj, full=True) for mobj in shape_mobjs]
-        else:
-            shapes = [om_util.get_name_of_mobj(mobj) for mobj in shape_mobjs]
+        shapes = [
+            om_util.get_dag_path_of_mobj(mobj, full=full) for mobj in shape_mobjs
+        ]
 
         return shapes
 
-    def info(self):
-        """Convenience method to see the status of _auto_unravel and _auto_consolidate."""
-        message = "auto_unravel: {}, auto_consolidate: {}".format(
+    def attr(self, attr=None):
+        """Get a new NcNode instance with given attr, INCLUDING keywords!
+
+        Note:
+            It is pretty difficult to get an NcNode instance with any of the
+            NodeCalculator keywords (node, attr, attrs, ...), except for when
+            they are initialized. This method helps for those special cases.
+
+        Args:
+            attr (str): Attribute on the Maya node this instance refers to.
+
+        Returns:
+            NcNode: Instance with the given attr in its Attrs.
+        """
+        if attr is None:
+            LOG.error(
+                "%s 'attr()' method call without arguments. Did you mean to "
+                "use 'attrs'?" % (self.__class__.__name__))
+
+        return NcNode(self._node_mobj, attr)
+
+    def auto_state(self):
+        """Print the status of _auto_unravel and _auto_consolidate."""
+        message = "auto_unravel: {0}, auto_consolidate: {1}".format(
             self._auto_unravel, self._auto_consolidate
         )
         print(message)
 
     def to_py_node(self):
-        """Convenience function to get a PyNode from a NcNode/NcAttrs instance
+        """Convenience method to get a PyNode from a NcNode/NcAttrs instance.
 
         Returns:
             pm.PyNode: PyNode-instance of this node or plug
@@ -1298,7 +1414,7 @@ class NcBaseNode(NcBaseClass):
         """Allows the user to change the auto unravelling state on the fly.
 
         Note:
-            For more info about _auto_unravel: Check docString of set_global_auto_unravel
+            Check docString of set_global_auto_unravel for more info!
 
         Args:
             state (bool): Desired auto unravel state: On/Off
@@ -1309,7 +1425,7 @@ class NcBaseNode(NcBaseClass):
         """Allows the user to change the auto consolidating state on the fly.
 
         Note:
-            For more info about _auto_consolidate: Check docString of set_global_auto_consolidate
+            Check docString of set_global_auto_consolidate for more info!
 
         Args:
             state (bool): Desired auto consolidate state: On/Off
@@ -1333,7 +1449,7 @@ class NcBaseNode(NcBaseClass):
 
             data_type = attr_data["data_type"]
             func = self._define_add_attr_method(attr_type, data_type)
-            self.__dict__["add_{}".format(attr_type)] = func
+            self.__dict__["add_{0}".format(attr_type)] = func
 
     def _define_add_attr_method(self, attr_type, default_data_type):
         """Closure to add add_XYZ() methods.
@@ -1342,8 +1458,9 @@ class NcBaseNode(NcBaseClass):
             Check docString of _add_all_add_attr_methods.
 
         Args:
-            attr_type (str): Name of data type of this attribute: bool, long, short, ...
-            default_data_type (str): Either "attributeType" or "dataType". Refer to Maya docs.
+            attr_type (str): Name of data type of this attribute: bool, long, ...
+            default_data_type (str): Either "attributeType" or "dataType". See
+                Maya docs for more info.
 
         Returns:
             executable: Function that will be added to class methods.
@@ -1357,7 +1474,7 @@ class NcBaseNode(NcBaseClass):
 
             Args:
                 name (str): Name for the new attribute to be created
-                kwargs (dict): User specified attributes to be set for the new attribute
+                kwargs (dict): User specified attributes to be set on new attr
 
             Returns:
                 NcNode: NcNode-instance with the node and new attribute.
@@ -1391,10 +1508,10 @@ class NcBaseNode(NcBaseClass):
             kwargs are exactly the same as in cmds.addAttr()!
 
         Args:
-            name (str): Name for the new attribute to be created
-            enum_name (list or str): User-choices for the resulting enum-attribute
-            cases (list or str): Overrides enum_name, which I find a horrific name
-            kwargs (dict): User specified attributes to be set for the new attribute
+            name (str): Name for the new attribute to be created.
+            enum_name (list or str): User-choices for the resulting enum-attr.
+            cases (list or str): Overrides enum_name, which is a horrific name.
+            kwargs (dict): User specified attributes to be set for the new attr.
 
         Returns:
             NcNode: NcNode-instance with the node and new attribute.
@@ -1410,7 +1527,7 @@ class NcBaseNode(NcBaseClass):
 
             kwargs["enumName"] = enum_name
 
-        # Replace any user inputs for attributeType. Type is defined by method name!
+        # Replace any user inputs for attributeType. Type is defined implicitly!
         kwargs["attributeType"] = "enum"
 
         return self._add_traced_attr(name, **kwargs)
@@ -1431,9 +1548,9 @@ class NcBaseNode(NcBaseClass):
 
         Args:
             name (str): Name for the new separator to be created.
-            enum_name (list or str): User-choices for the resulting enum-attribute.
-            cases (list or str): Overrides enum_name, which I find a horrific name.
-            kwargs (dict): User specified attributes to be set for the new attribute.
+            enum_name (list or str): User-choices for the resulting enum-attr.
+            cases (list or str): Overrides enum_name, which is a horrific name.
+            kwargs (dict): User specified attributes to be set for the new attr.
 
         Returns:
             NcNode: NcNode-instance with the node and new attribute.
@@ -1446,10 +1563,10 @@ class NcBaseNode(NcBaseClass):
         node = self.node
         base_long_name = "channelBoxSeparator"
         index = 1
-        unique_long_name = "{}{}".format(base_long_name, index)
+        unique_long_name = "{0}{1}".format(base_long_name, index)
         while cmds.attributeQuery(unique_long_name, node=node, exists=True):
             index += 1
-            unique_long_name = "{}{}".format(base_long_name, index)
+            unique_long_name = "{0}{1}".format(base_long_name, index)
 
         separator_attr = self.add_enum(
             unique_long_name,
@@ -1475,7 +1592,7 @@ class NcBaseNode(NcBaseClass):
         attr_name = attr_name.replace(' ', '_')
 
         # Check whether attribute already exists. If so; return it directly!
-        plug = "{}.{}".format(self.node, attr_name)
+        plug = "{0}.{1}".format(self.node, attr_name)
         if cmds.objExists(plug):
             LOG.warn("Attribute %s already existed!" % (str(plug)))
             return self.__getattr__(attr_name)
@@ -1496,13 +1613,12 @@ class NcBaseNode(NcBaseClass):
             "lock": attr_variables.pop("lock", None),
         }
         attr_value = attr_variables.pop("value", None)
-        LOG.debug("Extracted set_attr-variables from attr_variables: %s" % (str(attr_variables)))
-        LOG.debug("set_attr-variables: %s" % (str(set_attr_values)))
+        LOG.debug("Extracted set_attr-variables: %s" % (str(set_attr_values)))
 
         # Add the attribute
         _traced_add_attr(self.node, **attr_variables)
 
-        # Filter for any values that need to be set via the setAttr command. Oh Maya...
+        # Filter for any values that need to be set via the setAttr command.
         set_attr_values = {
             key: val for (key, val) in set_attr_values.iteritems()
             if val is not None
@@ -1522,9 +1638,9 @@ class NcBaseNode(NcBaseClass):
         """Set or connect attribute to the given value.
 
         Note:
-            Since setattr uses __getattr__ method it works for NcNode AND NcAttrs!
+            Since setattr uses __getattr__ method it works for NcNode & NcAttrs!
 
-            setattr is invoked by equal-sign. Does NOT work without attribute given:
+            setattr is invoked by equal-sign. Does NOT work without an attr given:
             a = Node("pCube1.ty")  # Initialize Node-object with attribute given
             a.ty = 7  # Works fine if attribute is specifically called
             a = 7  # Does NOT work! It looks like the same operation as above,
@@ -1533,8 +1649,8 @@ class NcBaseNode(NcBaseClass):
 
         Args:
             name (str): Name of the attribute to be set
-            value (NcNode or NcAttrs or str or int or float or list or tuple): Connect
-                attribute to this object or set attribute to this value/array
+            value (NcNode or NcAttrs or str or int or float or list or tuple):
+                Connect attr to this object or set attr to this value/array
 
         Example:
             ::
@@ -1554,13 +1670,14 @@ class NcBaseNode(NcBaseClass):
         """Set or connect attribute at index to the given value.
 
         Note:
-            Since setitem uses __getitem__ method it works for NcNode AND NcAttrs!
+            Since setitem uses __getitem__ method it works for NcNode & NcAttrs!
 
-            This looks at the list of attributes stored in the NcAttrs of this NcNode.
+            This looks at the list of attrs stored inside NcAttrs.
 
         Args:
             index (int): Index of item to be set
-            value (NcNode or NcAttrs or str or int or float): Set/connect item at index to this.
+            value (NcNode or NcAttrs or str or int or float): Set/connect item
+                at index to this.
         """
         LOG.debug(
             "%s __setitem__ (%s, %s)" % (self.__class__.__name__, str(index), str(value))
@@ -1571,29 +1688,30 @@ class NcBaseNode(NcBaseClass):
 
 # NcNode ---
 class NcNode(NcBaseNode):
-    """NcNodes are linked to Maya nodes and can hold attributes in the form of an NcAttrs-instance.
+    """NcNodes are linked to Maya nodes and can hold attrs in a NcAttrs-instance.
 
     Note:
-        Getting attr X from an NcNode that holds attr Y returns only attr X: NcNode.X
-        In contrast: Getting attr X from an NcAttrs that holds attr Y returns: NcAttrs.Y.X
+        Getting attr X from an NcNode that holds attr Y only returns: NcNode.X
+        In contrast; NcAttrs instances "concatenate" attrs:
+        Getting attr X from an NcAttrs that holds attr Y returns: NcAttrs.Y.X
     """
 
     def __init__(self, node, attrs=None, auto_unravel=None, auto_consolidate=None):
         """NcNode-class constructor
 
         Note:
-            __setattr__ is changed and the usual "self.node = node" results in a loop.
-            Therefore attributes need to be set a bit awkwardly; directly via __dict__!
+            __setattr__ is altered. The usual "self.node=node" results in loop!
+            Therefore attributes need to be set a bit awkwardly via __dict__!
 
-            NcNode uses an MObject as its reference to the Maya node it belongs to.
-            If the Maya node does not exist at instantiation time this will error!
+            NcNode uses an MObject as its reference to the Maya node it belongs
+            to. Maya node MUST therefore exist at instantiation time!
 
         Args:
             node (str or NcNode or NcAttrs or MObject): Represents a Maya node
-            attrs (str or list or NcAttrs): Represents Maya attributes on the node
-            auto_unravel (bool): Whether attributes should be automatically unravelled.
+            attrs (str or list or NcAttrs): Represents Maya attrs on the node
+            auto_unravel (bool): Should attrs automatically be unravelled?
                 Check set_global_auto_unravel docString for more details.
-            auto_consolidate (bool): Whether attributes should be automatically consolidated.
+            auto_consolidate (bool): Should attrs automatically be consolidated?
                 Check set_global_auto_consolidate docString for more details.
 
         Attributes:
@@ -1649,16 +1767,18 @@ class NcNode(NcBaseNode):
         if isinstance(node, NcBaseNode):
             node_mobj = node._node_mobj
 
-            # Use settings of given node if auto_unravel or auto_consolidate aren't set
+            # If auto_unravel flag wasn't specified: Use node settings!
             if auto_unravel is None:
                 auto_unravel = node._auto_unravel
+            # If auto_consolidate flag wasn't specified: Use node settings!
             if auto_consolidate is None:
                 auto_consolidate = node._auto_consolidate
         else:
             node_mobj = om_util.get_mobj(node)
             if node_mobj is None:
-                LOG.error("%s does not exist! NcNode initialization failed." % (str(node)))
-
+                LOG.error(
+                    "%s doesn't exist! NcNode initialization failed." % (str(node))
+                )
         # Using __dict__, because the setattr & getattr methods are overridden!
         self.__dict__["_node_mobj"] = node_mobj
         if isinstance(attrs, NcAttrs):
@@ -1666,25 +1786,25 @@ class NcNode(NcBaseNode):
         else:
             self.__dict__["_held_attrs"] = NcAttrs(self, attrs)
 
-        # If auto_unravel or auto_consolidate are not set; turn them on by default!
+        # If auto_unravel/auto_consolidate flags weren't specified: Use globals
         if auto_unravel is None:
-            auto_unravel = True
+            auto_unravel = GLOBAL_AUTO_UNRAVEL
         if auto_consolidate is None:
-            auto_consolidate = True
+            auto_consolidate = GLOBAL_AUTO_CONSOLIDATE
         self.__dict__["_auto_unravel"] = auto_unravel
         self.__dict__["_auto_consolidate"] = auto_consolidate
 
     def __getattr__(self, name):
-        """Get a new NcAttrs instance with the MObject this NcNode points to and
-        the requested attribute.
+        """Get a new NcAttrs instance with the MObject this NcNode points to
+        and the requested attribute.
 
         Note:
-            There are certain keywords that will NOT return a new NcAttrs, but instead:
+            There are certain keywords that will NOT return a new NcAttrs:
             * attrs: Returns currently stored NcAttrs of this NcNode instance.
-            * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+            * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
             * nodes: Returns name of Maya node in scene in a list ([str]).
-            * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
+            * plugs: Returns stored plugs: [node.attr, ...] (list of strings).
 
         Args:
             name (str): Name of requested attribute
@@ -1716,7 +1836,7 @@ class NcNode(NcBaseNode):
         """Get stored attribute at given index.
 
         Note:
-            This looks through the list of attributes stored in the NcAttrs of this NcNode.
+            Looks through list of attrs stored in the NcAttrs of this NcNode.
 
         Args:
             index (int): Index of desired item
@@ -1737,7 +1857,7 @@ class NcNode(NcBaseNode):
 
     @property
     def node(self):
-        """Property to allow easy access to name of Maya node this NcNode is linked to.
+        """Get the name of Maya node this NcNode refers to.
 
         Returns:
             str: Name of Maya node in the scene.
@@ -1746,7 +1866,7 @@ class NcNode(NcBaseNode):
 
     @property
     def attrs(self):
-        """Property to allow easy access to currently stored NcAttrs instance of this NcNode.
+        """Get currently stored NcAttrs instance of this NcNode.
 
         Returns:
             NcAttrs: NcAttrs instance that represents Maya attributes.
@@ -1755,7 +1875,7 @@ class NcNode(NcBaseNode):
 
     @property
     def attrs_list(self):
-        """Property to allow easy access to list of stored attributes of this NcNode instance.
+        """Get list of stored attributes of this NcNode instance.
 
         Returns:
             list: List of strings that represent Maya attributes.
@@ -1765,38 +1885,39 @@ class NcNode(NcBaseNode):
 
 # NcAttrs ---
 class NcAttrs(NcBaseNode):
-    """NcAttrs are linked to an NcNode instance. NcAttrs represent attributes on Maya nodes.
+    """NcAttrs are linked to an NcNode instance & represent attrs on Maya nodes.
 
     Note:
-        Getting attr X from an NcAttrs that holds attr Y returns a "concatenated" attr: NcAttrs.Y.X
-        In contrast: Getting attr X from an NcNode that holds attr Y only returns: NcAttrs.X
+        Getting attr X from an NcAttrs that holds attr Y returns: NcAttrs.Y.X
+        In contrast; NcNode instances do NOT "concatenate" attrs:
+        Getting attr X from an NcNode that holds attr Y only returns: NcNode.X
     """
 
     def __init__(self, holder_node, attrs):
         """NcAttrs-class constructor
 
         Note:
-            __setattr__ is changed and the usual "self.node = node" results in a loop.
-            Therefore attributes need to be set a bit awkwardly; directly via __dict__!
-
-            NcNode uses an MObject as its reference to the Maya node it belongs to.
-            If the Maya node does not exist at instantiation time this will error!
+            __setattr__ is altered. The usual "self.node=node" results in loop!
+            Therefore attributes need to be set a bit awkwardly via __dict__!
 
         Args:
             holder_node (NcNode): Represents a Maya node
-            attrs (str or list or NcAttrs): Represents Maya attributes on the node
+            attrs (str or list or NcAttrs): Represents attrs on the Maya node
 
 
         Attributes:
-            _holder_node (NcNode): Reference to NcNode instance this NcAttrs belongs to.
-            _held_attrs_list (list): Strings that represent attributes on a Maya node.
+            _holder_node (NcNode): NcNode instance this NcAttrs belongs to.
+            _held_attrs_list (list): Strings that represent attrs on Maya node.
         """
         LOG.debug("%s __init__ (%s)" % (self.__class__.__name__, str(attrs)))
 
         super(NcAttrs, self).__init__()
 
         if not isinstance(holder_node, NcNode):
-            LOG.error("holder_node must be of type NcNode! Given: %s" % (str(holder_node)))
+            LOG.error(
+                "holder_node must be of type NcNode! Given: %s "
+                "type: %s" % (str(holder_node), str(type(holder_node)))
+            )
             return None
 
         self.__dict__["_holder_node"] = holder_node
@@ -1811,7 +1932,7 @@ class NcAttrs(NcBaseNode):
 
     @property
     def node(self):
-        """Property to allow easy access to name of Maya node this NcAttrs is linked to.
+        """Get name of the Maya node this NcAttrs is linked to.
 
         Returns:
             str: Name of Maya node in the scene.
@@ -1820,7 +1941,7 @@ class NcAttrs(NcBaseNode):
 
     @property
     def attrs(self):
-        """Property to allow easy access to this NcAttrs instance.
+        """Get this NcAttrs instance.
 
         Returns:
             NcAttrs: NcAttrs instance that represents Maya attributes.
@@ -1829,7 +1950,7 @@ class NcAttrs(NcBaseNode):
 
     @property
     def attrs_list(self):
-        """Property to allow easy access to list of stored attributes of this NcAttrs instance.
+        """Get list of stored attributes of this NcAttrs instance.
 
         Returns:
             list: List of strings that represent Maya attributes.
@@ -1838,7 +1959,7 @@ class NcAttrs(NcBaseNode):
 
     @property
     def _node_mobj(self):
-        """Property to allow easy access to the MObject this NcAttrs instance refers to.
+        """Get the MObject this NcAttrs instance refers to.
 
         Note:
             MObject is stored on the NcNode this NcAttrs instance refers to!
@@ -1850,7 +1971,7 @@ class NcAttrs(NcBaseNode):
 
     @property
     def _auto_unravel(self):
-        """Property to allow easy access to _auto_unravel attribute of _holder_node.
+        """Get _auto_unravel attribute of _holder_node.
 
         Returns:
             bool: Whether auto unravelling is allowed
@@ -1859,7 +1980,7 @@ class NcAttrs(NcBaseNode):
 
     @property
     def _auto_consolidate(self):
-        """Property to allow easy access to _auto_consolidate attribute of _holder_node.
+        """Get _auto_consolidate attribute of _holder_node.
 
         Returns:
             bool: Whether auto consolidating is allowed
@@ -1867,15 +1988,16 @@ class NcAttrs(NcBaseNode):
         return self._holder_node._auto_consolidate
 
     def __getattr__(self, name):
-        """Get a new NcAttrs instance with the requested attr concatenated onto existing attr(s).
+        """Get a new NcAttrs instance with the requested attr concatenated onto
+        existing attr(s).
 
         Note:
-            There are certain keywords that will NOT return a new NcAttrs, but instead:
+            There are certain keywords that will NOT return a new NcAttrs:
             * attrs: Returns currently stored NcAttrs of this NcNode instance.
-            * attrs_list: Returns list of stored attributes: [attr, ...] (list of strings).
+            * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
             * nodes: Returns name of Maya node in scene in a list ([str]).
-            * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
+            * plugs: Returns stored plugs: [node.attr, ...] (list of strings).
 
         Args:
             name (str): Name of requested attribute
@@ -1887,11 +2009,12 @@ class NcAttrs(NcBaseNode):
             ::
 
                 a = Node("pCube1") # Create new NcNode-object
-                a.tx.ty  # invokes __getattr__ on NcNode "a" first, which returns
-                           an NcAttrs instance with node: "a" & attrs: "tx".
-                           The __getattr__ described here then acts on the retrieved
-                           NcAttrs instance and returns a new NcAttrs instance.
-                           This time with node: "a" & attrs: "tx.ty"!
+                a.tx.ty  # invokes __getattr__ on NcNode "a" first, which
+                           returns an NcAttrs instance with node: "a" & attrs:
+                           "tx". The __getattr__ described here then acts on
+                           the retrieved NcAttrs instance and returns a new
+                           NcAttrs instance. This time with node: "a" & attrs:
+                           "tx.ty"!
         """
         LOG.debug("%s __getattr__ (%s)" % (self.__class__.__name__, str(name)))
 
@@ -1900,7 +2023,9 @@ class NcAttrs(NcBaseNode):
             return self
 
         if len(self.attrs_list) != 1:
-            LOG.error("Tried to get attr of non-singular attribute: %s" % (str(self.attrs_list)))
+            LOG.error(
+                "Tried to get attr of non-singular attr: %s" % (str(self.attrs_list))
+            )
 
         return_value = NcAttrs(
             self._holder_node,
@@ -1933,19 +2058,19 @@ class NcAttrs(NcBaseNode):
 
 # NcList ---
 class NcList(NcBaseClass):
-    """NcList is a list with overloaded operators (due to inheritance from NcBaseClass).
+    """NcList is a list with overloaded operators (inherited from NcBaseClass).
 
     Note:
         NcList has the following keywords:
-        * nodes: Returns all Maya nodes within the list: [node, ...] (list of strings)
+        * nodes: Returns Maya nodes within NcList: [node, ...] (list of strings)
     """
 
     def __init__(self, *args):
         """NcList-class constructor
 
         Args:
-            args (NcNode or NcAttrs or NcValue or str or list or tuple): Any number of values
-                that should be stored as an array of values
+            args (NcNode or NcAttrs or NcValue or str or list or tuple): Any
+                number of values that should be stored as an array of values.
         """
         LOG.debug("%s __init__ (%s)" % (self.__class__.__name__, str(args)))
         super(NcList, self).__init__()
@@ -1954,7 +2079,7 @@ class NcList(NcBaseClass):
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
 
-        # Go through given args and cast them to appropriate type (NcNode, NcValue)
+        # Go through given args and cast them to NcNode or NcValue
         list_items = []
         for arg in args:
             converted_arg = self._convert_item_to_nc_instance(arg)
@@ -1971,7 +2096,7 @@ class NcList(NcBaseClass):
         Returns:
             str: String of all NcList _items.
         """
-        return "{}({})".format(self.__class__.__name__, self._items)
+        return "{0}({1})".format(self.__class__.__name__, self._items)
 
     def __repr__(self):
         """Unambiguous format of NcList instance.
@@ -1982,7 +2107,7 @@ class NcList(NcBaseClass):
         Returns:
             str: String of concatenated class-type, node and attrs.
         """
-        return "{}({})".format(self.__class__.__name__, self._items)
+        return "{0}({1})".format(self.__class__.__name__, self._items)
 
     def __getitem__(self, index):
         """Get stored item at given index.
@@ -2008,9 +2133,12 @@ class NcList(NcBaseClass):
 
         Args:
             index (int): Index of item to be set
-            value (NcNode or NcAttrs or str or int or float): Set/connect item at index to this.
+            value (NcNode or NcAttrs or str or int or float): Set/connect item
+                at index to this.
         """
-        LOG.debug("%s __setitem__ (%s, %s)" % (self.__class__.__name__, str(index), str(value)))
+        LOG.debug(
+            "%s __setitem__ (%s, %s)" % (self.__class__.__name__, str(index), str(value))
+        )
 
         self._items[index] = value
 
@@ -2083,8 +2211,8 @@ class NcList(NcBaseClass):
             None
         """
         LOG.warn(
-            "Returned None for invalid node-property request from %s instance: %s. "
-            "Did you mean 'nodes'?" % (self.__class__.__name__, str(self))
+            "Returned None for invalid node-property request from %s instance: "
+            "%s. Did you mean 'nodes'?" % (self.__class__.__name__, str(self))
         )
 
         return None
@@ -2140,7 +2268,7 @@ class NcList(NcBaseClass):
             NodeCalculator type before being appended!
 
         Args:
-            value (NcNode or NcAttrs or str or int or float): New value to be added to list.
+            value (NcNode or NcAttrs or str or int or float): Value to append.
         """
         converted_value = self._convert_item_to_nc_instance(value)
         self._items.append(converted_value)
@@ -2154,7 +2282,7 @@ class NcList(NcBaseClass):
 
         Args:
             index (int): Index at which the value should be inserted.
-            value (NcNode or NcAttrs or str or int or float): New value to be inserted into list.
+            value (NcNode or NcAttrs or str or int or float): Value to insert.
         """
         converted_value = self._convert_item_to_nc_instance(value)
         self._items.insert(index, converted_value)
@@ -2163,7 +2291,7 @@ class NcList(NcBaseClass):
         """Extend NcList with another list.
 
         Args:
-            other (NcList or list): List to be added to the end of this NcList instance.
+            other (NcList or list): List to be added to the end of this NcList.
         """
         if isinstance(other, NcList):
             other = other._items
@@ -2171,11 +2299,11 @@ class NcList(NcBaseClass):
 
     @staticmethod
     def _convert_item_to_nc_instance(item):
-        """Convert the given item into a NodeCalculator friendly class instance.
+        """Convert given item into a NodeCalculator friendly class instance.
 
         Args:
-            item (NcNode or NcAttrs or str or int or float): Item to be converted into
-                either a NcNode or a NcValue.
+            item (NcNode or NcAttrs or str or int or float): Item to be
+                converted into either an NcNode or an NcValue.
 
         Returns:
             NcNode or NcValue: Given item in the appropriate format.
@@ -2200,19 +2328,21 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         Allowed assignments are:
         (1-D stands for 1-dimensional, X-D for multi-dimensional; 2-D, 3-D, ...)
         Setting 1-D attribute to a 1-D value/attr  # pCube1.tx = 7
-        Setting X-D attribute to a 1-D value/attr  # pCube1.t = 7  # same as pCube1.t = [7]*3
+        Setting X-D attribute to a 1-D value/attr  # pCube1.t = 7  # equal to [7]*3
         Setting X-D attribute to a X-D value/attr  # pCube1.t = [1, 2, 3]
         Setting 1-D attribute to a X-D value/attr  # Error: Ambiguous connection!
 
     Args:
         obj_a (NcNode or NcAttrs or str): Needs to be a plug. Either as a
             NodeCalculator-object or as a string ("node.attr")
-        obj_b (NcNode or NcAttrs or int or float or list or tuple or string): Can be a
-            numeric value, a list of values or another plug either in the form
-            of a NodeCalculator-object or as a string ("node.attr")
+        obj_b (NcNode or NcAttrs or int or float or list or tuple or string):
+            Can be a numeric value, a list of values or another plug either in
+            the form of a NodeCalculator-object or as a string ("node.attr")
         kwargs (dict): Arguments used in _traced_set_attr (~ cmds.setAttr)
     """
-    LOG.debug("_unravel_and_set_or_connect_a_to_b (%s, %s)" % (str(obj_a), str(obj_b)))
+    LOG.debug(
+        "_unravel_and_set_or_connect_a_to_b (%s, %s)" % (str(obj_a), str(obj_b))
+    )
 
     # If both inputs are NcBaseNode instances and either has _auto_unravel off:
     # Turn it off for both
@@ -2235,14 +2365,14 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
             )
 
     # Unravel the given objects into a standard list-form:
-    # Strings become NcNode instances, parent attributes are split up into their
-    # child attributes, etc. This ensures the following setting/connecting can
-    # expect the inputs to be in a consistent form.
+    # Strings become NcNode instances, parent attributes are split up into
+    # their child attributes, etc. This ensures the following
+    # setting/connecting can expect the inputs to be in a consistent form.
     obj_a_unravelled_list = _unravel_item_as_list(obj_a)
     obj_b_unravelled_list = _unravel_item_as_list(obj_b)
 
-    # As described in the docString Note: Input dimensions are crucial.
-    # If they don't match they must either be matched or an error must be thrown!
+    # As described in the docString Note: Input dimensions are crucial. If they
+    # don't match they must either be matched or an error must be thrown!
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
 
@@ -2272,7 +2402,7 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         )
         return False
 
-    # Dimensionality above 3 is most likely not going to be handled reliable; warn user!
+    # Dimensionality above 3 is most likely not going to be handled reliable!
     if obj_a_dim > 3:
         LOG.warn(
             "obj_a %s is %sD; greater than 3D! Many operations only work "
@@ -2288,7 +2418,7 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     # length, which takes care of 1D to XD setting/connecting.
     if obj_a_dim != obj_b_dim:
         obj_b_unravelled_list = obj_b_unravelled_list * obj_a_dim
-        LOG.info(
+        LOG.debug(
             "Matched obj_b_unravelled_list %s dimension to obj_a_dim %s!" % (
                 str(obj_b_unravelled_list), str(obj_a_dim),
             )
@@ -2304,15 +2434,19 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         obj_a_unravelled_list, obj_b_unravelled_list = consolidated_plugs
 
     # Pass the fully processed inputs to be connected
-    _set_or_connect_a_to_b(obj_a_unravelled_list, obj_b_unravelled_list, **kwargs)
+    _set_or_connect_a_to_b(
+        obj_a_unravelled_list,
+        obj_b_unravelled_list,
+        **kwargs
+    )
 
 
 def _is_consolidation_allowed(inputs):
-    """Check given inputs for any NcBaseNode-instance that is not set to auto consolidate
+    """Check for any NcBaseNode-instance that is NOT set to auto consolidate.
 
     Args:
-        inputs (NcNode or NcAttrs or str or int or float or list or tuple): Items to check
-            for a turned off auto-consolidation.
+        inputs (NcNode or NcAttrs or str or int or float or list or tuple):
+            Items to check for a turned off auto-consolidation.
 
     Returns:
         bool: True, if all given items allow for consolidation.
@@ -2336,11 +2470,12 @@ def _consolidate_plugs_to_min_dimension(*plugs):
     Note:
         A full set of child attributes can be reduced to their parent attribute:
         ["tx", "ty", "tz"] becomes ["t"]
-        A 3D to 3D connection can be 1 connection if both plugs have such a parent-attribute!
-        However: A 1D attr can not connect to a 3D attr and must not be consolidated.
+        A 3D to 3D connection can be 1 connection if both plugs have a parent-attr!
+        But a 1D attr can not connect to a 3D attr and must NOT be consolidated!
 
     Args:
-        *plugs (list(NcNode or NcAttrs or str or int or float or list or tuple)): Plugs to check.
+        plugs (list(NcNode or NcAttrs or str or int or float or list or tuple)):
+            Plugs to check.
 
     Returns:
         list: Consolidated plugs, if consolidation was successful.
@@ -2352,7 +2487,7 @@ def _consolidate_plugs_to_min_dimension(*plugs):
     for plug in plugs:
         parent_plug = _check_for_parent_attribute(plug)
 
-        # If any plug doesn't have a parent it's impossible to consolidate plugs!
+        # If any plug doesn't have a parent the plugs can NOT be consolidated!
         if parent_plug is None:
             # Return early!
             return plugs
@@ -2364,7 +2499,7 @@ def _consolidate_plugs_to_min_dimension(*plugs):
 
 
 def _check_for_parent_attribute(plug_list):
-    """Check whether the given plug_list can be reduced to a single parent attribute
+    """Reduce the given list of plugs to a single parent attribute.
 
     Args:
         plug_list (list): List of plugs: ["node.attribute", ...]
@@ -2394,20 +2529,22 @@ def _check_for_parent_attribute(plug_list):
         # The first parent_attr becomes the potential_parent_attr.
         if potential_parent_mplug is None:
             potential_parent_mplug = parent_mplug
-        # Break if any subsequent potential_parent_attr is different to the existing
+        # If any subsequent potential_parent_attr is different to the existing...
         elif potential_parent_mplug != parent_mplug:
+            # ...return early, because it won't be possible to reduce this plug!
             return None
 
         # If the plug passed all previous tests: Add it to the list
         checked_mplugs.append(mplug)
 
-    # Given plug_list should not be reduced if the list of all checked attributes
+    # Given plug_list should not be reduced if the list of all checked attrs
     # does not match the full list of available children attributes exactly!
-    # Example A: [outputX] should not be reduced to [output], since Y & Z are missing!
-    # Example B: [outputX, outputX, outputZ] has duplicates and should not be reduced!
-    # Example C: [outputX, outputZ, outputY] isn't in the right order and should not be reduced!
+    # -> [outputX] should not be reduced to [output]; Y & Z are missing!
+    # -> [outputX, outputX, outputZ] should not be reduced; it has duplicates!
+    # -> [outputX, outputZ, outputY] should not be reduced; wrong attr-order!
     all_child_mplugs = om_util.get_child_mplugs(potential_parent_mplug)
-    for checked_mplug, child_mplug in itertools.izip_longest(checked_mplugs, all_child_mplugs):
+    zipped_lists = itertools.izip_longest(checked_mplugs, all_child_mplugs)
+    for checked_mplug, child_mplug in zipped_lists:
         empty_plug_detected = checked_mplug is None or child_mplug is None
         if empty_plug_detected or checked_mplug != child_mplug:
             return None
@@ -2433,7 +2570,7 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
     )
 
     for obj_a_item, obj_b_item in zip(obj_a_list, obj_b_list):
-        # Make sure obj_a_item exists in the Maya scene and get its dimensionality
+        # Make sure obj_a_item exists in the Maya scene
         if not cmds.objExists(obj_a_item):
             LOG.error("obj_a_item seems not to be a Maya attr: %s!" % (str(obj_a_item)))
 
@@ -2470,9 +2607,16 @@ def _is_valid_maya_attr(plug):
 
     split_plug = _split_plug_into_node_and_attr(plug)
     if split_plug:
-        return cmds.attributeQuery(split_plug[1], node=split_plug[0], exists=True)
+        is_existing_maya_plug = cmds.attributeQuery(
+            split_plug[1],
+            node=split_plug[0],
+            exists=True
+        )
+        return is_existing_maya_plug
 
-    LOG.error("Given string '%s' does not seem to be a Maya attribute!" % (str(plug)))
+    LOG.error(
+        "Given string '%s' does not seem to be a Maya attribute!" % (str(plug))
+    )
     return False
 
 
@@ -2482,50 +2626,60 @@ def _create_and_connect_node(operation, *args):
 
     Args:
         operation (str): Operation the new node has to perform
-        args (NcNode or NcAttrs or string): Attributes connecting into the newly created node
+        args (NcNode or NcAttrs or str): Attrs connecting into newly created node
 
     Returns:
         NcNode: New NcNode instance with the newly created Maya-node of type
             OPERATOR_LOOKUP_TABLE[operation]["node"] and with attributes
             stored in OPERATOR_LOOKUP_TABLE[operation]["output"].
     """
-    LOG.debug("Creating a new %s-operationNode with args: %s" % (str(operation), str(args)))
+    LOG.debug(
+        "Creating a new %s-operationNode with args: %s" % (str(operation), str(args))
+    )
 
-    # If a multi_index-attribute is given; create list with it of same length than args
+    # If a multi_index-attr is given; create inputs-list with same length as args
     new_node_inputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["inputs"]
     if lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("is_multi_index", False):
-        new_node_inputs = len(args) * lookup_table.OPERATOR_LOOKUP_TABLE[operation]["inputs"][:]
+        new_node_inputs = len(args) * new_node_inputs
 
     # Check that dimensions match: args must be of same length as node-inputs:
     if len(args) != len(new_node_inputs):
-        LOG.error(
-            "Dimensions to create node don't match! Given args: %s "
-            "Required node-inputs: %s" % (str(args), str(new_node_inputs))
+        LOG.info(
+            "Dimensions to create node don't match! Given inputs: %s "
+            "Expected node-inputs: %s" % (str(args), str(new_node_inputs))
         )
 
-    # Unravel all given arguments and create a new node according to given operation
-    unravelled_args_list = [_unravel_item_as_list(x) for x in args]
+    # Unravel all given args and create a new node according to given operation
+    unravelled_args_list = [_unravel_item_as_list(arg) for arg in args]
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
-    # If the given node-type has an operation attr; set it according to OPERATOR_LOOKUP_TABLE
+    # Set operation attr if specified in OPERATOR_LOOKUP_TABLE for this node-type
     node_operation = lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("operation", None)
     if node_operation:
-        _unravel_and_set_or_connect_a_to_b(new_node + ".operation", node_operation)
+        _unravel_and_set_or_connect_a_to_b(
+            "{}.operation".format(new_node), node_operation
+        )
 
     # Find the maximum dimension involved to know what to connect. For example:
-    # 3D to 3D requires 3D-input, 1D to 2D needs 2D-input, 1D to 1D only needs 1D-input
+    # 1D to 1D needs 1D-input
+    # 1D to 2D needs 2D-input  # "1D" is not a typo! ;)
+    # 3D to 3D needs 3D-input
     max_dim = max([len(x) for x in unravelled_args_list])
 
     # Connect all given args to the inputs of the newly created Maya node.
     for i, (plug_to_connect, new_node_input) in enumerate(zip(args, new_node_inputs)):
-        new_node_input_list = [(new_node + "." + _input) for _input in new_node_input][:max_dim]
+        new_node_input_list = [
+            "{0}.{1}".format(new_node, _input) for _input in new_node_input
+        ][:max_dim]
         # multi_index inputs must always be caught and filled!
         if lookup_table.OPERATOR_LOOKUP_TABLE[operation].get("is_multi_index", False):
-            new_node_input_list = [x.format(multi_index=i) for x in new_node_input_list]
+            new_node_input_list = [
+                _input.format(multi_index=i) for _input in new_node_input_list
+            ]
 
-        # Support for single-dimension-inputs in the OPERATOR_LOOKUP_TABLE. For example:
-        # The blend-attr of a blendColors-node is always 1D,
-        # so only a 1D plug_to_connect must be given!
+        # Support for single-dimension-inputs in the OPERATOR_LOOKUP_TABLE.
+        # For example: The blend-attr of a blendColors-node is always 1D, so
+        # only a 1D plug_to_connect must be given!
         elif len(new_node_input) == 1:
             if len(_unravel_item_as_list(plug_to_connect)) > 1:
                 LOG.error(
@@ -2554,8 +2708,9 @@ def _create_and_connect_node(operation, *args):
 
         _unravel_and_set_or_connect_a_to_b(new_node_input_list, plug_to_connect)
 
-    # Support for single-dimension-outputs in the OPERATOR_LOOKUP_TABLE. For example:
-    # distanceBetween returns 1D attr, no matter what dimension the inputs were
+    # Support for single-dimension-outputs in the OPERATOR_LOOKUP_TABLE.
+    # For example: distanceBetween returns 1D attr, no matter what dimension
+    # the inputs were
     output_is_predetermined = lookup_table.OPERATOR_LOOKUP_TABLE[operation].get(
         "output_is_predetermined", False
     )
@@ -2563,11 +2718,11 @@ def _create_and_connect_node(operation, *args):
     # Return new NcNode instance with the appropriate output-attributes.
     outputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["output"]
     if len(outputs) == 1 or output_is_predetermined:
-        # If the outputs are of length 1 or should not be altered: Return directly
+        # Return outputs directly if they should not be altered or are 1D
         return NcNode(new_node, outputs)
 
     else:
-        # Truncate the number of outputs according to how many attributes were processed
+        # Truncate number of outputs according to how many attrs were processed
         return NcNode(new_node, outputs[:max_dim])
 
 
@@ -2604,7 +2759,7 @@ def _create_node_name(operation, *args):
                 involved_args.append(arg.node)
 
         elif isinstance(arg, (tuple, list)):
-            # If it's a list of 1 element; use that element, otherwise use "list"
+            # If it's a list of 1 item; use that item, otherwise use "list"
             if len(arg) == 1:
                 involved_args.append(str(arg[0]))
             else:
@@ -2630,7 +2785,7 @@ def _create_node_name(operation, *args):
         NODE_NAME_PREFIX,  # Common NodeCalculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
-        lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]  # Node type as suffix
+        lookup_table.OPERATOR_LOOKUP_TABLE[operation]["node"]  # Node type
     ]
     name = "_".join(name_elements)
 
@@ -2643,8 +2798,8 @@ def _create_traced_operation_node(operation, attrs):
 
     Args:
         operation (str): Operation the new node has to perform
-        attrs (MPlug or NcNode or NcAttrs or list or numbers or str): Attributes that
-            will be connecting into the newly created node
+        attrs (MPlug or NcNode or NcAttrs or list or numbers or str): Attrs
+            that will be connecting into the newly created node.
 
     Returns:
         str: Name of newly created Maya node.
@@ -2678,7 +2833,7 @@ def _traced_create_node(node_type, **kwargs):
     # Make sure a sensible name is in the kwargs
     name = kwargs.pop("name", node_type)
 
-    # Separate the parent command flags from the createNode/spaceLocator kwargs.
+    # Separate parent command flags from the createNode/spaceLocator kwargs.
     parent = kwargs.pop("parent", None) or kwargs.pop("p", None)
     parent_kwargs = {}
     if parent:
@@ -2689,8 +2844,8 @@ def _traced_create_node(node_type, **kwargs):
                 parent_kwargs[parent_flag] = kwargs.pop(parent_flag)
     if "s" in parent_kwargs:
         LOG.warn(
-            "The 's'-flag was used for creation of %s. Please use 'shared' or "
-            "'shape' flag to avoid ambiguity! Used 's' for 'shape' "
+            "The 's'-flag was used for creation of %s. Please use 'shared' "
+            "or 'shape' flag to avoid ambiguity! Used 's' for 'shape' "
             "in cmds.parent command!" % (str(node_type))
         )
 
@@ -2710,7 +2865,7 @@ def _traced_create_node(node_type, **kwargs):
 
     # Add creation command and new node to traced nodes, if Tracer is active
     if NcBaseClass._is_tracing:
-        # Add the newly created node to the tracer. Use the mobj for non-ambiguity
+        # Add the newly created node to Tracer. Use mobj to avoid ambiguity
         node_variable = NcBaseClass._get_next_variable_name()
         tracer_mobj = TracerMObject(new_node, node_variable)
         NcBaseClass._add_to_traced_nodes(tracer_mobj)
@@ -2720,7 +2875,10 @@ def _traced_create_node(node_type, **kwargs):
             # Add the name-kwarg back in, if the new node isn't a shape
             kwargs["name"] = name
 
-        joined_kwargs = ", {}".format(_join_cmds_kwargs(**kwargs)) if kwargs else ""
+        if kwargs:
+            joined_kwargs = ", {0}".format(_join_cmds_kwargs(**kwargs))
+        else:
+            joined_kwargs = ""
         command = [
             "{var} = cmds.createNode('{op}'{kwargs})".format(
                 var=node_variable,
@@ -2729,7 +2887,8 @@ def _traced_create_node(node_type, **kwargs):
             )
         ]
 
-        # If shape was created: Add getting its parent and renaming it to command stack
+        # If shape was created:
+        # Add getting its parent and renaming it to command stack.
         if new_node_is_shape:
             command.append(
                 "{var} = cmds.listRelatives({var}, parent=True)[0]".format(
@@ -2747,7 +2906,7 @@ def _traced_create_node(node_type, **kwargs):
         if parent:
             joined_parent_kwargs = _join_cmds_kwargs(**parent_kwargs)
             if joined_parent_kwargs:
-                joined_parent_kwargs = ", {}".format(joined_parent_kwargs)
+                joined_parent_kwargs = ", {0}".format(joined_parent_kwargs)
             command.append(
                 "cmds.parent({var}, '{parent}'{kwargs})".format(
                     var=node_variable,
@@ -2762,7 +2921,8 @@ def _traced_create_node(node_type, **kwargs):
 
 
 def _traced_add_attr(node, **kwargs):
-    """Add an attr on a Maya node & add command to _command_stack if Tracer is active
+    """Add an attribute on a Maya node and add the executed command to
+    _command_stack if Tracer is active.
 
     Note:
         This is simply an overloaded cmds.addAttr(node, **kwargs).
@@ -2778,17 +2938,19 @@ def _traced_add_attr(node, **kwargs):
 
         # If node is already part of the traced nodes: Use its variable instead
         node_variable = NcBaseClass._get_tracer_variable_for_node(node)
-        node = node_variable if node_variable else "'{}'".format(node)
+        node = node_variable if node_variable else "'{0}'".format(node)
 
         # Join any given kwargs so they can be passed on to the addAttr-command
         joined_kwargs = _join_cmds_kwargs(**kwargs)
 
         # Add the addAttr-command to the command stack
-        NcBaseClass._add_to_command_stack("cmds.addAttr({}, {})".format(node, joined_kwargs))
+        cmd_str = "cmds.addAttr({0}, {1})".format(node, joined_kwargs)
+        NcBaseClass._add_to_command_stack(cmd_str)
 
 
 def _traced_set_attr(plug, value=None, **kwargs):
-    """Set an attr on a Maya node & add command to _command_stack if Tracer is active
+    """Set an attribute on a Maya node and add the executed command to
+    _command_stack if Tracer is active.
 
     Note:
         This is simply an overloaded cmds.setAttr(plug, value, **kwargs).
@@ -2814,11 +2976,11 @@ def _traced_set_attr(plug, value=None, **kwargs):
         node, attr = _split_plug_into_node_and_attr(plug)
         node_variable = NcBaseClass._get_tracer_variable_for_node(node)
         if node_variable:
-            # ...if it is already part of the traced nodes: Use its variable instead
-            plug = "{} + '.{}'".format(node_variable, attr)
+            # ...if it is a traced node: Use its variable instead
+            plug = "{0} + '.{1}'".format(node_variable, attr)
         else:
             # ...otherwise add quotes around original attr
-            plug = "'{}'".format(plug)
+            plug = "'{0}'".format(plug)
 
         # Join any given kwargs so they can be passed on to the setAttr-command
         joined_kwargs = _join_cmds_kwargs(**kwargs)
@@ -2832,7 +2994,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
             if joined_kwargs:
                 # If both value and kwargs were given
                 NcBaseClass._add_to_command_stack(
-                    "cmds.setAttr({}, {}{}, edit=True, {})".format(
+                    "cmds.setAttr({0}, {1}{2}, edit=True, {3})".format(
                         plug,
                         unpack_operator,
                         value,
@@ -2841,22 +3003,27 @@ def _traced_set_attr(plug, value=None, **kwargs):
                 )
             else:
                 # If only a value was given
-                NcBaseClass._add_to_command_stack(
-                    "cmds.setAttr({}, {}{})".format(plug, unpack_operator, value)
+                cmd_str = "cmds.setAttr({0}, {1}{2})".format(
+                    plug,
+                    unpack_operator,
+                    value
                 )
+                NcBaseClass._add_to_command_stack(cmd_str)
         else:
             if joined_kwargs:
                 # If only kwargs were given
-                NcBaseClass._add_to_command_stack(
-                    "cmds.setAttr({}, edit=True, {})".format(plug, joined_kwargs)
+                cmd_str = "cmds.setAttr({0}, edit=True, {1})".format(
+                    plug,
+                    joined_kwargs
                 )
-            else:
-                # If neither value or kwargs were given it was a redundant setAttr. Don't store!
-                pass
+                NcBaseClass._add_to_command_stack(cmd_str)
+
+            # If neither value or kwargs were given it was a redundant setAttr.
 
 
 def _traced_get_attr(plug):
-    """Get value of an attr on a Maya node & add command to _command_stack if Tracer is active
+    """Get value of an attribute on a Maya node and add the executed command to
+    _command_stack if Tracer is active.
 
     Note:
         This is a tweaked & overloaded cmds.getAttr(plug): Awkward return values
@@ -2874,7 +3041,7 @@ def _traced_get_attr(plug):
 
     if _is_valid_maya_attr(plug):
         return_value = cmds.getAttr(plug)
-        # getAttr of 3D-plug returns list of a tuple. This unravels that abomination
+        # getAttr of 3D-plug returns list of tuple. This fixes that abomination
         if isinstance(return_value, list):
             if len(return_value) == 1 and isinstance(return_value[0], tuple):
                 list_of_tuples_returned = True
@@ -2885,7 +3052,11 @@ def _traced_get_attr(plug):
     if NcBaseClass._is_tracing:
         value_name = NcBaseClass._get_next_value_name()
 
-        return_value = nc_value.value(return_value, metadata=value_name, created_by_user=False)
+        return_value = nc_value.value(
+            return_value,
+            metadata=value_name,
+            created_by_user=False
+        )
 
         NcBaseClass._add_to_traced_values(return_value)
 
@@ -2893,17 +3064,19 @@ def _traced_get_attr(plug):
         node, attr = _split_plug_into_node_and_attr(plug)
         node_variable = NcBaseClass._get_tracer_variable_for_node(node)
         if node_variable:
-            # ...if it is already part of the traced nodes: Use its variable instead
-            plug = "{} + '.{}'".format(node_variable, attr)
+            # ...if it is already a traced node: Use its variable instead
+            plug = "{0} + '.{1}'".format(node_variable, attr)
         else:
             # ...otherwise add quotes around original plug
-            plug = "'{}'".format(plug)
+            plug = "'{0}'".format(plug)
 
         # Add the getAttr-command to the command stack
         if list_of_tuples_returned:
-            NcBaseClass._add_to_command_stack("{} = list(cmds.getAttr({})[0])".format(value_name, plug))
+            cmd_str = "{0} = list(cmds.getAttr({1})[0])".format(value_name, plug)
+            NcBaseClass._add_to_command_stack(cmd_str)
         else:
-            NcBaseClass._add_to_command_stack("{} = cmds.getAttr({})".format(value_name, plug))
+            cmd_str = "{0} = cmds.getAttr({1})".format(value_name, plug)
+            NcBaseClass._add_to_command_stack(cmd_str)
 
     return return_value
 
@@ -2922,9 +3095,9 @@ def _join_cmds_kwargs(**kwargs):
     for key, val in kwargs.iteritems():
         # Add quotes around values that are strings
         if isinstance(val, basestring):
-            prepared_kwargs.append("{}='{}'".format(key, val))
+            prepared_kwargs.append("{0}='{1}'".format(key, val))
         else:
-            prepared_kwargs.append("{}={}".format(key, val))
+            prepared_kwargs.append("{0}={1}".format(key, val))
 
     joined_kwargs = ", ".join(prepared_kwargs)
 
@@ -2932,10 +3105,11 @@ def _join_cmds_kwargs(**kwargs):
 
 
 def _traced_connect_attr(plug_a, plug_b):
-    """Connect 2 plugs & add executed command to the command_stack if Tracer is active.
+    """Connect 2 plugs and add the executed command to _command_stack if Tracer
+    is active.
 
     Note:
-        This is simply an overloaded cmds.connectAttr(plug_a, plug_b, force=True).
+        This is cmds.connectAttr(plug_a, plug_b, force=True) with Tracer-stuff.
 
     Args:
         plug_a (MPlug or str): Source plug
@@ -2956,17 +3130,18 @@ def _traced_connect_attr(plug_a, plug_b):
             node, attr = _split_plug_into_node_and_attr(plug)
             node_variable = NcBaseClass._get_tracer_variable_for_node(node)
             if node_variable:
-                # ...if it is already part of the traced nodes: Use its variable instead...
-                formatted_attr = "{} + '.{}'".format(node_variable, attr)
+                # ...if it is already a traced node: Use its variable instead...
+                formatted_attr = "{0} + '.{1}'".format(node_variable, attr)
             # ...otherwise make sure it's stored as a string
             else:
-                formatted_attr = "'{}'".format(plug)
+                formatted_attr = "'{0}'".format(plug)
             formatted_args.append(formatted_attr)
 
         # Add the connectAttr-command to the command stack
-        NcBaseClass._add_to_command_stack(
-            "cmds.connectAttr({0}, {1}, force=True)".format(*formatted_args)
+        cmd_str = "cmds.connectAttr({0}, {1}, force=True)".format(
+            *formatted_args
         )
+        NcBaseClass._add_to_command_stack(cmd_str)
 
 
 # UNRAVELLING INPUTS ---
@@ -2974,8 +3149,8 @@ def _unravel_item_as_list(item):
     """Convert input into clean list of values or MPlugs.
 
     Args:
-        item (NcNode or NcAttrs or NcList or int or float or list or str): input to be
-            unravelled and returned as list.
+        item (NcNode or NcAttrs or NcList or int or float or list or str):
+            input to be unravelled and returned as list.
 
     Returns:
         list: List consistent of values or MPlugs
@@ -3076,14 +3251,17 @@ def _unravel_base_node_instance(base_node_instance):
     """
     LOG.debug("_unravel_base_node_instance (%s)" % (str(base_node_instance)))
 
-    # If there are no attributes specified on the given NcNode/NcAttrs: return node name
+    # If no attrs are specified on the given NcNode/NcAttrs: return node name
     if len(base_node_instance.attrs_list) == 0:
         return_value = base_node_instance.node
-    # If a single attribute is defined; try to unravel it into child attributes (if they exist)
+    # If a single attribute is defined; try to unravel it into child attributes
     elif len(base_node_instance.attrs_list) == 1:
         # If unravelling is allowed: Try to unravel plug...
         if GLOBAL_AUTO_UNRAVEL and base_node_instance._auto_unravel:
-            return_value = _unravel_plug(base_node_instance.node, base_node_instance.attrs_list[0])
+            return_value = _unravel_plug(
+                base_node_instance.node,
+                base_node_instance.attrs_list[0]
+            )
         # ...otherwise get MPlug of given attribute directly.
         else:
             return_value = om_util.get_mplug_of_node_and_attr(
@@ -3092,9 +3270,9 @@ def _unravel_base_node_instance(base_node_instance):
             )
     # If multiple attributes are defined; Return list of unravelled plugs
     else:
-        return_value = [
-            _unravel_plug(base_node_instance.node, attr) for attr in base_node_instance.attrs_list
-        ]
+        return_value = []
+        for attr in base_node_instance.attrs_list:
+            return_value.append(_unravel_plug(base_node_instance.node, attr))
 
     return return_value
 
@@ -3160,7 +3338,9 @@ def _split_plug_into_node_and_attr(plug):
         node, attr = plug.split(".", 1)
         return (node, attr)
 
-    LOG.error("Given plug %s could not be split into node and attr parts!" % (str(plug)))
+    LOG.error(
+        "Given plug %s could not be split into node and attr parts!" % (str(plug))
+    )
     return None
 
 
@@ -3184,8 +3364,8 @@ class Tracer(object):
 
         Args:
             trace (bool): Enables/disables tracing.
-            print_trace (bool): Enable printing command stack as a list.
-            pprint_trace (bool): Enable printing command stack as a multi-line string.
+            print_trace (bool): Print command stack as a list.
+            pprint_trace (bool): Print command stack as a multi-line string.
         """
         self.trace = trace
         self.print_trace = print_trace
@@ -3193,7 +3373,7 @@ class Tracer(object):
         self.cheers_love = cheers_love
 
     def __enter__(self):
-        """with-statement "start method". Sets up NcBaseClass class variables for tracing.
+        """Set up NcBaseClass class-variables for tracing.
 
         Note:
             The returned variable is what X in "with noca.Tracer() as X" will be.
@@ -3208,16 +3388,20 @@ class Tracer(object):
         return NcBaseClass._executed_commands_stack
 
     def __exit__(self, exc_type, value, traceback):
-        """with-statement "end method". Print executed commands during tracing, if desired."""
+        """Print executed commands at the end of the with-statement."""
 
-        # Tell the user if he/she wants to print results but they were not traced!
-        if not self.trace and (self.print_trace or self.pprint_trace or self.cheers_love):
+        # Tell user if he/she wants to print results but they were not traced!
+        output_desired = self.print_trace or self.pprint_trace or self.cheers_love
+        if not self.trace and output_desired:
             LOG.warn("NodeCalculator commands were not traced!")
             return False
 
         # Print executed commands as list
         if self.print_trace:
-            print("NodeCalculator command-stack:", NcBaseClass._executed_commands_stack)
+            print(
+                "NodeCalculator command-stack:",
+                NcBaseClass._executed_commands_stack
+            )
 
         # Print executed commands on separate lines
         if self.cheers_love:
@@ -3241,7 +3425,7 @@ class TracerMObject(object):
 
     Note:
         The Tracer uses variable names for created nodes. This class is an easy
-        and convenient way to store these variable names with the MObject itself.
+        and convenient way to store these variable names with the MObject.
     """
 
     def __init__(self, node, tracer_variable):
@@ -3257,7 +3441,7 @@ class TracerMObject(object):
 
     @property
     def node(self):
-        """Property to allow easy access to name of Maya node this TracerMObject stores.
+        """Get name of Maya node this TracerMObject refers to.
 
         Returns:
             str: Name of Maya node in the scene.
@@ -3266,7 +3450,7 @@ class TracerMObject(object):
 
     @property
     def tracer_variable(self):
-        """Property to allow easy access to variable name of this TracerMObject.
+        """Get variable name of this TracerMObject.
 
         Returns:
             str: Variable name the NodeCalculator associated with this MObject.
