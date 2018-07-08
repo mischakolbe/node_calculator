@@ -367,6 +367,23 @@ class OperatorLookupTableMetaClass(object):
                 "operation": 0,
             },
 
+            "pair_blend": {
+                "node": "pairBlend",
+                "inputs": [
+                    ["inTranslateX1", "inTranslateY1", "inTranslateZ1"],
+                    ["inRotateX1", "inRotateY1", "inRotateZ1"],
+                    ["inTranslateX2", "inTranslateY2", "inTranslateZ2"],
+                    ["inRotateX2", "inRotateY2", "inRotateZ2"],
+                    ["weight"],
+                    ["rotInterpolation"],
+                ],
+                "output": [
+                    "outTranslateX", "outTranslateY", "outTranslateZ",
+                    "outRotateX", "outRotateY", "outRotateZ",
+                ],
+                "output_is_predetermined": True,
+            },
+
             "point_matrix_mult": {
                 "node": "pointMatrixMult",
                 "inputs": [

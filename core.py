@@ -338,7 +338,7 @@ class OperatorMetaClass(object):
         super(OperatorMetaClass, self).__init__()
 
     @staticmethod
-    def angle_between(vector_a, vector_b=[1, 0, 0]):
+    def angle_between(vector_a, vector_b=(1, 0, 0)):
         """Create angleBetween-node to find the angle between 2 vectors.
 
         Args:
@@ -698,6 +698,51 @@ class OperatorMetaClass(object):
             'normalize_vector',
             in_vector,
             normalize
+        )
+        return return_value
+
+    @staticmethod
+    def pair_blend(
+            translate_a=0,
+            rotate_a=0,
+            translate_b=0,
+            rotate_b=0,
+            weight=1,
+            quat_interpolation=False
+    ):
+        """Create pairBlend-node to blend between two transforms.
+
+        Args:
+            translate_a (NcNode or NcAttrs or str or int or float or list):
+                Translate value of first transform.
+            rotate_a (NcNode or NcAttrs or str or int or float or list):
+                Rotate value of first transform.
+            translate_b (NcNode or NcAttrs or str or int or float or list):
+                Translate value of second transform.
+            rotate_b (NcNode or NcAttrs or str or int or float or list):
+                Rotate value of second transform.
+            weight (NcNode or NcAttrs or str or int or float or list):
+                Bias towards first or second transform.
+            quat_interpolation (NcNode or NcAttrs or boolean):
+                Use euler (False) or quaternions (True) to interpolate rotation.
+
+        Returns:
+            NcNode: Instance with pairBlend-node and output-attribute(s)
+
+        Example:
+            a = Node("pCube1")
+            b = Node("pSphere1")
+            blend_attr = a.add_float("blend")
+            Op.pair_blend(a.t, a.r, b.t, b.r, blend_attr)
+        """
+        return_value = _create_and_connect_node(
+            'pair_blend',
+            translate_a,
+            rotate_a,
+            translate_b,
+            rotate_b,
+            weight,
+            quat_interpolation,
         )
         return return_value
 
