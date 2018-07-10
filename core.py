@@ -2102,12 +2102,14 @@ class NcAttrs(NcBaseNode):
 
 
 # NcList ---
-class NcList(NcBaseClass):
+class NcList(NcBaseClass, list):
     """NcList is a list with overloaded operators (inherited from NcBaseClass).
 
     Note:
         NcList has the following keywords:
         * nodes: Returns Maya nodes within NcList: [node, ...] (list of strings)
+
+        NcList inherits from list, for things like isinstance(NcList, list).
     """
 
     def __init__(self, *args):
@@ -2674,9 +2676,12 @@ def _create_and_connect_node(operation, *args):
         args (NcNode or NcAttrs or str): Attrs connecting into newly created node
 
     Returns:
-        NcNode: New NcNode instance with the newly created Maya-node of type
-            OPERATOR_LOOKUP_TABLE[operation]["node"] and with attributes
-            stored in OPERATOR_LOOKUP_TABLE[operation]["output"].
+        NcNode or NcList: Either new NcNode instance with the newly created
+            Maya-node of type OPERATOR_LOOKUP_TABLE[operation]["node"] and with
+            attributes stored in OPERATOR_LOOKUP_TABLE[operation]["outputs"].
+            If the outputs are multidimensional (for example "translateXYZ" &
+            "rotateXYZ") a new NcList instance is returned with NcNodes for
+            each of the outputs.
     """
     LOG.debug(
         "Creating a new %s-operationNode with args: %s" % (str(operation), str(args))
@@ -2760,15 +2765,28 @@ def _create_and_connect_node(operation, *args):
         "output_is_predetermined", False
     )
 
-    # Return new NcNode instance with the appropriate output-attributes.
-    outputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["output"]
-    if len(outputs) == 1 or output_is_predetermined:
-        # Return outputs directly if they should not be altered or are 1D
-        return NcNode(new_node, outputs)
+    # Get the outputs for the created node, based on OPERATOR_LOOKUP_TABLE.
+    # All operations need to have outputs defined in the OPERATOR_LOOKUP_TABLE!
+    outputs = lookup_table.OPERATOR_LOOKUP_TABLE[operation]["outputs"]
 
+    output_nodes = []
+    for output in outputs:
+        if len(output) == 1 or output_is_predetermined:
+            # Return outputs directly if they should not be altered or are 1D
+            node = NcNode(new_node, output)
+        else:
+            # Truncate number of outputs based on how many attrs were processed
+            node = NcNode(new_node, output[:max_dim])
+
+        output_nodes.append(node)
+
+    # For manifold outputs: Return an NcList (of NcNodes; one for each output)
+    if len(output_nodes) > 1:
+        return NcList(output_nodes)
+
+    # Usually outputs are singular; one (parent)plug. Return a single NcNode
     else:
-        # Truncate number of outputs according to how many attrs were processed
-        return NcNode(new_node, outputs[:max_dim])
+        return output_nodes[0]
 
 
 def _create_node_name(operation, *args):

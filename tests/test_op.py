@@ -112,7 +112,7 @@ def _test_regular_op(operator):
 
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
-        node_outputs = node_data.get("output", None)
+        node_outputs = node_data.get("outputs", None)
         node_is_multi_index = node_data.get("is_multi_index", False)
         node_operation = node_data.get("operation", None)
         node_output_is_predetermined = node_data.get("output_is_predetermined", False)
@@ -178,11 +178,17 @@ def _test_regular_op(operator):
             self.assertEqual(input_connections, desired_input.plugs)
 
         # Test that the outputs are correct
-        for node_output, desired_output in zip(result, node_outputs):
-            self.assertEqual(node_output.attrs_list[0], desired_output)
+        if len(node_outputs) == 1:
+            for node_output, desired_output in zip(result, node_outputs):
+                self.assertEqual(node_output.attrs_list[0], desired_output[0])
 
-            output_exists = cmds.objExists(node_output.plugs[0])
-            self.assertTrue(output_exists)
+                output_exists = cmds.objExists(node_output.plugs[0])
+                self.assertTrue(output_exists)
+
+        else:
+            # This case is not yet necessary/implemented. Will be similar to
+            # True-block, but it will have to look through the NcList-elements.
+            self.assertTrue(False)
 
         # Test if the operation of the created node is correctly set
         if node_operation:
@@ -306,23 +312,26 @@ class TestOperators(TestCase):
         input_plugs = [self.a.worldMatrix]
 
         result = noca.Op.decompose_matrix(input_plugs[0])
-        self.c.translateX = result[0]
+        self.c.translateX = result[0][0]
+
+        # Check that result is an NcList
+        self.assertTrue(isinstance(result, noca.NcList))
 
         # Test that the created node is of the correct type
-        self.assertEqual(cmds.nodeType(result.node), node_type)
+        self.assertEqual(cmds.nodeType(result[0].node), node_type)
 
         for node_input, desired_input in zip(node_inputs, input_plugs):
             if isinstance(node_input, (tuple, list)):
                 node_input = node_input[0]
             # Check the correct plug is connected into the input-plug
             input_connections = cmds.listConnections(
-                "{}.{}".format(result.node, node_input),
+                "{}.{}".format(result[0].node, node_input),
                 plugs=True
             )
             self.assertEqual(input_connections, desired_input.plugs)
 
-        # Test that the outputs are correct
-        plug_connected_to_output = cmds.listConnections(result.plugs, plugs=True)[0]
+        # Test that the outputs are correctly connected
+        plug_connected_to_output = cmds.listConnections(result[0].plugs[0], plugs=True)[0]
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_point_matrix_mult(self):

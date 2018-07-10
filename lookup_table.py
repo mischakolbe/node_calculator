@@ -245,7 +245,9 @@ class OperatorLookupTableMetaClass(object):
                     ["vector1X", "vector1Y", "vector1Z"],
                     ["vector2X", "vector2Y", "vector2Z"],
                 ],
-                "output": ["angle"],
+                "outputs": [
+                    ["angle"],
+                ],
             },
 
             "average": {
@@ -258,7 +260,9 @@ class OperatorLookupTableMetaClass(object):
                     ],
                 ],
                 "is_multi_index": True,
-                "output": ["output3Dx", "output3Dy", "output3Dz"],
+                "outputs": [
+                    ["output3Dx", "output3Dy", "output3Dz"],
+                ],
                 "operation": 3,
             },
 
@@ -269,7 +273,9 @@ class OperatorLookupTableMetaClass(object):
                     ["color2R", "color2G", "color2B"],
                     ["blender"],
                 ],
-                "output": ["outputR", "outputG", "outputB"],
+                "outputs": [
+                    ["outputR", "outputG", "outputB"],
+                ],
             },
 
             "choice": {
@@ -280,7 +286,9 @@ class OperatorLookupTableMetaClass(object):
                     ],
                 ],
                 "is_multi_index": True,
-                "output": ["output"],
+                "outputs": [
+                    ["output"],
+                ],
             },
 
             "clamp": {
@@ -290,7 +298,9 @@ class OperatorLookupTableMetaClass(object):
                     ["minR", "minG", "minB"],
                     ["maxR", "maxG", "maxB"],
                 ],
-                "output": ["outputR", "outputG", "outputB"],
+                "outputs": [
+                    ["outputR", "outputG", "outputB"],
+                ],
             },
 
             "compose_matrix": {
@@ -303,7 +313,9 @@ class OperatorLookupTableMetaClass(object):
                     ["inputRotateOrder"],
                     ["useEulerRotation"],
                 ],
-                "output": ["outputMatrix"],
+                "outputs": [
+                    ["outputMatrix"],
+                ],
             },
 
             "decompose_matrix": {
@@ -311,11 +323,11 @@ class OperatorLookupTableMetaClass(object):
                 "inputs": [
                     ["inputMatrix"],
                 ],
-                "output": [
-                    "outputTranslateX", "outputTranslateY", "outputTranslateZ",
-                    "outputRotateX", "outputRotateY", "outputRotateZ",
-                    "outputScaleX", "outputScaleY", "outputScaleZ",
-                    "outputShearX", "outputShearY", "outputShearZ",
+                "outputs": [
+                    ["outputTranslateX", "outputTranslateY", "outputTranslateZ"],
+                    ["outputRotateX", "outputRotateY", "outputRotateZ"],
+                    ["outputScaleX", "outputScaleY", "outputScaleZ"],
+                    ["outputShearX", "outputShearY", "outputShearZ"],
                 ],
                 "output_is_predetermined": True,
             },
@@ -325,7 +337,9 @@ class OperatorLookupTableMetaClass(object):
                 "inputs": [
                     ["inputMatrix"],
                 ],
-                "output": ["outputMatrix"],
+                "outputs": [
+                    ["outputMatrix"],
+                ],
             },
 
             "length": {
@@ -334,7 +348,9 @@ class OperatorLookupTableMetaClass(object):
                     ["point1X", "point1Y", "point1Z"],
                     ["point2X", "point2Y", "point2Z"],
                 ],
-                "output": ["distance"],
+                "outputs": [
+                    ["distance"],
+                ],
             },
 
             "matrix_distance": {
@@ -343,7 +359,9 @@ class OperatorLookupTableMetaClass(object):
                     ["inMatrix1"],
                     ["inMatrix2"],
                 ],
-                "output": ["distance"],
+                "outputs": [
+                    ["distance"],
+                ],
             },
 
             "mult_matrix": {
@@ -354,7 +372,9 @@ class OperatorLookupTableMetaClass(object):
                     ],
                 ],
                 "is_multi_index": True,
-                "output": ["matrixSum"],
+                "outputs": [
+                    ["matrixSum"],
+                ],
             },
 
             "normalize_vector": {
@@ -363,7 +383,9 @@ class OperatorLookupTableMetaClass(object):
                     ["input1X", "input1Y", "input1Z"],
                     ["normalizeOutput"],
                 ],
-                "output": ["outputX", "outputY", "outputZ"],
+                "outputs": [
+                    ["outputX", "outputY", "outputZ"],
+                ],
                 "operation": 0,
             },
 
@@ -377,9 +399,9 @@ class OperatorLookupTableMetaClass(object):
                     ["weight"],
                     ["rotInterpolation"],
                 ],
-                "output": [
-                    "outTranslateX", "outTranslateY", "outTranslateZ",
-                    "outRotateX", "outRotateY", "outRotateZ",
+                "outputs": [
+                    ["outTranslateX", "outTranslateY", "outTranslateZ"],
+                    ["outRotateX", "outRotateY", "outRotateZ"],
                 ],
                 "output_is_predetermined": True,
             },
@@ -391,7 +413,9 @@ class OperatorLookupTableMetaClass(object):
                     ["inMatrix"],
                     ["vectorMultiply"],
                 ],
-                "output": ["outputX", "outputY", "outputZ"],
+                "outputs": [
+                    ["outputX", "outputY", "outputZ"],
+                ],
             },
 
             "remap_value": {
@@ -403,7 +427,9 @@ class OperatorLookupTableMetaClass(object):
                     ["inputMin"],
                     ["inputMax"],
                 ],
-                "output": ["outValue"],
+                "outputs": [
+                    ["outValue"],
+                ],
             },
 
             "set_range": {
@@ -415,7 +441,9 @@ class OperatorLookupTableMetaClass(object):
                     ["oldMinX", "oldMinY", "oldMinZ"],
                     ["oldMaxX", "oldMaxY", "oldMaxZ"],
                 ],
-                "output": ["outValueX", "outValueY", "outValueZ"],
+                "outputs": [
+                    ["outValueX", "outValueY", "outValueZ"],
+                ],
             },
 
             "transpose_matrix": {
@@ -423,7 +451,9 @@ class OperatorLookupTableMetaClass(object):
                 "inputs": [
                     ["inputMatrix"],
                 ],
-                "output": ["outputMatrix"],
+                "outputs": [
+                    ["outputMatrix"],
+                ],
             },
         }
 
@@ -438,8 +468,8 @@ class OperatorLookupTableMetaClass(object):
                 # The condition node is a special case! It gets created during
                 # the magic-method-comparison and fully connected after being
                 # passed on to the condition()-method in this OperatorMetaClass
-                "output": [
-                    None
+                "outputs": [
+                    [None],
                 ],
                 "operation": i,
             }
@@ -456,7 +486,9 @@ class OperatorLookupTableMetaClass(object):
                     ],
                 ],
                 "is_multi_index": True,
-                "output": ["output3Dx", "output3Dy", "output3Dz"],
+                "outputs": [
+                    ["output3Dx", "output3Dy", "output3Dz"],
+                ],
                 "operation": i + 1,
             }
 
@@ -468,7 +500,9 @@ class OperatorLookupTableMetaClass(object):
                     ["input1X", "input1Y", "input1Z"],
                     ["input2X", "input2Y", "input2Z"],
                 ],
-                "output": ["outputX", "outputY", "outputZ"],
+                "outputs": [
+                    ["outputX", "outputY", "outputZ"],
+                ],
                 "operation": i + 1,
             }
 
@@ -481,7 +515,9 @@ class OperatorLookupTableMetaClass(object):
                     ["input2X", "input2Y", "input2Z"],
                     ["normalizeOutput"],
                 ],
-                "output": ["outputX", "outputY", "outputZ"],
+                "outputs": [
+                    ["outputX", "outputY", "outputZ"],
+                ],
                 "operation": i + 1,
             }
 

@@ -62,7 +62,6 @@ Example:
 
 # IMPORTS ---
 # Python imports
-import os
 import re
 import copy
 
@@ -79,13 +78,12 @@ logger.setup_stream_handler(level=logger.logging.DEBUG)
 LOG = logger.log
 
 
-# CLEAN GLOBALS (useful for dev work!) ---
-# NcValue-types stay in globals() even when reloaded. Avoids restarting Maya.
-if os.environ.get("MAYA_DEV"):
-    globals_copy = copy.copy(globals())
-    for key, value in globals_copy.iteritems():
-        if key.startswith("Nc") and key.endswith("Value"):
-            del globals()[key]
+# CLEAN GLOBALS ---
+# NcValue-types stay in globals() even when reloaded. Must be cleaned on reload.
+globals_copy = copy.copy(globals())
+for key, value in globals_copy.iteritems():
+    if key.startswith("Nc") and key.endswith("Value"):
+        del globals()[key]
 
 
 # BASIC FUNCTIONALITY ---
