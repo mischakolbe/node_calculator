@@ -38,6 +38,7 @@ IRREGULAR_OPERATORS = [
     "matrix_distance",
     "compose_matrix",
     "point_matrix_mult",
+    "pair_blend",
 ]
 
 
@@ -353,6 +354,59 @@ class TestOperators(TestCase):
         # Test that the outputs are correct
         plug_connected_to_output = cmds.listConnections(result.plugs, plugs=True)[0]
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
+
+    def test_pair_blend(self):
+        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["pair_blend"]
+        node_type = node_data.get("node", None)
+        node_inputs = node_data.get("inputs", None)
+
+        input_plugs = [
+            self.a.translate,
+            self.a.rotate,
+            self.b.translate,
+            self.b.rotate,
+        ]
+
+        result = noca.Op.pair_blend(*input_plugs)
+        self.c.t = result[0]
+        self.c.r = result[1]
+
+        # Check that result is an NcList
+        self.assertTrue(isinstance(result, noca.NcList))
+
+        # Test that the created node is of the correct type
+        self.assertEqual(cmds.nodeType(result.nodes[0]), node_type)
+
+        # Check the correct plug is connected into the input-plug
+        input_translate1 = cmds.listConnections(
+            "{}.inTranslate1".format(result[0].node), plugs=True
+        )
+        self.assertEqual(input_translate1, ["A.translate"])
+
+        input_translate2 = cmds.listConnections(
+            "{}.inTranslate2".format(result[0].node), plugs=True
+        )
+        self.assertEqual(input_translate2, ["B.translate"])
+
+        input_rotate1 = cmds.listConnections(
+            "{}.inRotate1".format(result[0].node), plugs=True
+        )
+        self.assertEqual(input_rotate1, ["A.rotate"])
+
+        input_rotate2 = cmds.listConnections(
+            "{}.inRotate2".format(result[0].node), plugs=True
+        )
+        self.assertEqual(input_rotate2, ["B.rotate"])
+
+        # Test that the outputs are correct
+        plug_connected_to_output = cmds.listConnections(
+            "{}.outTranslate".format(result[0].node), plugs=True
+        )[0]
+        self.assertEqual(plug_connected_to_output, "{}.translate".format(TEST_NODES[2]))
+        plug_connected_to_output = cmds.listConnections(
+            "{}.outRotate".format(result[0].node), plugs=True
+        )[0]
+        self.assertEqual(plug_connected_to_output, "{}.rotate".format(TEST_NODES[2]))
 
     def test_for_every_operator(self):
         """
