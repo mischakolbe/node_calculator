@@ -103,6 +103,7 @@ Example:
 
 # IMPORTS ---
 # Python imports
+from __future__ import absolute_import
 import os
 import numbers
 import itertools
@@ -118,11 +119,11 @@ from . import logger
 from . import lookup_table
 from . import om_util
 from . import nc_value
-# if os.environ.get("MAYA_DEV"):
-reload(logger)
-reload(lookup_table)
-reload(om_util)
-reload(nc_value)
+if os.environ.get("MAYA_DEV"):
+    reload(logger)
+    reload(lookup_table)
+    reload(om_util)
+    reload(nc_value)
 
 
 # CONSTANTS ---
@@ -133,7 +134,7 @@ GLOBAL_AUTO_CONSOLIDATE = True
 GLOBAL_AUTO_UNRAVEL = True
 VARIABLE_BASE_NAME = "var"
 VALUE_BASE_NAME = "val"
-
+REQUIRED_PLUGINS = ["matrixNodes"]
 
 # SETUP LOGGER ---
 logger.clear_handlers()
@@ -335,6 +336,9 @@ class OperatorMetaClass(object):
         Note:
             name, bases, body are necessary for __metaclass__ to work properly
         """
+        for required_plugin in REQUIRED_PLUGINS:
+            cmds.loadPlugin(required_plugin, quiet=True)
+
         super(OperatorMetaClass, self).__init__()
 
     @staticmethod
