@@ -8,7 +8,7 @@ Notes:
         Example: "input3D" is the array plug of the plugs "input3D[i]".
     * Array plug element: A specific plug of an array plug.
         Example: "input3D[7]" is an array plug element of "input3D".
-    * Parent plug: A plug that can be split into child plugs associated with it.
+    * Parent plug: A plug that can be split into child plugs associated with it
         Example: "translate" is the parent plug of ["tx", "ty", "ty"]
     * Child plug: A plug that makes up part of a parent plug.
         Example: "translateX" is a child plug of "translate"
@@ -21,8 +21,8 @@ from __future__ import absolute_import
 import re
 
 # Third party imports
-from maya.api import OpenMaya
 from maya import cmds
+from maya.api import OpenMaya
 
 # Local imports
 from . import logger
@@ -50,9 +50,9 @@ def get_mobj(node):
     if isinstance(node, OpenMaya.MDagPath):
         return node.node()
 
-    selectionList = OpenMaya.MSelectionList()
-    selectionList.add(node)
-    mobj = selectionList.getDependNode(0)
+    selection_list = OpenMaya.MSelectionList()
+    selection_list.add(node)
+    mobj = selection_list.getDependNode(0)
 
     return mobj
 
@@ -113,8 +113,8 @@ def is_instanced(node):
         bool: Whether given node is instantiated.
     """
     mdag_path = get_mdag_path(node)
-    is_instanced = mdag_path.isInstanced()
-    return is_instanced
+    state = mdag_path.isInstanced()
+    return state
 
 
 def get_dag_path_of_mobj(mobj, full=False):
@@ -199,6 +199,9 @@ def rename_mobj(mobj, name):
     Args:
         mobj (MObject): Node to be renamed.
         name (str): New name for the node.
+
+    Returns:
+        str: New name of renamed mobj
     """
     dag_modifier = OpenMaya.MDagModifier()
     dag_modifier.renameNode(mobj, name)
@@ -300,7 +303,7 @@ def get_parents(node):
     """Get parents of the given node.
 
     Args:
-        node (MObject or MDagPath or str): Node whose list of parents is queried
+        node (MObject or MDagPath or str): Node whose parents are queried.
 
     Returns:
         list: Name of parents in an ascending list: First parent first.
@@ -381,9 +384,7 @@ def is_valid_mplug(mplug):
         bool: True if given mplug actually is an MPlug instance.
     """
     if not isinstance(mplug, OpenMaya.MPlug):
-        LOG.error(
-            "Expected an MPlug, got %s of type %s" % (str(mplug), type(mplug))
-        )
+        LOG.error("Expected an MPlug, got %s of type %s", mplug, type(mplug))
         return False
     return True
 
@@ -522,7 +523,7 @@ def get_array_mplug_by_index(mplug, index, physical=True):
     return_mplug = None
 
     if not mplug.isArray:
-        LOG.warn("%s is not an array plug!" % (str(mplug)))
+        LOG.warn("%s is not an array plug!", mplug)
         return return_mplug
 
     if physical:
@@ -561,14 +562,13 @@ def get_mplug_of_node_and_attr(node, attr_str):
             mplug = get_child_mplug(mplug, attr)
 
         if not mplug:
-            LOG.error(
-                "mplug %s.%s doesn't seem to exist!" % (str(node), str(attr_str))
-            )
+            LOG.error("mplug %s.%s doesn't seem to exist!", node, attr_str)
+
         if index is not None:
             if not mplug.isArray:
                 LOG.error(
                     "mplug for %s.%s is supposed to have an index, "
-                    "but is not an array attr!" % (str(node), str(attr_str))
+                    "but is not an array attr!", node, attr_str
                 )
             mplug = get_array_mplug_by_index(mplug, index, physical=False)
 
@@ -656,17 +656,15 @@ def split_attr_string(attr):
     matches = attr_pattern.findall(attr)
 
     if not matches:
-        LOG.error(
-            "Attr %s could not be broken down into components!" % (str(attr))
-        )
+        LOG.error("Attr %s could not be broken down into components!", attr)
 
     cleaned_matches = []
-    for attr, index in matches:
+    for attribute, index in matches:
         if index:
             index = int(index)
         else:
             index = None
-        cleaned_matches.append((attr, index))
+        cleaned_matches.append((attribute, index))
 
     return cleaned_matches
 
@@ -689,9 +687,7 @@ def split_node_string(node):
     matches = node_pattern.findall(node)
 
     if not matches:
-        LOG.error(
-            "Node %s could not be broken down into components!" % (str(node))
-        )
+        LOG.error("Node %s could not be broken down into components!", node)
 
     if len(matches) > 1:
         LOG.error(

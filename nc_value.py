@@ -63,8 +63,8 @@ Example:
 # IMPORTS ---
 # Python imports
 from __future__ import absolute_import
-import re
 import copy
+import re
 
 # Third party imports
 
@@ -81,8 +81,7 @@ LOG = logger.log
 
 # CLEAN GLOBALS ---
 # NcValue-types stay in globals() even when reloaded. Must be cleaned on reload.
-globals_copy = copy.copy(globals())
-for key, value in globals_copy.iteritems():
+for key in copy.copy(globals()):
     if key.startswith("Nc") and key.endswith("Value"):
         del globals()[key]
 
@@ -140,7 +139,6 @@ def value(value, metadata=None, created_by_user=True):
             print(b.basetype)
             # >>> <type 'list'>
     """
-
     # Retrieve the basetype of NcValues, to make a new value of same basetype
     # This avoids making NcValues of NcValues of NcValues of ...
     if isinstance(value, NcValue):
@@ -157,19 +155,23 @@ def value(value, metadata=None, created_by_user=True):
 
     # If the necessary class type already exists in the globals: Return it
     if class_name in globals():
-        NewNcValueClass = globals()[class_name]
+        new_nc_value_class = globals()[class_name]
 
     # If it doesn't exist in the globals yet: Create necessary class type
     else:
-        NewNcValueClass = _create_metadata_val_class(value_type)
+        new_nc_value_class = _create_metadata_val_class(value_type)
 
-        # Set the class name so it's not "NewNcValueClass" for all types!
-        NewNcValueClass.__name__ = class_name
+        # Set the class name so it's not "new_nc_value_class" for all types!
+        new_nc_value_class.__name__ = class_name
         # Add the new type to the globals
-        globals()[class_name] = NewNcValueClass
+        globals()[class_name] = new_nc_value_class
 
     # Create a new instance of the specified type with given value & metadata
-    return_value = NewNcValueClass(value)
+    return_value = new_nc_value_class(value)
+
+    # These attributes can't be included in the class init above. The NcValue
+    # classes mimic a regular built-in type, which does not accept other args:
+    # >>>> "int() takes at most 2 arguments (3 given)"
     return_value.metadata = metadata
     return_value.created_by_user = created_by_user
 
@@ -184,6 +186,7 @@ class NcValue(object):
         Only exists for inheritance check: isinstance(XYZ, NcValue)
         NcIntValue, NcFloatValue, etc. are otherwise hard to identify.
     """
+
     pass
 
 
@@ -200,20 +203,33 @@ def _create_metadata_val_class(class_type):
         NcValueClass: New class constructor for a NcValue class of appropriate
             type to match given class_type
     """
-
     # Can't inherit bool (TypeError: 'bool' not acceptable base type).
     if class_type is bool:
         # Redirect bool to integer!
         class_type = int
 
     class NcValueClass(class_type, NcValue):
+        """Shapeshifter class that becomes overloaded form of the given type.
+
+        Note:
+            Only the attributes .metadata and .created_by_user are added by
+            default. However: Any attribute can be added to an NcValueClass-
+            instance.
+
+        Example:
+            (pseudo-code)
+            int_nc_value_class = NcValueClass(int)
+            my_int = int_nc_value_class(7)
+            my_int.is_odd = True  # This would be impossible with regular int.
+        """
+
         def __init__(self, *args, **kwargs):
-            """Leave the init method unchanged"""
+            """Leave the init method unchanged."""
             class_type.__init__(self, *args, **kwargs)
 
         @property
         def basetype(self):
-            """Convenience property to access the base type easily.
+            """Access the base type this particular NcValueClass is based on.
 
             Returns:
                 builtin-type: Type which this class is derived from.
@@ -233,7 +249,7 @@ def _create_metadata_val_class(class_type):
             return self.basetype(self)
 
         def __add__(self, other):
-            """Regular addition operator.
+            """Regular addition operator + .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -244,10 +260,10 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __radd__(self, other):
-            """Reflected addition operator.
+            """Reflected addition operator + .
 
             Note:
-                Fall-back method in case regular addition isn't defined & fails.
+                Fall-back method in case regular addition isn't defined/fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -258,7 +274,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __sub__(self, other):
-            """Regular subtraction operator.
+            """Regular subtraction operator - .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -269,10 +285,10 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __rsub__(self, other):
-            """Reflected subtraction operator.
+            """Reflected subtraction operator - .
 
             Note:
-                Fall-back method in case regular sub isn't defined & fails.
+                Fall-back method in case regular sub isn't defined/fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -283,7 +299,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __mul__(self, other):
-            """Regular multiplication operator.
+            """Regular multiplication operator * .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -294,10 +310,10 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __rmul__(self, other):
-            """Reflected multiplication operator.
+            """Reflected multiplication operator * .
 
             Note:
-                Fall-back method in case regular mult isn't defined & fails.
+                Fall-back method in case regular mult isn't defined/fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -308,7 +324,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __div__(self, other):
-            """Regular division operator.
+            """Regular division operator / .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -319,10 +335,10 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __rdiv__(self, other):
-            """Reflected division operator.
+            """Reflected division operator / .
 
             Note:
-                Fall-back method in case regular division isn't defined & fails.
+                Fall-back method in case regular division isn't defined/fails.
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -333,7 +349,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __pow__(self, other):
-            """Power operator.
+            """Power operator ^ .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -344,7 +360,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __eq__(self, other):
-            """Equality operator: ==
+            """Equality operator: == .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -355,7 +371,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __ne__(self, other):
-            """Inequality operator: !=
+            """Inequality operator: != .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -366,7 +382,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __gt__(self, other):
-            """Greater than operator: >
+            """Greater than operator: > .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -377,7 +393,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __ge__(self, other):
-            """Greater equal operator: >=
+            """Greater equal operator: >= .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -388,7 +404,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __lt__(self, other):
-            """Less than operator: <
+            """Less than operator: < .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -399,7 +415,7 @@ def _create_metadata_val_class(class_type):
             return value(val, metadata=metadata, created_by_user=False)
 
         def __le__(self, other):
-            """Less equal operator: <=
+            """Less equal operator: <= .
 
             Returns:
                 NcValue: Result of calculation with concatenated metadata to
@@ -440,13 +456,7 @@ def _concatenate_metadata(operator, input_a, input_b):
             # >>> val1 = cmds.getAttr('pCube1.tx')
             # >>> cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
     """
-    LOG.debug(
-        "_concatenate_metadata (%s, %s, %s)" % (
-            str(operator),
-            str(input_a),
-            str(input_b)
-        )
-    )
+    LOG.debug("_concatenate_metadata (%s, %s, %s)", operator, input_a, input_b)
 
     operator_data = lookup_table.METADATA_CONCATENATION_TABLE[operator]
     operator_symbol = operator_data.get("symbol")

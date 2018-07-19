@@ -57,7 +57,7 @@ def _test_condition_op(operator):
     """
 
     def test(self):
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE[operator]
+        node_data = lookup_table.OPERATORS[operator]
         condition_value = 1.1
         false_value = 2
 
@@ -108,7 +108,7 @@ def _test_regular_op(operator):
         matrix_operator = True
 
     def test(self):
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE[operator]
+        node_data = lookup_table.OPERATORS[operator]
 
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
@@ -207,7 +207,7 @@ class TestOperatorsMeta(type):
         """
 
         # Add tests for each operator
-        for operator, data in lookup_table.OPERATOR_LOOKUP_TABLE.iteritems():
+        for operator, data in lookup_table.OPERATORS.iteritems():
 
             # Skip operators that need an individual test
             if operator in IRREGULAR_OPERATORS:
@@ -238,7 +238,7 @@ class TestOperators(TestCase):
 
     def test_matrix_distance(self):
 
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["matrix_distance"]
+        node_data = lookup_table.OPERATORS["matrix_distance"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -268,7 +268,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_compose_matrix(self):
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["compose_matrix"]
+        node_data = lookup_table.OPERATORS["compose_matrix"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -305,7 +305,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.inMatrix".format(TEST_NODES[3]))
 
     def test_decompose_matrix(self):
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["decompose_matrix"]
+        node_data = lookup_table.OPERATORS["decompose_matrix"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -335,7 +335,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_point_matrix_mult(self):
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["point_matrix_mult"]
+        node_data = lookup_table.OPERATORS["point_matrix_mult"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -365,7 +365,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_pair_blend(self):
-        node_data = lookup_table.OPERATOR_LOOKUP_TABLE["pair_blend"]
+        node_data = lookup_table.OPERATORS["pair_blend"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -432,5 +432,5 @@ class TestOperators(TestCase):
                 operator_tests.append(tested_operator)
 
         # Compare operators with implemented tests to all available operators
-        all_operators = lookup_table.OPERATOR_LOOKUP_TABLE.keys()[:]
+        all_operators = lookup_table.OPERATORS.keys()[:]
         self.assertEqual(sorted(all_operators), sorted(operator_tests))

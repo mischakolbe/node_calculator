@@ -1,4 +1,4 @@
-"""Various lookup tables used in the NodeCalculator initialization & evaluation.
+"""Various lookup tables used in NodeCalculator initialization & evaluation.
 
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 """
@@ -198,13 +198,14 @@ PARENT_FLAGS = [
 
 
 # Dict of all available operations: used node-type, inputs, outputs, etc.
-OPERATOR_LOOKUP_TABLE = {}
+OPERATORS = {}
 
 
 # OPERATORS ---
-class OperatorLookupTableMetaClass(object):
-    """Base class for NodeCalculator operators:
-    Everything that goes beyond basic operators (+-*/)
+class OperatorsMetaClass(object):
+    """Base class for NodeCalculator operators.
+
+    Everything that goes beyond basic operators: + - * /
 
     Note:
         A meta-class was used, because many methods of this class are created
@@ -212,21 +213,22 @@ class OperatorLookupTableMetaClass(object):
     """
 
     def __init__(self, name, bases, body):
-        """Operator-class constructor
+        """Initialize operator-class.
 
         Note:
             name, bases, body are necessary for metaClass to work properly
         """
-        # Initialize the OPERATOR_LOOKUP_TABLE_dictionary
-        self._initialize_operator_lookup_table()
+        # Initialize the OPERATORS_dictionary
+        self._operator_lookup_table_init()
 
-    def _initialize_operator_lookup_table(self):
-        """Fill OPERATOR_LOOKUP_TABLE-dictionary with all available operations.
+    @staticmethod
+    def _operator_lookup_table_init():
+        """Fill OPERATORS-dictionary with all available operations.
 
         Note:
-            OPERATOR_LOOKUP_TABLE holds the data for each available operation:
+            OPERATORS holds the data for each available operation:
             the necessary node-type, its inputs, outputs, etc.
-            This unified data enables to abstract node creation, connection, ...
+            This unified data enables to abstract node creation, connection, ..
 
             possible flags:
             - node: Type of Maya node necessary
@@ -236,9 +238,9 @@ class OperatorLookupTableMetaClass(object):
             - operation: set operation-attr for different modes of a node
             - output_is_predetermined: should always ALL output attrs be added?
         """
-        global OPERATOR_LOOKUP_TABLE
+        global OPERATORS
 
-        OPERATOR_LOOKUP_TABLE = {
+        OPERATORS = {
             "angle_between": {
                 "node": "angleBetween",
                 "inputs": [
@@ -457,9 +459,10 @@ class OperatorLookupTableMetaClass(object):
             },
         }
 
-        # Fill OPERATOR_LOOKUP_TABLE with condition operations
-        for i, condition_operator in enumerate(["eq", "ne", "gt", "ge", "lt", "le"]):
-            OPERATOR_LOOKUP_TABLE[condition_operator] = {
+        # Fill OPERATORS with condition operations
+        cond_operators = ["eq", "ne", "gt", "ge", "lt", "le"]
+        for i, condition_operator in enumerate(cond_operators):
+            OPERATORS[condition_operator] = {
                 "node": "condition",
                 "inputs": [
                     ["firstTerm"],
@@ -474,9 +477,9 @@ class OperatorLookupTableMetaClass(object):
                 "operation": i,
             }
 
-        # Fill OPERATOR_LOOKUP_TABLE with +,- operations
+        # Fill OPERATORS with +,- operations
         for i, add_sub_operator in enumerate(["add", "sub"]):
-            OPERATOR_LOOKUP_TABLE[add_sub_operator] = {
+            OPERATORS[add_sub_operator] = {
                 "node": "plusMinusAverage",
                 "inputs": [
                     [
@@ -492,9 +495,9 @@ class OperatorLookupTableMetaClass(object):
                 "operation": i + 1,
             }
 
-        # Fill OPERATOR_LOOKUP_TABLE with *,/,** operations
+        # Fill OPERATORS with *,/,** operations
         for i, mult_div_operator in enumerate(["mul", "div", "pow"]):
-            OPERATOR_LOOKUP_TABLE[mult_div_operator] = {
+            OPERATORS[mult_div_operator] = {
                 "node": "multiplyDivide",
                 "inputs": [
                     ["input1X", "input1Y", "input1Z"],
@@ -506,9 +509,9 @@ class OperatorLookupTableMetaClass(object):
                 "operation": i + 1,
             }
 
-        # Fill OPERATOR_LOOKUP_TABLE with vectorProduct operations
+        # Fill OPERATORS with vectorProduct operations
         for i, vector_product_operator in enumerate(["dot", "cross"]):
-            OPERATOR_LOOKUP_TABLE[vector_product_operator] = {
+            OPERATORS[vector_product_operator] = {
                 "node": "vectorProduct",
                 "inputs": [
                     ["input1X", "input1Y", "input1Z"],
@@ -522,19 +525,19 @@ class OperatorLookupTableMetaClass(object):
             }
 
 
-class OperatorLookupTable(object):
-    """Create OPERATOR_LOOKUP_TABLE from OperatorLookupTableMetaClass"""
-    __metaclass__ = OperatorLookupTableMetaClass
+class OperatorsCreator(object):
+    """Create OPERATORS from OperatorsMetaClass."""
+    __metaclass__ = OperatorsMetaClass
 
 
-# Little helper to print all available Operators for the core.py-docString
+# Little helper to print all available Operators for the core.py-docString.
 if __name__ == "__main__":
-    basic_ops = [
+    basic_operators = [
         "add", "sub",
         "div", "mul",
         "pow",
         "le", "eq", "ge", "gt", "lt", "ne",
     ]
-    for op in sorted(OPERATOR_LOOKUP_TABLE.keys()):
-        if op not in basic_ops:
+    for op in sorted(OPERATORS.keys()):
+        if op not in basic_operators:
             print(op)
