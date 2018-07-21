@@ -510,12 +510,12 @@ _operator_lookup_table_init()
 
 # Little helper to print all available Operators for the core.py-docString.
 if __name__ == "__main__":
-    basic_operators = [
+    BASIC_OPERATORS = [
         "add", "sub",
         "div", "mul",
         "pow",
         "le", "eq", "ge", "gt", "lt", "ne",
     ]
     for op in sorted(OPERATORS.keys()):
-        if op not in basic_operators:
+        if op not in BASIC_OPERATORS:
             print(op)

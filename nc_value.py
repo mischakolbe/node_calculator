@@ -30,7 +30,7 @@ Note:
         # >>> val1 = cmds.getAttr('pCube1.tx')
         # >>> cmds.setAttr('pSphere1.translateY', val1)
         # Rather than plugging in the queried value (making it very unclear
-        # where that value came from), the value-variable "val1" is used instead.
+        # where that value came from), value-variable "val1" is used instead.
 
     Furthermore: Basic math operations performed on NcValues are stored, too!
     This allows to keep track of where values came from as much as possible:
@@ -63,6 +63,7 @@ Example:
 # IMPORTS ---
 # Python imports
 from __future__ import absolute_import
+
 import copy
 import re
 
@@ -80,18 +81,18 @@ LOG = logger.log
 
 
 # CLEAN GLOBALS ---
-# NcValue-types stay in globals() even when reloaded. Must be cleaned on reload.
+# NcValue-types stay in globals() when reloaded. Must be cleaned on reload.
 for key in copy.copy(globals()):
     if key.startswith("Nc") and key.endswith("Value"):
         del globals()[key]
 
 
 # BASIC FUNCTIONALITY ---
-def value(value, metadata=None, created_by_user=True):
+def value(in_val, metadata=None, created_by_user=True):
     """Create a new value with metadata of appropriate NcValue-type.
 
     Note:
-        For clarity: The given value is of a certain type & an appropriate type
+        For clarity: The given in_val is of a certain type & an appropriate type
         of NcValue must be used. For example:
         - A value of type <int> will become a <NcIntValue>
         - A value of type <float> will become a <NcFloatValue>
@@ -109,7 +110,7 @@ def value(value, metadata=None, created_by_user=True):
         - An instance of <NcListValue> inherits from <list>
 
     Args:
-        value (any type): Value of any type
+        in_val (any type): Value of any type
         metadata (any type): Any data that should be attached to this value
         created_by_user (bool): Whether this value was created manually
 
@@ -141,16 +142,16 @@ def value(value, metadata=None, created_by_user=True):
     """
     # Retrieve the basetype of NcValues, to make a new value of same basetype
     # This avoids making NcValues of NcValues of NcValues of ...
-    if isinstance(value, NcValue):
-        value_type = value.basetype
+    if isinstance(in_val, NcValue):
+        value_type = in_val.basetype
         if metadata is None:
-            metadata = value.metadata
+            metadata = in_val.metadata
     else:
-        value_type = type(value)
+        value_type = type(in_val)
         if metadata is None:
-            metadata = value
+            metadata = in_val
 
-    # Construct the class name out of the type of the given value
+    # Construct the class name out of the type of the given in_val
     class_name = "Nc{0}Value".format(value_type.__name__.capitalize())
 
     # If the necessary class type already exists in the globals: Return it
@@ -166,8 +167,8 @@ def value(value, metadata=None, created_by_user=True):
         # Add the new type to the globals
         globals()[class_name] = new_nc_value_class
 
-    # Create a new instance of the specified type with given value & metadata
-    return_value = new_nc_value_class(value)
+    # Create a new instance of the specified type with given in_val & metadata
+    return_value = new_nc_value_class(in_val)
 
     # These attributes can't be included in the class init above. The NcValue
     # classes mimic a regular built-in type, which does not accept other args:

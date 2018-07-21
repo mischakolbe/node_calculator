@@ -18,6 +18,7 @@ Notes:
 # IMPORTS ---
 # Python imports
 from __future__ import absolute_import
+
 import re
 
 # Third party imports
@@ -563,10 +564,11 @@ def get_mplug_of_node_and_attr(node, attr_str):
 
         if not mplug:
             LOG.error("mplug %s.%s doesn't seem to exist!", node, attr_str)
+            return None
 
         if index is not None:
             if not mplug.isArray:
-                LOG.error(
+                LOG.warn(
                     "mplug for %s.%s is supposed to have an index, "
                     "but is not an array attr!", node, attr_str
                 )
@@ -691,8 +693,8 @@ def split_node_string(node):
 
     if len(matches) > 1:
         LOG.error(
-            "Node %s yielded multiple results. "
-            "Should be singular result!" % (str(node))
+            "Node %s yielded multiple results. Should be singular result!",
+            node
         )
 
     namespace, dag_path, node = matches[0]
