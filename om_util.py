@@ -311,10 +311,10 @@ def get_parents(node):
     """
     # Getting the parents from splitting the long name string is faster than
     # using the .parent() method recursively.
-    parents = list(reversed(
+    parents = list(
         # Slice off empty first string and node itself from the full dag path
-        get_dag_path_of_mobj(node, full=True).split("|")[1:-1]
-    ))
+        reversed(get_dag_path_of_mobj(node, full=True).split("|")[1:-1])
+    )
 
     return parents
 

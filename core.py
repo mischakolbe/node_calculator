@@ -123,10 +123,10 @@ TODO: Add raise-statements where erroring!
 # Python imports
 from __future__ import absolute_import
 
-import os
-import numbers
-import itertools
 import copy
+import itertools
+import numbers
+import os
 
 # Third party imports
 from maya import cmds
@@ -136,13 +136,13 @@ import pymel.core as pm
 # Local imports
 from . import logger
 from . import lookup_table
-from . import om_util
 from . import nc_value
+from . import om_util
 if os.environ.get("MAYA_DEV"):
     reload(logger)
     reload(lookup_table)
-    reload(om_util)
     reload(nc_value)
+    reload(om_util)
 
 
 # CONSTANTS ---
@@ -246,6 +246,10 @@ class Node(object):
 
         The Node-class only serves to redirect to the appropriate type
         based on the given args! Therefore the init must not do anything.
+
+        Args:
+            args (list): This dummy-init accepts any arguments.
+            kwargs (dict): This dummy-init accepts any keyword arguments.
         """
         pass
 
@@ -650,7 +654,6 @@ class OperatorMetaClass(object):
         Example:
             >>> Op.inverse_matrix(Node("pCube.worldMatrix"))
         """
-
         return _create_and_connect_node('inverse_matrix', in_matrix)
 
     @staticmethod
@@ -1433,7 +1436,6 @@ class NcBaseNode(NcBaseClass):
         Returns:
             list: List of MObjects of shapes.
         """
-
         shape_mobjs = om_util.get_shape_mobjs(self._node_mobj)
 
         shapes = [
@@ -1444,7 +1446,7 @@ class NcBaseNode(NcBaseClass):
         return shapes
 
     def attr(self, attr=None):
-        """Get a new NcNode instance with given attr (using keywords allowed).
+        """Get new NcNode instance with given attr (using keywords is allowed).
 
         Note:
             It is pretty difficult to get an NcNode instance with any of the
@@ -1579,7 +1581,7 @@ class NcBaseNode(NcBaseClass):
         return func
 
     def add_enum(self, name, enum_name="", cases=None, **kwargs):
-        """Create a boolean-attribute for the given attribute
+        """Create an enum-attribute with given name and kwargs.
 
         Note:
             kwargs are exactly the same as in cmds.addAttr()!
@@ -1634,7 +1636,6 @@ class NcBaseNode(NcBaseClass):
         Example:
             >>> Node("pCube1").add_separator()
         """
-
         # Find the next available longName for the new separator
         node = self.node
         base_long_name = "channelBoxSeparator"
@@ -1784,7 +1785,7 @@ class NcNode(NcBaseNode):
             attrs=None,
             auto_unravel=None,
             auto_consolidate=None):
-        """NcNode-class constructor
+        """Initialize NcNode-class instance.
 
         Note:
             __setattr__ is altered. The usual "self.node=node" results in loop!
@@ -1977,7 +1978,7 @@ class NcAttrs(NcBaseNode):
     """
 
     def __init__(self, holder_node, attrs):
-        """NcAttrs-class constructor
+        """Initialize NcAttrs-class instance.
 
         Note:
             __setattr__ is altered. The usual "self.node=node" results in loop!
@@ -2071,10 +2072,11 @@ class NcAttrs(NcBaseNode):
         return self._holder_node._auto_consolidate
 
     def __getattr__(self, name):
-        """Get a new NcAttrs instance with the requested attr concatenated onto
-        existing attr(s).
+        """Get a new NcAttrs instance with the requested attribute.
 
         Note:
+            The requested attr gets "concatenated" onto the existing attr(s)!
+
             There are certain keywords that will NOT return a new NcAttrs:
             * attrs: Returns currently stored NcAttrs of this NcNode instance.
             * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
@@ -2244,7 +2246,7 @@ class NcList(NcBaseClass, list):
         del self._items[index]
 
     def __iter__(self):
-        """Generator to iterate over items stored in this NcList instance.
+        """Iterate over items stored in this NcList instance.
 
         Yields:
             NcNode or NcAttrs or NcValue: Next item in list of attributes.
@@ -3326,8 +3328,9 @@ def _unravel_list(list_instance):
 
 
 def _unravel_base_node_instance(base_node_instance):
-    """Unravel NcBaseNode instance; get name of node or MPlug of Maya attribute
-    it refers to.
+    """Unravel NcBaseNode instance.
+
+    Get name of Maya node or MPlug of Maya attribute the NcBaseNode refers to.
 
     Args:
         base_node_instance (NcNode or NcAttrs): Instance to find Mplug for.
