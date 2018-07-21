@@ -202,332 +202,310 @@ OPERATORS = {}
 
 
 # OPERATORS ---
-class OperatorsMetaClass(object):
-    """Base class for NodeCalculator operators.
-
-    Everything that goes beyond basic operators: + - * /
+def _operator_lookup_table_init():
+    """Fill OPERATORS-dictionary with all available operations.
 
     Note:
-        A meta-class was used, because many methods of this class are created
-        on the fly in the __init__ method (possibly even with closures).
+        OPERATORS holds the data for each available operation:
+        the necessary node-type, its inputs, outputs, etc.
+        This unified data enables to abstract node creation, connection, ..
+
+        possible flags:
+        - node: Type of Maya node necessary
+        - inputs: input attributes (list of lists)
+        - output: output attributes (list)
+        - is_multi_index: any number of input attrs possible? (array attr)
+        - operation: set operation-attr for different modes of a node
+        - output_is_predetermined: should always ALL output attrs be added?
     """
+    global OPERATORS
 
-    def __init__(self, name, bases, body):
-        """Initialize operator-class.
+    OPERATORS = {
+        "angle_between": {
+            "node": "angleBetween",
+            "inputs": [
+                ["vector1X", "vector1Y", "vector1Z"],
+                ["vector2X", "vector2Y", "vector2Z"],
+            ],
+            "outputs": [
+                ["angle"],
+            ],
+        },
 
-        Note:
-            name, bases, body are necessary for metaClass to work properly
-        """
-        # Initialize the OPERATORS_dictionary
-        self._operator_lookup_table_init()
+        "average": {
+            "node": "plusMinusAverage",
+            "inputs": [
+                [
+                    "input3D[{multi_index}].input3Dx",
+                    "input3D[{multi_index}].input3Dy",
+                    "input3D[{multi_index}].input3Dz"
+                ],
+            ],
+            "is_multi_index": True,
+            "outputs": [
+                ["output3Dx", "output3Dy", "output3Dz"],
+            ],
+            "operation": 3,
+        },
 
-    @staticmethod
-    def _operator_lookup_table_init():
-        """Fill OPERATORS-dictionary with all available operations.
+        "blend": {
+            "node": "blendColors",
+            "inputs": [
+                ["color1R", "color1G", "color1B"],
+                ["color2R", "color2G", "color2B"],
+                ["blender"],
+            ],
+            "outputs": [
+                ["outputR", "outputG", "outputB"],
+            ],
+        },
 
-        Note:
-            OPERATORS holds the data for each available operation:
-            the necessary node-type, its inputs, outputs, etc.
-            This unified data enables to abstract node creation, connection, ..
+        "choice": {
+            "node": "choice",
+            "inputs": [
+                [
+                    "input[{multi_index}]",
+                ],
+            ],
+            "is_multi_index": True,
+            "outputs": [
+                ["output"],
+            ],
+        },
 
-            possible flags:
-            - node: Type of Maya node necessary
-            - inputs: input attributes (list of lists)
-            - output: output attributes (list)
-            - is_multi_index: any number of input attrs possible? (array attr)
-            - operation: set operation-attr for different modes of a node
-            - output_is_predetermined: should always ALL output attrs be added?
-        """
-        global OPERATORS
+        "clamp": {
+            "node": "clamp",
+            "inputs": [
+                ["inputR", "inputG", "inputB"],
+                ["minR", "minG", "minB"],
+                ["maxR", "maxG", "maxB"],
+            ],
+            "outputs": [
+                ["outputR", "outputG", "outputB"],
+            ],
+        },
 
-        OPERATORS = {
-            "angle_between": {
-                "node": "angleBetween",
-                "inputs": [
-                    ["vector1X", "vector1Y", "vector1Z"],
-                    ["vector2X", "vector2Y", "vector2Z"],
-                ],
-                "outputs": [
-                    ["angle"],
-                ],
-            },
+        "compose_matrix": {
+            "node": "composeMatrix",
+            "inputs": [
+                ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
+                ["inputRotateX", "inputRotateY", "inputRotateZ"],
+                ["inputScaleX", "inputScaleY", "inputScaleZ"],
+                ["inputShearX", "inputShearY", "inputShearZ"],
+                ["inputRotateOrder"],
+                ["useEulerRotation"],
+            ],
+            "outputs": [
+                ["outputMatrix"],
+            ],
+        },
 
-            "average": {
-                "node": "plusMinusAverage",
-                "inputs": [
-                    [
-                        "input3D[{multi_index}].input3Dx",
-                        "input3D[{multi_index}].input3Dy",
-                        "input3D[{multi_index}].input3Dz"
-                    ],
-                ],
-                "is_multi_index": True,
-                "outputs": [
-                    ["output3Dx", "output3Dy", "output3Dz"],
-                ],
-                "operation": 3,
-            },
+        "decompose_matrix": {
+            "node": "decomposeMatrix",
+            "inputs": [
+                ["inputMatrix"],
+            ],
+            "outputs": [
+                ["outputTranslateX", "outputTranslateY", "outputTranslateZ"],
+                ["outputRotateX", "outputRotateY", "outputRotateZ"],
+                ["outputScaleX", "outputScaleY", "outputScaleZ"],
+                ["outputShearX", "outputShearY", "outputShearZ"],
+            ],
+            "output_is_predetermined": True,
+        },
 
-            "blend": {
-                "node": "blendColors",
-                "inputs": [
-                    ["color1R", "color1G", "color1B"],
-                    ["color2R", "color2G", "color2B"],
-                    ["blender"],
-                ],
-                "outputs": [
-                    ["outputR", "outputG", "outputB"],
-                ],
-            },
+        "inverse_matrix": {
+            "node": "inverseMatrix",
+            "inputs": [
+                ["inputMatrix"],
+            ],
+            "outputs": [
+                ["outputMatrix"],
+            ],
+        },
 
-            "choice": {
-                "node": "choice",
-                "inputs": [
-                    [
-                        "input[{multi_index}]",
-                    ],
-                ],
-                "is_multi_index": True,
-                "outputs": [
-                    ["output"],
-                ],
-            },
+        "length": {
+            "node": "distanceBetween",
+            "inputs": [
+                ["point1X", "point1Y", "point1Z"],
+                ["point2X", "point2Y", "point2Z"],
+            ],
+            "outputs": [
+                ["distance"],
+            ],
+        },
 
-            "clamp": {
-                "node": "clamp",
-                "inputs": [
-                    ["inputR", "inputG", "inputB"],
-                    ["minR", "minG", "minB"],
-                    ["maxR", "maxG", "maxB"],
-                ],
-                "outputs": [
-                    ["outputR", "outputG", "outputB"],
-                ],
-            },
+        "matrix_distance": {
+            "node": "distanceBetween",
+            "inputs": [
+                ["inMatrix1"],
+                ["inMatrix2"],
+            ],
+            "outputs": [
+                ["distance"],
+            ],
+        },
 
-            "compose_matrix": {
-                "node": "composeMatrix",
-                "inputs": [
-                    ["inputTranslateX", "inputTranslateY", "inputTranslateZ"],
-                    ["inputRotateX", "inputRotateY", "inputRotateZ"],
-                    ["inputScaleX", "inputScaleY", "inputScaleZ"],
-                    ["inputShearX", "inputShearY", "inputShearZ"],
-                    ["inputRotateOrder"],
-                    ["useEulerRotation"],
+        "mult_matrix": {
+            "node": "multMatrix",
+            "inputs": [
+                [
+                    "matrixIn[{multi_index}]"
                 ],
-                "outputs": [
-                    ["outputMatrix"],
-                ],
-            },
+            ],
+            "is_multi_index": True,
+            "outputs": [
+                ["matrixSum"],
+            ],
+        },
 
-            "decompose_matrix": {
-                "node": "decomposeMatrix",
-                "inputs": [
-                    ["inputMatrix"],
-                ],
-                "outputs": [
-                    ["outputTranslateX", "outputTranslateY", "outputTranslateZ"],
-                    ["outputRotateX", "outputRotateY", "outputRotateZ"],
-                    ["outputScaleX", "outputScaleY", "outputScaleZ"],
-                    ["outputShearX", "outputShearY", "outputShearZ"],
-                ],
-                "output_is_predetermined": True,
-            },
+        "normalize_vector": {
+            "node": "vectorProduct",
+            "inputs": [
+                ["input1X", "input1Y", "input1Z"],
+                ["normalizeOutput"],
+            ],
+            "outputs": [
+                ["outputX", "outputY", "outputZ"],
+            ],
+            "operation": 0,
+        },
 
-            "inverse_matrix": {
-                "node": "inverseMatrix",
-                "inputs": [
-                    ["inputMatrix"],
-                ],
-                "outputs": [
-                    ["outputMatrix"],
-                ],
-            },
+        "pair_blend": {
+            "node": "pairBlend",
+            "inputs": [
+                ["inTranslateX1", "inTranslateY1", "inTranslateZ1"],
+                ["inRotateX1", "inRotateY1", "inRotateZ1"],
+                ["inTranslateX2", "inTranslateY2", "inTranslateZ2"],
+                ["inRotateX2", "inRotateY2", "inRotateZ2"],
+                ["weight"],
+                ["rotInterpolation"],
+            ],
+            "outputs": [
+                ["outTranslateX", "outTranslateY", "outTranslateZ"],
+                ["outRotateX", "outRotateY", "outRotateZ"],
+            ],
+            "output_is_predetermined": True,
+        },
 
-            "length": {
-                "node": "distanceBetween",
-                "inputs": [
-                    ["point1X", "point1Y", "point1Z"],
-                    ["point2X", "point2Y", "point2Z"],
-                ],
-                "outputs": [
-                    ["distance"],
-                ],
-            },
+        "point_matrix_mult": {
+            "node": "pointMatrixMult",
+            "inputs": [
+                ["inPointX", "inPointY", "inPointZ"],
+                ["inMatrix"],
+                ["vectorMultiply"],
+            ],
+            "outputs": [
+                ["outputX", "outputY", "outputZ"],
+            ],
+        },
 
-            "matrix_distance": {
-                "node": "distanceBetween",
-                "inputs": [
-                    ["inMatrix1"],
-                    ["inMatrix2"],
-                ],
-                "outputs": [
-                    ["distance"],
-                ],
-            },
+        "remap_value": {
+            "node": "remapValue",
+            "inputs": [
+                ["inputValue"],
+                ["outputMin"],
+                ["outputMax"],
+                ["inputMin"],
+                ["inputMax"],
+            ],
+            "outputs": [
+                ["outValue"],
+            ],
+        },
 
-            "mult_matrix": {
-                "node": "multMatrix",
-                "inputs": [
-                    [
-                        "matrixIn[{multi_index}]"
-                    ],
-                ],
-                "is_multi_index": True,
-                "outputs": [
-                    ["matrixSum"],
-                ],
-            },
+        "set_range": {
+            "node": "setRange",
+            "inputs": [
+                ["valueX", "valueY", "valueZ"],
+                ["minX", "minY", "minZ"],
+                ["maxX", "maxY", "maxZ"],
+                ["oldMinX", "oldMinY", "oldMinZ"],
+                ["oldMaxX", "oldMaxY", "oldMaxZ"],
+            ],
+            "outputs": [
+                ["outValueX", "outValueY", "outValueZ"],
+            ],
+        },
 
-            "normalize_vector": {
-                "node": "vectorProduct",
-                "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["normalizeOutput"],
-                ],
-                "outputs": [
-                    ["outputX", "outputY", "outputZ"],
-                ],
-                "operation": 0,
-            },
+        "transpose_matrix": {
+            "node": "transposeMatrix",
+            "inputs": [
+                ["inputMatrix"],
+            ],
+            "outputs": [
+                ["outputMatrix"],
+            ],
+        },
+    }
 
-            "pair_blend": {
-                "node": "pairBlend",
-                "inputs": [
-                    ["inTranslateX1", "inTranslateY1", "inTranslateZ1"],
-                    ["inRotateX1", "inRotateY1", "inRotateZ1"],
-                    ["inTranslateX2", "inTranslateY2", "inTranslateZ2"],
-                    ["inRotateX2", "inRotateY2", "inRotateZ2"],
-                    ["weight"],
-                    ["rotInterpolation"],
-                ],
-                "outputs": [
-                    ["outTranslateX", "outTranslateY", "outTranslateZ"],
-                    ["outRotateX", "outRotateY", "outRotateZ"],
-                ],
-                "output_is_predetermined": True,
-            },
-
-            "point_matrix_mult": {
-                "node": "pointMatrixMult",
-                "inputs": [
-                    ["inPointX", "inPointY", "inPointZ"],
-                    ["inMatrix"],
-                    ["vectorMultiply"],
-                ],
-                "outputs": [
-                    ["outputX", "outputY", "outputZ"],
-                ],
-            },
-
-            "remap_value": {
-                "node": "remapValue",
-                "inputs": [
-                    ["inputValue"],
-                    ["outputMin"],
-                    ["outputMax"],
-                    ["inputMin"],
-                    ["inputMax"],
-                ],
-                "outputs": [
-                    ["outValue"],
-                ],
-            },
-
-            "set_range": {
-                "node": "setRange",
-                "inputs": [
-                    ["valueX", "valueY", "valueZ"],
-                    ["minX", "minY", "minZ"],
-                    ["maxX", "maxY", "maxZ"],
-                    ["oldMinX", "oldMinY", "oldMinZ"],
-                    ["oldMaxX", "oldMaxY", "oldMaxZ"],
-                ],
-                "outputs": [
-                    ["outValueX", "outValueY", "outValueZ"],
-                ],
-            },
-
-            "transpose_matrix": {
-                "node": "transposeMatrix",
-                "inputs": [
-                    ["inputMatrix"],
-                ],
-                "outputs": [
-                    ["outputMatrix"],
-                ],
-            },
+    # Fill OPERATORS with condition operations
+    cond_operators = ["eq", "ne", "gt", "ge", "lt", "le"]
+    for i, condition_operator in enumerate(cond_operators):
+        OPERATORS[condition_operator] = {
+            "node": "condition",
+            "inputs": [
+                ["firstTerm"],
+                ["secondTerm"],
+            ],
+            # The condition node is a special case! It gets created during
+            # the magic-method-comparison and fully connected after being
+            # passed on to the condition()-method in this OperatorMetaClass
+            "outputs": [
+                [None],
+            ],
+            "operation": i,
         }
 
-        # Fill OPERATORS with condition operations
-        cond_operators = ["eq", "ne", "gt", "ge", "lt", "le"]
-        for i, condition_operator in enumerate(cond_operators):
-            OPERATORS[condition_operator] = {
-                "node": "condition",
-                "inputs": [
-                    ["firstTerm"],
-                    ["secondTerm"],
+    # Fill OPERATORS with +,- operations
+    for i, add_sub_operator in enumerate(["add", "sub"]):
+        OPERATORS[add_sub_operator] = {
+            "node": "plusMinusAverage",
+            "inputs": [
+                [
+                    "input3D[{multi_index}].input3Dx",
+                    "input3D[{multi_index}].input3Dy",
+                    "input3D[{multi_index}].input3Dz"
                 ],
-                # The condition node is a special case! It gets created during
-                # the magic-method-comparison and fully connected after being
-                # passed on to the condition()-method in this OperatorMetaClass
-                "outputs": [
-                    [None],
-                ],
-                "operation": i,
-            }
+            ],
+            "is_multi_index": True,
+            "outputs": [
+                ["output3Dx", "output3Dy", "output3Dz"],
+            ],
+            "operation": i + 1,
+        }
 
-        # Fill OPERATORS with +,- operations
-        for i, add_sub_operator in enumerate(["add", "sub"]):
-            OPERATORS[add_sub_operator] = {
-                "node": "plusMinusAverage",
-                "inputs": [
-                    [
-                        "input3D[{multi_index}].input3Dx",
-                        "input3D[{multi_index}].input3Dy",
-                        "input3D[{multi_index}].input3Dz"
-                    ],
-                ],
-                "is_multi_index": True,
-                "outputs": [
-                    ["output3Dx", "output3Dy", "output3Dz"],
-                ],
-                "operation": i + 1,
-            }
+    # Fill OPERATORS with *,/,** operations
+    for i, mult_div_operator in enumerate(["mul", "div", "pow"]):
+        OPERATORS[mult_div_operator] = {
+            "node": "multiplyDivide",
+            "inputs": [
+                ["input1X", "input1Y", "input1Z"],
+                ["input2X", "input2Y", "input2Z"],
+            ],
+            "outputs": [
+                ["outputX", "outputY", "outputZ"],
+            ],
+            "operation": i + 1,
+        }
 
-        # Fill OPERATORS with *,/,** operations
-        for i, mult_div_operator in enumerate(["mul", "div", "pow"]):
-            OPERATORS[mult_div_operator] = {
-                "node": "multiplyDivide",
-                "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["input2X", "input2Y", "input2Z"],
-                ],
-                "outputs": [
-                    ["outputX", "outputY", "outputZ"],
-                ],
-                "operation": i + 1,
-            }
-
-        # Fill OPERATORS with vectorProduct operations
-        for i, vector_product_operator in enumerate(["dot", "cross"]):
-            OPERATORS[vector_product_operator] = {
-                "node": "vectorProduct",
-                "inputs": [
-                    ["input1X", "input1Y", "input1Z"],
-                    ["input2X", "input2Y", "input2Z"],
-                    ["normalizeOutput"],
-                ],
-                "outputs": [
-                    ["outputX", "outputY", "outputZ"],
-                ],
-                "operation": i + 1,
-            }
+    # Fill OPERATORS with vectorProduct operations
+    for i, vector_product_operator in enumerate(["dot", "cross"]):
+        OPERATORS[vector_product_operator] = {
+            "node": "vectorProduct",
+            "inputs": [
+                ["input1X", "input1Y", "input1Z"],
+                ["input2X", "input2Y", "input2Z"],
+                ["normalizeOutput"],
+            ],
+            "outputs": [
+                ["outputX", "outputY", "outputZ"],
+            ],
+            "operation": i + 1,
+        }
 
 
-class OperatorsCreator(object):
-    """Create OPERATORS from OperatorsMetaClass."""
-    __metaclass__ = OperatorsMetaClass
+_operator_lookup_table_init()
 
 
 # Little helper to print all available Operators for the core.py-docString.
