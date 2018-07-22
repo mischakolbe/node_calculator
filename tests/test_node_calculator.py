@@ -75,7 +75,8 @@ class TestNodeCalculatorCore(TestCase):
         node_a_no_auto_unravel = noca.Node(self.node_a, auto_unravel=False)
         # Setattr that doesn't require unravelling should work
         node_a_no_auto_unravel.tx = 1
-        node_a_no_auto_unravel.t = [1, 2, 3]
+        with self.assertRaises(RuntimeError):
+            node_a_no_auto_unravel.t = [1, 2, 3]
         with self.assertRaises(RuntimeError):
             node_a_no_auto_unravel.t = 1
 
@@ -83,7 +84,8 @@ class TestNodeCalculatorCore(TestCase):
         noca.set_global_auto_unravel(False)
         # Setattr that doesn't require unravelling should work
         self.node_a.tx = 1
-        self.node_a.t = [1, 2, 3]
+        with self.assertRaises(RuntimeError):
+            self.node_a.t = [1, 2, 3]
         # Setattr that requires unravelling should NOT work
         with self.assertRaises(RuntimeError):
             self.node_a.t = 1

@@ -114,8 +114,6 @@ Example:
         with noca.Tracer(pprint_trace=True):
             e = b.add_float(value=c.tx)
             a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
-
-TODO: Add raise-statements where erroring!
 """
 
 
@@ -146,7 +144,7 @@ if os.environ.get("MAYA_DEV"):
 
 
 # CONSTANTS ---
-NODE_NAME_PREFIX = "nc"  # Common prefix for nodes created by NodeCalculator
+NODE_CALCULATOR_NAME_PREFIX = "nc"
 STANDARD_SEPARATOR_NICENAME = "________"
 STANDARD_SEPARATOR_VALUE = "________"
 GLOBAL_AUTO_CONSOLIDATE = True
@@ -557,9 +555,9 @@ class OperatorMetaClass(object):
         """
         # Make sure condition_node is of expected Node-type!
         if not isinstance(condition_node, NcNode):
-            LOG.error("%s isn't NcNode-instance.", condition_node)
+            LOG.warn("%s isn't NcNode-instance.", condition_node)
         if cmds.objectType(condition_node.node) != "condition":
-            LOG.error("%s isn't of type condition.", condition_node)
+            LOG.warn("%s isn't of type condition.", condition_node)
 
         # Determine how many attrs were given & need to be connected
         max_dim = max(
@@ -830,6 +828,11 @@ class OperatorMetaClass(object):
         Returns:
             NcNode: Instance with remapValue-node and output-attribute(s)
 
+        Raises:
+            TypeError: If given values isn't a list of either lists or tuples.
+            RuntimeError: If given values isn't a list of lists/tuples of
+                length 2 or 3.
+
         Example:
             ::
 
@@ -847,10 +850,11 @@ class OperatorMetaClass(object):
             # "x-axis", "y-axis", interpolation
 
             if not isinstance(value_data, (list, tuple)):
-                LOG.error(
+                msg = (
                     "The values-flag for remap_value requires a list of "
-                    "tuples! Got %s instead.", values
+                    "tuples! Got {0} instead.".format(values)
                 )
+                raise TypeError(msg)
 
             elif len(value_data) == 2:
                 pos, val = value_data
@@ -860,10 +864,11 @@ class OperatorMetaClass(object):
                 pos, val, interp = value_data
 
             else:
-                LOG.error(
+                msg = (
                     "The values-flag for remap_value requires a list of "
-                    "tuples of length 2 or 3! Got %s instead.", values
+                    "tuples of length 2 or 3! Got {0} instead.".format(values)
                 )
+                raise RuntimeError(msg)
 
             # Set these attributes directly to avoid unnecessary unravelling.
             _traced_set_attr(
@@ -1457,13 +1462,15 @@ class NcBaseNode(NcBaseClass):
             attr (str): Attribute on the Maya node this instance refers to.
 
         Returns:
-            NcNode: Instance with the given attr in its Attrs.
+            NcNode or None: Instance with the given attr in its Attrs, or None
+                if no attr was specified.
         """
         if attr is None:
-            LOG.error(
+            LOG.warn(
                 "%s 'attr()' method call without arguments. Did you mean to "
                 "use 'attrs'?", self.__class__.__name__
             )
+            return None
 
         return NcNode(self._node_mobj, attr)
 
@@ -1479,17 +1486,21 @@ class NcBaseNode(NcBaseClass):
 
         Returns:
             pm.PyNode: PyNode-instance of this node or plug
+
+        Raises:
+            RuntimeError: If the user requested a PyNode of an NcNode/NcAttrs
+                with multiple attrs. PyNodes can only contain one attr max.
         """
         if not self.attrs_list:
             return pm.PyNode(self.node)
         if len(self.attrs_list) == 1:
             return pm.PyNode(self.plugs[0])
 
-        LOG.error(
-            "Tried to create PyNode from NcNode with multiple attributes: %s "
-            "PyNode only supports node or single attributes!", self
+        msg = (
+            "Tried to create PyNode from NcNode with multiple attributes: {0} "
+            "PyNode only supports node or single attributes!".format(self)
         )
-        return None
+        raise RuntimeError(msg)
 
     def set_auto_unravel(self, state):
         """Change the auto unravelling state.
@@ -1806,6 +1817,12 @@ class NcNode(NcBaseNode):
             _node_mobj (MObject): Reference to Maya node.
             _held_attrs (NcAttrs): NcAttrs instance that defines the attrs.
 
+        Raises:
+            RuntimeError: If number was given to initialize an NcNode with.
+            RuntimeError: If list/tuple was given to initialize an NcNode with.
+            RuntimeError: If the given string doesn't seem to represent an
+                existing Maya node in the scene.
+
         Examples:
             ::
 
@@ -1822,19 +1839,19 @@ class NcNode(NcBaseNode):
 
         # Plain values should be Value-instance!
         if isinstance(node, numbers.Real):
-            LOG.error(
-                "Explicit NcNode __init__ with number (%s). "
-                "Use Node() instead!", node
+            msg = (
+                "Explicit NcNode __init__ with number: {0}  "
+                "Use Node() instead!".format(node)
             )
-            return
+            raise RuntimeError(msg)
 
         # Lists or tuples should be NcList!
         if isinstance(node, (list, tuple)):
-            LOG.error(
-                "Explicit NcNode __init__ with list or tuple (%s). "
-                "Use Node() instead!", node
+            msg = (
+                "Explicit NcNode __init__ with list or tuple: {0}  "
+                "Use Node() instead!".format(node)
             )
-            return
+            raise RuntimeError(msg)
 
         super(NcNode, self).__init__()
 
@@ -1861,9 +1878,12 @@ class NcNode(NcBaseNode):
         else:
             node_mobj = om_util.get_mobj(node)
             if node_mobj is None:
-                LOG.error(
-                    "%s doesn't exist! NcNode initialization failed.", node
+                msg = (
+                    "No Maya node was found for '{0}'! The node might not "
+                    "exist or its name might be non-unique.".format(node)
                 )
+                raise RuntimeError(msg)
+
         # Using __dict__, because the setattr & getattr methods are overridden!
         self.__dict__["_node_mobj"] = node_mobj
         if isinstance(attrs, NcAttrs):
@@ -1992,17 +2012,20 @@ class NcAttrs(NcBaseNode):
         Attributes:
             _holder_node (NcNode): NcNode instance this NcAttrs belongs to.
             _held_attrs_list (list): Strings that represent attrs on Maya node.
+
+        Raises:
+            TypeError: If the holder_node isn't of type NcNode.
         """
         LOG.debug("%s __init__ (%s)", self.__class__.__name__, attrs)
 
         super(NcAttrs, self).__init__()
 
         if not isinstance(holder_node, NcNode):
-            LOG.error(
-                "holder_node must be of type NcNode! Given: %s type: %s",
-                holder_node, type(holder_node)
+            msg = (
+                "holder_node must be of type NcNode! Given: {0} "
+                "type: {1}".format(holder_node, type(holder_node))
             )
-            return
+            raise TypeError(msg)
 
         self.__dict__["_holder_node"] = holder_node
 
@@ -2108,8 +2131,10 @@ class NcAttrs(NcBaseNode):
             return self
 
         if len(self.attrs_list) != 1:
-            LOG.error(
-                "Tried to get attr of non-singular attr: %s", self.attrs_list
+            LOG.warn(
+                "__getattr__ of non-singular NcAttr: %s Using first item of "
+                "attrs-list %s, which could result in unwanted behaviour!",
+                self, self.attrs_list
             )
 
         return_value = NcAttrs(
@@ -2397,6 +2422,10 @@ class NcList(NcBaseClass, list):
 
         Returns:
             NcNode or NcValue: Given item in the appropriate format.
+
+        Raises:
+            RuntimeError: If the given item cannot be converted into an NcNode
+                or NcValue.
         """
         if isinstance(item, (NcBaseNode, nc_value.NcValue)):
             return item
@@ -2404,11 +2433,10 @@ class NcList(NcBaseClass, list):
         if isinstance(item, (basestring, numbers.Real)):
             return Node(item)
 
-        LOG.error(
-            "%s is of unsupported type %s! Can't convert to NcList item!",
+        msg = "Can't convert {0} to NcList item; unsupported type {1}!".format(
             item, type(item)
         )
-        return None
+        raise RuntimeError(msg)
 
 
 # SET & CONNECT PLUGS ---
@@ -2431,6 +2459,9 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
         > Setting 1-D attribute to a X-D value/attr
             # Error: Ambiguous connection!
 
+        > Setting X-D attribute to a Y-D value/attr
+            # Error: Dimension mismatch that can't be resolved!
+
     Args:
         obj_a (NcNode or NcAttrs or str): Needs to be a plug. Either as a
             NodeCalculator-object or as a string ("node.attr")
@@ -2438,6 +2469,13 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
             Can be a numeric value, a list of values or another plug either in
             the form of a NodeCalculator-object or as a string ("node.attr")
         kwargs (dict): Arguments used in _traced_set_attr (~ cmds.setAttr)
+
+    Raises:
+        RuntimeError: If trying to connect a multi-dimensional attr into a 1D
+            attr. This is an ambiguous connection that can't be resolved.
+        RuntimeError: If trying to connect a multi-dimensional attr into a
+            multi-dimensional attr with different dimensionality. This is a
+            dimension mismatch that can't be resolved!
     """
     LOG.debug("_unravel_and_set_or_connect_a_to_b (%s, %s)", obj_a, obj_b)
 
@@ -2469,29 +2507,29 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
     obj_b_unravelled_list = _unravel_item_as_list(obj_b)
 
     # As described in the docString Note: Input dimensions are crucial. If they
-    # don't match they must either be matched or an error must be thrown!
+    # don't match they must either be matched or an exception must be raised!
     obj_a_dim = len(obj_a_unravelled_list)
     obj_b_dim = len(obj_b_unravelled_list)
 
     # A multidimensional connection into a 1D attribute does not make sense!
     if obj_a_dim == 1 and obj_b_dim != 1:
-        LOG.error(
-            "Ambiguous connection from %dD to %dD: (%s, %s)",
+        msg = "Ambiguous connection from {0}D to {1}D: ({2}, {3})".format(
             obj_b_dim, obj_a_dim,
             obj_b_unravelled_list, obj_a_unravelled_list
         )
-        return
+        raise RuntimeError(msg)
 
     # If obj_a and obj_b are higher dimensional but not the same dimension
     # the connection can't be resolved! 2D -> 3D or 4D -> 2D is ambiguous!
     if obj_a_dim > 1 and obj_b_dim > 1 and obj_a_dim != obj_b_dim:
-        LOG.error(
+        msg = (
             "Dimension mismatch for connection that can't be resolved! "
-            "From %dD to %dD: (%s, %s)",
-            obj_b_dim, obj_a_dim,
-            obj_b_unravelled_list, obj_a_unravelled_list
+            "From {0}D to {1}D: ({2}, {3})".format(
+                obj_b_dim, obj_a_dim,
+                obj_b_unravelled_list, obj_a_unravelled_list
+            )
         )
-        return
+        raise RuntimeError(msg)
 
     # Dimensionality above 3 is most likely not going to be handled reliable!
     if obj_a_dim > 3:
@@ -2655,6 +2693,11 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
 
     Returns:
         bool: Returns False, if setting/connecting was not possible.
+
+    Raises:
+        RuntimeError: If an item of the obj_a_list isn't a Maya attribute.
+        RuntimeError: If an item of the obj_b_list can't be set/connected due
+            to unsupported type.
     """
     LOG.debug(
         "_set_or_connect_a_to_b (%s, %s, %s)", obj_a_list, obj_b_list, kwargs
@@ -2663,9 +2706,10 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
     for obj_a_item, obj_b_item in zip(obj_a_list, obj_b_list):
         # Make sure obj_a_item exists in the Maya scene
         if not cmds.objExists(obj_a_item):
-            LOG.error(
-                "obj_a_item doesn't seem to be a Maya attr: %s!", obj_a_item
+            msg = "obj_a_item doesn't seem to be a Maya attr: {0}!".format(
+                obj_a_item
             )
+            raise RuntimeError(msg)
 
         # If obj_b_item is a simple number...
         if isinstance(obj_b_item, numbers.Real):
@@ -2679,11 +2723,11 @@ def _set_or_connect_a_to_b(obj_a_list, obj_b_list, **kwargs):
 
         # If obj_b_item didn't match anything; obj_b_item-type isn't supported.
         else:
-            LOG.error(
-                "Cannot set obj_b_item: %s because of unknown type: %s",
-                obj_b_item, type(obj_b_item)
+            msg = (
+                "Cannot set obj_b_item: {0} because it is of unsupported "
+                "type: {1}".format(obj_b_item, type(obj_b_item))
             )
-            return
+            raise RuntimeError(msg)
 
 
 def _is_valid_maya_attr(plug):
@@ -2706,7 +2750,7 @@ def _is_valid_maya_attr(plug):
         )
         return is_existing_maya_plug
 
-    LOG.error("Given string '%s' does not seem to be a Maya attribute!", plug)
+    LOG.debug("Given string '%s' does not seem to be a Maya attribute!", plug)
     return False
 
 
@@ -2725,6 +2769,10 @@ def _create_and_connect_node(operation, *args):
             If the outputs are multidimensional (for example "translateXYZ" &
             "rotateXYZ") a new NcList instance is returned with NcNodes for
             each of the outputs.
+
+    Raises:
+        RuntimeError: If trying to connect a multi-dimensional attr into a 1D
+            attr. This is an ambiguous connection that can't be resolved.
     """
     LOG.debug("Creating a new %s-operationNode with args: %s", operation, args)
 
@@ -2773,12 +2821,14 @@ def _create_and_connect_node(operation, *args):
         # For example: The blend-attr of a blendColors-node is always 1D, so
         # only a 1D plug_to_connect must be given!
         elif len(new_node_input) == 1:
+
             if len(_unravel_item_as_list(plug_to_connect)) > 1:
-                LOG.error(
-                    "Unable to connect multi-dimensional plug %s to 1D "
-                    "input %s.%s!", plug_to_connect, new_node, new_node_input
+                msg = (
+                    "Unable to connect multi-dimensional plug {0} to 1D input "
+                    "{1}.{2}".format(plug_to_connect, new_node, new_node_input)
                 )
-                return False
+                raise RuntimeError(msg)
+
             else:
                 LOG.debug(
                     "Directly connecting 1D plug %s to 1D input %s.%s",
@@ -2878,7 +2928,7 @@ def _create_node_name(operation, *args):
 
     # Combine all name-elements
     name_elements = [
-        NODE_NAME_PREFIX,  # Common NodeCalculator-prefix
+        NODE_CALCULATOR_NAME_PREFIX,  # Common NodeCalculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
         lookup_table.OPERATORS[operation]["node"]  # Node type
@@ -3268,6 +3318,9 @@ def _unravel_item(item):
 
     Returns:
         MPlug or NcValue or int or float or list: MPlug or value
+
+    Raises:
+        TypeError: If given item is of an unsupported type.
     """
     LOG.debug("_unravel_item (%s)", item)
 
@@ -3286,10 +3339,10 @@ def _unravel_item(item):
     if isinstance(item, numbers.Real):
         return item
 
-    LOG.error(
-        "_unravel_item can't unravel %s of type %s", item, type(item)
+    msg = (
+        "_unravel_item can't unravel {0} of type {1}".format(item, type(item))
     )
-    return None
+    raise TypeError(msg)
 
 
 def _unravel_nc_list(nc_list):
@@ -3419,6 +3472,9 @@ def _split_plug_into_node_and_attr(plug):
     Returns:
         tuple or None: Strings of separated node and attribute part or None if
             separation was not possible.
+
+    Raises:
+        RuntimeError: If the given plug could not be split into node & attr.
     """
     if isinstance(plug, OpenMaya.MPlug):
         plug = str(plug)
@@ -3427,8 +3483,8 @@ def _split_plug_into_node_and_attr(plug):
         node, attr = plug.split(".", 1)
         return (node, attr)
 
-    LOG.error("Could not split given plug %s into node & attr parts!", plug)
-    return None
+    msg = "Could not split given plug {0} into node & attr parts!".format(plug)
+    raise RuntimeError(msg)
 
 
 # Tracer ---

@@ -385,7 +385,7 @@ def is_valid_mplug(mplug):
         bool: True if given mplug actually is an MPlug instance.
     """
     if not isinstance(mplug, OpenMaya.MPlug):
-        LOG.error("Expected an MPlug, got %s of type %s", mplug, type(mplug))
+        LOG.debug("Expected an MPlug, got %s of type %s", mplug, type(mplug))
         return False
     return True
 
@@ -549,6 +549,9 @@ def get_mplug_of_node_and_attr(node, attr_str):
 
     Returns:
         MPlug or None: MPlug of given node.attr or None if that doesn't exist.
+
+    Raises:
+        RuntimeError: If the desired mplug does not exist.
     """
     mobj = get_mobj(node)
 
@@ -563,8 +566,8 @@ def get_mplug_of_node_and_attr(node, attr_str):
             mplug = get_child_mplug(mplug, attr)
 
         if not mplug:
-            LOG.error("mplug %s.%s doesn't seem to exist!", node, attr_str)
-            return None
+            msg = "mplug {0}.{1} doesn't seem to exist!".format(node, attr_str)
+            raise RuntimeError(msg)
 
         if index is not None:
             if not mplug.isArray:
@@ -652,13 +655,20 @@ def split_attr_string(attr):
 
     Returns:
         list: List of tuples of the form (attribute, attribute-index)
+
+    Raises:
+        ValueError: If given string is not in the pattern described in Note.
     """
     attr_pattern = re.compile(r"(\w+)(?:\[(\d+)\])?\.?")
 
     matches = attr_pattern.findall(attr)
 
     if not matches:
-        LOG.error("Attr %s could not be broken down into components!", attr)
+        msg = (
+            "String '{0}' could not be broken down into components that "
+            "represent a Maya attr!".format(attr)
+        )
+        raise ValueError(msg)
 
     cleaned_matches = []
     for attribute, index in matches:
@@ -683,19 +693,30 @@ def split_node_string(node):
 
     Returns:
         tuple: Tuple of the form (namespace, dag_path, node)
+
+    Raises:
+        ValueError: If given string is not in the pattern described in Note.
+        RuntimeError: If the given string looks like it stands for multiple
+            Maya-nodes; a string that yields multiple regex-matches.
+
     """
     node_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)")
 
     matches = node_pattern.findall(node)
 
     if not matches:
-        LOG.error("Node %s could not be broken down into components!", node)
+        msg = (
+            "String '{0}' could not be broken down into components that "
+            "represent a Maya node!".format(node)
+        )
+        raise ValueError(msg)
 
     if len(matches) > 1:
-        LOG.error(
-            "Node %s yielded multiple results. Should be singular result!",
-            node
+        msg = (
+            "String '{0}' yielded multiple nodes as results. "
+            "Should be singular node!".format(node)
         )
+        raise RuntimeError(msg)
 
     namespace, dag_path, node = matches[0]
 

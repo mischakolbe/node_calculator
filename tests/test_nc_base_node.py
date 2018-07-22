@@ -177,7 +177,8 @@ class TestNcBaseNodeClass(TestCase):
         # Test to_py_node method to easily retrieve a PyNode instance
         self.assertIsInstance(self.node_mesh.to_py_node(), pm.nodetypes.Transform)
         self.assertIsInstance(self.attrs_parent_attr.to_py_node(), pm.general.Attribute)
-        self.assertIsNone(self.attrs_multi_attr.to_py_node())
+        with self.assertRaises(RuntimeError):
+            self.attrs_multi_attr.to_py_node()
 
     def test_attribute_adding(self):
         """Test convenience methods to add attributes to Maya nodes"""
