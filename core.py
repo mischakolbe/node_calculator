@@ -132,11 +132,15 @@ from maya.api import OpenMaya
 import pymel.core as pm
 
 # Local imports
+from . import config
 from . import logger
 from . import lookup_table
 from . import nc_value
 from . import om_util
-if os.environ.get("MAYA_DEV"):
+
+# Reload modules when in DEV mode
+if os.environ.get("MAYA_DEV", False):
+    reload(config)
     reload(logger)
     reload(lookup_table)
     reload(nc_value)
@@ -144,14 +148,13 @@ if os.environ.get("MAYA_DEV"):
 
 
 # CONSTANTS ---
-NODE_CALCULATOR_NAME_PREFIX = "nc"
-STANDARD_SEPARATOR_NICENAME = "________"
-STANDARD_SEPARATOR_VALUE = "________"
-GLOBAL_AUTO_CONSOLIDATE = True
-GLOBAL_AUTO_UNRAVEL = True
-VARIABLE_BASE_NAME = "var"
-VALUE_BASE_NAME = "val"
-REQUIRED_PLUGINS = ["matrixNodes"]
+NODE_PREFIX = config.NODE_PREFIX
+DEFAULT_SEPARATOR_NAME = config.DEFAULT_SEPARATOR_NAME
+DEFAULT_SEPARATOR_VALUE = config.DEFAULT_SEPARATOR_VALUE
+VARIABLE_PREFIX = config.VARIABLE_PREFIX
+VALUE_PREFIX = config.VALUE_PREFIX
+GLOBAL_AUTO_CONSOLIDATE = config.GLOBAL_AUTO_CONSOLIDATE
+GLOBAL_AUTO_UNRAVEL = config.GLOBAL_AUTO_UNRAVEL
 
 # SETUP LOGGER ---
 logger.clear_handlers()
