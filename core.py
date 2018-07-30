@@ -155,6 +155,8 @@ VARIABLE_PREFIX = config.VARIABLE_PREFIX
 VALUE_PREFIX = config.VALUE_PREFIX
 GLOBAL_AUTO_CONSOLIDATE = config.GLOBAL_AUTO_CONSOLIDATE
 GLOBAL_AUTO_UNRAVEL = config.GLOBAL_AUTO_UNRAVEL
+OPERATORS = lookup_table.BASIC_OPERATORS
+
 
 # SETUP LOGGER ---
 logger.clear_handlers()
@@ -351,6 +353,19 @@ def set_global_auto_consolidate(state):
     GLOBAL_AUTO_CONSOLIDATE = state
 
 
+def noca_op(func):
+    """Add given function to the Op-class.
+
+    Note:
+        This is a decorator used in noca_extension.py! It makes it easy for the
+        user to add additional operators to the Op-class.
+
+    Args:
+        func (executable): Function to be added to Op as a method.
+    """
+    setattr(Op, func.__name__, func)
+
+
 # OPERATORS ---
 class OperatorMetaClass(object):
     """MetaClass for NodeCalculator operators that go beyond basic math (+-*/).
@@ -366,7 +381,7 @@ class OperatorMetaClass(object):
         Note:
             name, bases, body are necessary for __metaclass__ to work properly
         """
-        for required_plugin in REQUIRED_PLUGINS:
+        for required_plugin in lookup_table.BASIC_REQUIRED_PLUGINS:
             cmds.loadPlugin(required_plugin, quiet=True)
 
         super(OperatorMetaClass, self).__init__()
@@ -1235,7 +1250,7 @@ class NcBaseClass(object):
         """
         next_variable_index = len(cls._traced_nodes) + 1
         variable_name = "{0}{1}".format(
-            VARIABLE_BASE_NAME,
+            VARIABLE_PREFIX,
             next_variable_index
         )
         return variable_name
@@ -1277,7 +1292,7 @@ class NcBaseClass(object):
             str: Next available value name.
         """
         next_value_index = len(cls._traced_values) + 1
-        value_name = "{0}{1}".format(VALUE_BASE_NAME, next_value_index)
+        value_name = "{0}{1}".format(VALUE_PREFIX, next_value_index)
         return value_name
 
 
@@ -1627,15 +1642,15 @@ class NcBaseNode(NcBaseClass):
 
     def add_separator(
             self,
-            name=STANDARD_SEPARATOR_NICENAME,
-            enum_name=STANDARD_SEPARATOR_VALUE,
+            name=DEFAULT_SEPARATOR_NAME,
+            enum_name=DEFAULT_SEPARATOR_VALUE,
             cases=None,
             **kwargs):
         """Create a separator-attribute.
 
         Note:
             Default name and enum_name are defined by the globals
-            STANDARD_SEPARATOR_NICENAME and STANDARD_SEPARATOR_VALUE!
+            DEFAULT_SEPARATOR_NAME and DEFAULT_SEPARATOR_VALUE!
             kwargs are exactly the same as in cmds.addAttr()!
 
         Args:
@@ -1690,7 +1705,7 @@ class NcBaseNode(NcBaseClass):
             return self.__getattr__(attr_name)
 
         # Make a copy of the default addAttr command flags
-        attr_variables = lookup_table.DEFAULT_ATTR_FLAGS.copy()
+        attr_variables = config.DEFAULT_ATTR_FLAGS.copy()
         LOG.debug("Copied default attr_variables: %s", attr_variables)
 
         # Add the attr variable into the dictionary
@@ -2780,8 +2795,8 @@ def _create_and_connect_node(operation, *args):
     LOG.debug("Creating a new %s-operationNode with args: %s", operation, args)
 
     # If a multi_index-attr is given...
-    new_node_inputs = lookup_table.OPERATORS[operation]["inputs"]
-    if lookup_table.OPERATORS[operation].get("is_multi_index", False):
+    new_node_inputs = OPERATORS[operation]["inputs"]
+    if OPERATORS[operation].get("is_multi_index", False):
         # ...create inputs-list with same length as args
         new_node_inputs = len(args) * new_node_inputs
 
@@ -2797,7 +2812,7 @@ def _create_and_connect_node(operation, *args):
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
     # Set operation attr if specified in OPERATORS for this node-type
-    node_operation = lookup_table.OPERATORS[operation].get("operation", None)
+    node_operation = OPERATORS[operation].get("operation", None)
     if node_operation:
         _unravel_and_set_or_connect_a_to_b(
             "{0}.operation".format(new_node), node_operation
@@ -2815,7 +2830,7 @@ def _create_and_connect_node(operation, *args):
             "{0}.{1}".format(new_node, _input) for _input in new_node_input
         ][:max_dim]
         # multi_index inputs must always be caught and filled!
-        if lookup_table.OPERATORS[operation].get("is_multi_index", False):
+        if OPERATORS[operation].get("is_multi_index", False):
             new_node_input_list = [
                 _input.format(multi_index=i) for _input in new_node_input_list
             ]
@@ -2848,13 +2863,13 @@ def _create_and_connect_node(operation, *args):
     # Support for single-dimension-outputs in the OPERATORS.
     # For example: distanceBetween returns 1D attr, no matter what dimension
     # the inputs were
-    output_is_predetermined = lookup_table.OPERATORS[operation].get(
+    output_is_predetermined = OPERATORS[operation].get(
         "output_is_predetermined", False
     )
 
     # Get the outputs for the created node, based on OPERATORS.
     # All operations need to have outputs defined in the OPERATORS!
-    outputs = lookup_table.OPERATORS[operation]["outputs"]
+    outputs = OPERATORS[operation]["outputs"]
 
     output_nodes = []
     for output in outputs:
@@ -2931,10 +2946,10 @@ def _create_node_name(operation, *args):
 
     # Combine all name-elements
     name_elements = [
-        NODE_CALCULATOR_NAME_PREFIX,  # Common NodeCalculator-prefix
+        NODE_PREFIX,  # Common NodeCalculator-prefix
         operation.upper(),  # Operation type
         "_".join(involved_args),  # Involved args
-        lookup_table.OPERATORS[operation]["node"]  # Node type
+        OPERATORS[operation]["node"]  # Node type
     ]
     name = "_".join(name_elements)
 
@@ -2953,7 +2968,7 @@ def _create_traced_operation_node(operation, attrs):
     Returns:
         str: Name of newly created Maya node.
     """
-    node_type = lookup_table.OPERATORS[operation]["node"]
+    node_type = OPERATORS[operation]["node"]
     node_name = _create_node_name(operation, attrs)
     new_node = _traced_create_node(node_type, name=node_name)
 
@@ -3607,3 +3622,33 @@ class TracerMObject(object):
             str: Variable name the NodeCalculator associated with this MObject.
         """
         return self._tracer_variable
+
+
+# NodeCalculator Extensions ---
+# The following code block takes care of importing the potential NodeCalculator
+# extension. Until I find a better solution, this code MUST remain at the end
+# of this module, due to its cyclical imports. If the extension Operators are
+# loaded at the beginning, they will be overridden by the Op-class init!
+has_extension = True
+try:
+    # Try to load it via specific path first...
+    import noca_extension
+    LOG.info("NodeCalculator loaded with extensions from path!")
+except ImportError:
+    try:
+        # ...otherwise: Look for it in the NodeCalculator module itself.
+        from . import noca_extension
+        LOG.info("NodeCalculator loaded with local extensions!")
+    except ImportError:
+        has_extension = False
+        LOG.info("NodeCalculator loaded without extensions!")
+
+if os.environ.get("MAYA_DEV", False) and has_extension:
+    reload(noca_extension)
+
+# Load necessary plugins and add extension operators to dictionary
+if has_extension:
+    for required_plugin in noca_extension.REQUIRED_EXTENSION_PLUGINS:
+        cmds.loadPlugin(required_plugin, quiet=True)
+
+    OPERATORS.update(noca_extension.EXTENSION_OPERATORS)

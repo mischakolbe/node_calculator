@@ -234,9 +234,9 @@ class TestNcBaseNodeClass(TestCase):
         # Test whether attribute was set up correctly
         self.assertEqual(
             cmds.attributeQuery(separator_attr.attrs_list[0], node=TEST_MESH, niceName=True),
-            noca.STANDARD_SEPARATOR_NICENAME
+            noca.DEFAULT_SEPARATOR_NAME
         )
         self.assertEqual(
             cmds.attributeQuery(separator_attr.attrs_list[0], node=TEST_MESH, listEnum=True),
-            ["{}".format(noca.STANDARD_SEPARATOR_VALUE)]
+            ["{}".format(noca.DEFAULT_SEPARATOR_VALUE)]
         )
