@@ -1,5 +1,11 @@
 """Additional operators for the NodeCalculator; proprietary or custom nodes.
 
+Note:
+    If you want to separate out this extension file from the core functionality
+    of the NodeCalculator (to maintain your proprietary additions in a separate
+    repo or so) you simply have to add the folder where this noca_extension
+    module will live to the __init__.py of the node_calculator-module!
+
 :author: You ;)
 """
 
