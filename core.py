@@ -137,6 +137,7 @@ from . import logger
 from . import lookup_table
 from . import nc_value
 from . import om_util
+from . import tracer
 
 # Reload modules when in DEV mode
 if os.environ.get("MAYA_DEV", False):
@@ -145,6 +146,7 @@ if os.environ.get("MAYA_DEV", False):
     reload(lookup_table)
     reload(nc_value)
     reload(om_util)
+    reload(tracer)
 
 
 # CONSTANTS ---
@@ -3030,7 +3032,7 @@ def _traced_create_node(node_type, **kwargs):
     if NcBaseClass._is_tracing:
         # Add the newly created node to Tracer. Use mobj to avoid ambiguity
         node_variable = NcBaseClass._get_next_variable_name()
-        tracer_mobj = TracerMObject(new_node, node_variable)
+        tracer_mobj = tracer.TracerMObject(new_node, node_variable)
         NcBaseClass._add_to_traced_nodes(tracer_mobj)
 
         # Add the node createNode command to the command stack
@@ -3584,44 +3586,6 @@ class Tracer(object):
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         NcBaseClass._is_tracing = False
-
-
-class TracerMObject(object):
-    """Class that allows to store metadata with MObjects, used for the Tracer.
-
-    Note:
-        The Tracer uses variable names for created nodes. This class is an easy
-        and convenient way to store these variable names with the MObject.
-    """
-
-    def __init__(self, node, tracer_variable):
-        """TracerMObject-class constructor.
-
-        Args:
-            node (MObject): Maya MObject
-            tracer_variable (str): Variable name for this MObject.
-        """
-        super(TracerMObject, self).__init__()
-        self.mobj = om_util.get_mobj(node)
-        self._tracer_variable = tracer_variable
-
-    @property
-    def node(self):
-        """Get name of Maya node this TracerMObject refers to.
-
-        Returns:
-            str: Name of Maya node in the scene.
-        """
-        return om_util.get_name_of_mobj(self.mobj)
-
-    @property
-    def tracer_variable(self):
-        """Get variable name of this TracerMObject.
-
-        Returns:
-            str: Variable name the NodeCalculator associated with this MObject.
-        """
-        return self._tracer_variable
 
 
 # NodeCalculator Extensions ---
