@@ -35,7 +35,7 @@ Mandatory flags:
 - outputs: output attributes (list)
 
 Optional flags:
-- is_multi_index: any number of input attrs possible? (array attr)
+- is_multi_input: any number of input attrs possible? (array attr)
 - operation: many Maya nodes have an "operation" attribute that sets the
     operation mode of the node. Use this flag to set this attribute.
 - output_is_predetermined: should outputs be truncated to dimensionality of
@@ -52,7 +52,7 @@ EXTENSION_OPERATORS = {
     #     "outputs": [
     #         ["outputX", "outputY", "outputZ"],
     #     ],
-    #     "is_multi_index": False,
+    #     "is_multi_input": False,
     #     "operation": 3,
     #     "output_is_predetermined": False,
     # }

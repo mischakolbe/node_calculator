@@ -212,7 +212,7 @@ def _operator_lookup_table_init():
         - node: Type of Maya node necessary
         - inputs: input attributes (list of lists)
         - output: output attributes (list)
-        - is_multi_index: any number of input attrs possible? (array attr)
+        - is_multi_input: any number of input attrs possible? (array attr)
         - operation: set operation-attr for different modes of a node
         - output_is_predetermined: should always ALL output attrs be added?
     """
@@ -234,12 +234,12 @@ def _operator_lookup_table_init():
             "node": "plusMinusAverage",
             "inputs": [
                 [
-                    "input3D[{multi_index}].input3Dx",
-                    "input3D[{multi_index}].input3Dy",
-                    "input3D[{multi_index}].input3Dz"
+                    "input3D[{multi_input}].input3Dx",
+                    "input3D[{multi_input}].input3Dy",
+                    "input3D[{multi_input}].input3Dz"
                 ],
             ],
-            "is_multi_index": True,
+            "is_multi_input": True,
             "outputs": [
                 ["output3Dx", "output3Dy", "output3Dz"],
             ],
@@ -262,10 +262,10 @@ def _operator_lookup_table_init():
             "node": "choice",
             "inputs": [
                 [
-                    "input[{multi_index}]",
+                    "input[{multi_input}]",
                 ],
             ],
-            "is_multi_index": True,
+            "is_multi_input": True,
             "outputs": [
                 ["output"],
             ],
@@ -348,10 +348,10 @@ def _operator_lookup_table_init():
             "node": "multMatrix",
             "inputs": [
                 [
-                    "matrixIn[{multi_index}]"
+                    "matrixIn[{multi_input}]"
                 ],
             ],
-            "is_multi_index": True,
+            "is_multi_input": True,
             "outputs": [
                 ["matrixSum"],
             ],
@@ -461,12 +461,12 @@ def _operator_lookup_table_init():
             "node": "plusMinusAverage",
             "inputs": [
                 [
-                    "input3D[{multi_index}].input3Dx",
-                    "input3D[{multi_index}].input3Dy",
-                    "input3D[{multi_index}].input3Dz"
+                    "input3D[{multi_input}].input3Dx",
+                    "input3D[{multi_input}].input3Dy",
+                    "input3D[{multi_input}].input3Dz"
                 ],
             ],
-            "is_multi_index": True,
+            "is_multi_input": True,
             "outputs": [
                 ["output3Dx", "output3Dy", "output3Dz"],
             ],

@@ -110,290 +110,290 @@ EXTENSION_OPERATORS = {
     "average": {
         "node": "math_Average",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "average_int": {
         "node": "math_AverageInt",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "average_angle": {
         "node": "math_AverageAngle",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "average_rotation": {
         "node": "math_AverageRotation",
         "inputs": [
             [
-                "input[{multi_index}].inputX",
-                "input[{multi_index}].inputY",
-                "input[{multi_index}].inputZ",
+                "input[{multi_input}].inputX",
+                "input[{multi_input}].inputY",
+                "input[{multi_input}].inputZ",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "average_vector": {
         "node": "math_AverageVector",
         "inputs": [
             [
-                "input[{multi_index}].inputX",
-                "input[{multi_index}].inputY",
-                "input[{multi_index}].inputZ",
+                "input[{multi_input}].inputX",
+                "input[{multi_input}].inputY",
+                "input[{multi_input}].inputZ",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "average_matrix": {
         "node": "math_AverageMatrix",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "average_quaternion": {
         "node": "math_AverageQuaternion",
         "inputs": [
             [
-                "input[{multi_index}].inputX",
-                "input[{multi_index}].inputY",
-                "input[{multi_index}].inputZ",
-                "input[{multi_index}].inputW",
+                "input[{multi_input}].inputX",
+                "input[{multi_input}].inputY",
+                "input[{multi_input}].inputZ",
+                "input[{multi_input}].inputW",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ", "outputW"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     # Sum
     "sum": {
         "node": "math_Sum",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "sum_int": {
         "node": "math_SumInt",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "sum_angle": {
         "node": "math_SumAngle",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "sum_vector": {
         "node": "math_SumVector",
         "inputs": [
             [
-                "input[{multi_index}].inputX",
-                "input[{multi_index}].inputY",
-                "input[{multi_index}].inputZ",
+                "input[{multi_input}].inputX",
+                "input[{multi_input}].inputY",
+                "input[{multi_input}].inputZ",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     # Min/Max Element
     "min_element": {
         "node": "math_MinElement",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "min_int_element": {
         "node": "math_MinIntElement",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "min_angle_element": {
         "node": "math_MinAngleElement",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "max_element": {
         "node": "math_MaxElement",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "max_int_element": {
         "node": "math_MaxIntElement",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "max_angle_element": {
         "node": "math_MaxAngleElement",
         "inputs": [
-            ["input[{multi_index}]"],
+            ["input[{multi_input}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     # WeightedAverage
     "weighted_average": {
         "node": "math_WeightedAverage",
         "inputs": [
             [
-                "input[{multi_index}].value",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "weighted_average_int": {
         "node": "math_WeightedAverageInt",
         "inputs": [
             [
-                "input[{multi_index}].value",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "weighted_average_angle": {
         "node": "math_WeightedAverageAngle",
         "inputs": [
             [
-                "input[{multi_index}].value",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "weighted_average_rotation": {
         "node": "math_WeightedAverageRotation",
         "inputs": [
             [
-                "input[{multi_index}].value.valueX",
-                "input[{multi_index}].value.valueY",
-                "input[{multi_index}].value.valueZ",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value.valueX",
+                "input[{multi_input}].value.valueY",
+                "input[{multi_input}].value.valueZ",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "weighted_average_vector": {
         "node": "math_WeightedAverageVector",
         "inputs": [
             [
-                "input[{multi_index}].value.valueX",
-                "input[{multi_index}].value.valueY",
-                "input[{multi_index}].value.valueZ",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value.valueX",
+                "input[{multi_input}].value.valueY",
+                "input[{multi_input}].value.valueZ",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "weighted_average_matrix": {
         "node": "math_WeightedAverageMatrix",
         "inputs": [
             [
-                "input[{multi_index}].value",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
     "weighted_average_quaternion": {
         "node": "math_WeightedAverageQuaternion",
         "inputs": [
             [
-                "input[{multi_index}].value.valueX",
-                "input[{multi_index}].value.valueY",
-                "input[{multi_index}].value.valueZ",
-                "input[{multi_index}].value.valueW",
-                "input[{multi_index}].weight",
+                "input[{multi_input}].value.valueX",
+                "input[{multi_input}].value.valueY",
+                "input[{multi_input}].value.valueZ",
+                "input[{multi_input}].value.valueW",
+                "input[{multi_input}].weight",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ", "outputW"],
         ],
-        "is_multi_index": True,
+        "is_multi_input": True,
     },
 
 

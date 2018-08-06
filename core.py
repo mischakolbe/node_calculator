@@ -2803,9 +2803,9 @@ def _create_and_connect_node(operation, *args):
     """
     LOG.debug("Creating a new %s-operationNode with args: %s", operation, args)
 
-    # If a multi_index-attr is given...
+    # If a multi_input-attr is given...
     new_node_inputs = OPERATORS[operation]["inputs"]
-    if OPERATORS[operation].get("is_multi_index", False):
+    if OPERATORS[operation].get("is_multi_input", False):
         # ...create inputs-list with same length as args
         new_node_inputs = len(args) * new_node_inputs
 
@@ -2838,10 +2838,10 @@ def _create_and_connect_node(operation, *args):
         new_node_input_list = [
             "{0}.{1}".format(new_node, _input) for _input in new_node_input
         ][:max_dim]
-        # multi_index inputs must always be caught and filled!
-        if OPERATORS[operation].get("is_multi_index", False):
+        # multi_input inputs must always be caught and filled!
+        if OPERATORS[operation].get("is_multi_input", False):
             new_node_input_list = [
-                _input.format(multi_index=i) for _input in new_node_input_list
+                _input.format(multi_input=i) for _input in new_node_input_list
             ]
 
         # Support for single-dimension-inputs in the OPERATORS.

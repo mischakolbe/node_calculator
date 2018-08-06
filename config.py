@@ -8,7 +8,7 @@ NODE_PREFIX = "nc"
 # Attribute preferences ---
 DEFAULT_SEPARATOR_NAME = "________"
 DEFAULT_SEPARATOR_VALUE = "________"
-# Default attr-creation flags - Applies to creation of ALL attribute types
+# Default attr-creation flags - Applies to creation of ALL attribute types.
 DEFAULT_ATTR_FLAGS = {
     "keyable": True,
 }
@@ -25,5 +25,6 @@ VALUE_PREFIX = "val"
 
 
 # Extension preferences ---
+# No path means the NodeCalculator will only check for the extension locally.
 EXTENSION_PATH = ""
 EXTENSION_NAME = "noca_extension"

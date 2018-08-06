@@ -113,14 +113,14 @@ def _test_regular_op(operator):
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
         node_outputs = node_data.get("outputs", None)
-        node_is_multi_index = node_data.get("is_multi_index", False)
+        node_is_multi_input = node_data.get("is_multi_input", False)
         node_operation = node_data.get("operation", None)
         node_output_is_predetermined = node_data.get("output_is_predetermined", False)
 
-        if node_is_multi_index:
+        if node_is_multi_input:
             new_node_inputs = []
             for i in range(2):
-                input_item = [x.format(multi_index=i) for x in node_inputs[0]]
+                input_item = [x.format(multi_input=i) for x in node_inputs[0]]
                 new_node_inputs.append(input_item)
 
             node_inputs = new_node_inputs
