@@ -22,3 +22,8 @@ GLOBAL_AUTO_UNRAVEL = True
 # Tracer preferences ---
 VARIABLE_PREFIX = "var"
 VALUE_PREFIX = "val"
+
+
+# Extension preferences ---
+EXTENSION_PATH = ""
+EXTENSION_NAME = "noca_extension"

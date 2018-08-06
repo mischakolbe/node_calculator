@@ -125,6 +125,7 @@ import copy
 import itertools
 import numbers
 import os
+import sys
 
 # Third party imports
 from maya import cmds
@@ -138,6 +139,19 @@ from . import lookup_table
 from . import nc_value
 from . import om_util
 from . import tracer
+
+
+# PYTHON 2.7 & 3 COMPATIBILITY ---
+try:
+    basestring
+except NameError:
+    basestring = str
+try:
+    reload
+except NameError:
+    # Python 3
+    from imp import reload
+
 
 # Reload modules when in DEV mode
 if os.environ.get("MAYA_DEV", False):
@@ -164,13 +178,6 @@ OPERATORS = lookup_table.BASIC_OPERATORS
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.WARN)
 LOG = logger.log
-
-
-# PYTHON 2.7 & 3 COMPATIBILITY ---
-try:
-    basestring
-except NameError:
-    basestring = str
 
 
 # BASIC FUNCTIONALITY ---
@@ -3597,24 +3604,36 @@ class Tracer(object):
 # of this module, due to its cyclical imports. If the extension Operators are
 # loaded at the beginning, they will be overridden by the Op-class init!
 has_extension = True
+# Optionally specify the folder where the noca_extension.py file is located, if
+# it is moved outside of the node_calculator module.
+if config.EXTENSION_PATH and config.EXTENSION_PATH not in sys.path:
+    sys.path.insert(0, config.EXTENSION_PATH)
+
 try:
+    # Without a given EXTENSION_PATH a relative import is required!
+    if not config.EXTENSION_PATH:
+        raise ImportError
     # Try to load it via specific path first...
-    import noca_extension
+    noca_extension = __import__(config.EXTENSION_NAME)
     LOG.info("NodeCalculator loaded with extensions from path!")
+
 except ImportError:
     try:
         # ...otherwise: Look for it in the NodeCalculator module itself.
-        from . import noca_extension
+        noca_extension = __import__(config.EXTENSION_NAME, globals(), locals(), [], level=1)
         LOG.info("NodeCalculator loaded with local extensions!")
+
     except ImportError:
         has_extension = False
         LOG.info("NodeCalculator loaded without extensions!")
 
-if os.environ.get("MAYA_DEV", False) and has_extension:
-    reload(noca_extension)
 
 # Load necessary plugins and add extension operators to dictionary
 if has_extension:
+    # It is very important to reload the noca_extension(!). This runs through
+    # the decorators that in turn populate the Op-class with all extension-ops.
+    reload(noca_extension)
+
     for required_plugin in noca_extension.REQUIRED_EXTENSION_PLUGINS:
         cmds.loadPlugin(required_plugin, quiet=True)
 
