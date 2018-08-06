@@ -3333,8 +3333,8 @@ def _unravel_item(item):
         Parent plug becomes list of child plugs: "t" -> ["tx", "ty", "tz"]
 
     Args:
-        item (NcList or NcNode or NcAttrs or NcValue or list or tuple or str or
-            numbers): input to be unravelled/cleaned.
+        item (MPlug, NcList or NcNode or NcAttrs or NcValue or list or tuple or
+            str or numbers): input to be unravelled/cleaned.
 
     Returns:
         MPlug or NcValue or int or float or list: MPlug or value
@@ -3343,6 +3343,9 @@ def _unravel_item(item):
         TypeError: If given item is of an unsupported type.
     """
     LOG.debug("_unravel_item (%s)", item)
+
+    if isinstance(item, OpenMaya.MPlug):
+        return item
 
     if isinstance(item, NcList):
         return _unravel_nc_list(item)

@@ -175,6 +175,15 @@ def _test_regular_op(operator):
 
             # Check the correct plug is connected into the input-plug
             input_connections = cmds.listConnections(input_plug, plugs=True)
+            # Skip over unitConversion nodes
+            if cmds.objectType(input_connections) == "unitConversion":
+                conversion_node = input_connections[0].split(".")[0]
+                input_connections = cmds.listConnections(
+                    conversion_node,
+                    source=True,
+                    destination=False,
+                    plugs=True,
+                )
             self.assertEqual(input_connections, desired_input.plugs)
 
         # Test that the outputs are correct
