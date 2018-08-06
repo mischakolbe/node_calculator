@@ -8,11 +8,9 @@ Note:
     This is a functioning example for what a possible NodeCalculator extension
     could look like, using proprietary/custom nodes.
 
-    The following nodes are currently not implemented! They have a multi-index
-    output, which is currently not supported. (You can still manually
-    create and connect them though)
-    - NormalizeArray
-    - NormalizeWeightsArray
+    The following nodes are currently not implemented! They have multiple
+    multi-index inputs, which is currently not supported. (You can still
+    manually create and connect them though)
     - SelectArray
     - SelectIntArray
     - SelectAngleArray
@@ -394,6 +392,29 @@ EXTENSION_OPERATORS = {
             ["outputX", "outputY", "outputZ", "outputW"],
         ],
         "is_multi_input": True,
+    },
+    # Normalize
+    "normalize_array": {
+        "node": "math_NormalizeArray",
+        "inputs": [
+            ["input[{multi_input}]"],
+        ],
+        "outputs": [
+            ["output[{multi_output}]"],
+        ],
+        "is_multi_input": True,
+        "is_multi_output": True,
+    },
+    "normalize_weights_array": {
+        "node": "math_NormalizeWeightsArray",
+        "inputs": [
+            ["input[{multi_input}]"],
+        ],
+        "outputs": [
+            ["output[{multi_output}]"],
+        ],
+        "is_multi_input": True,
+        "is_multi_output": True,
     },
 
 
@@ -858,7 +879,7 @@ EXTENSION_OPERATORS = {
 
 
     # MinMax.h
-    "min": {
+    "min_float": {
         "node": "math_Min",
         "inputs": [
             ["input1"],
@@ -868,7 +889,7 @@ EXTENSION_OPERATORS = {
             ["output"],
         ],
     },
-    "max": {
+    "max_float": {
         "node": "math_Max",
         "inputs": [
             ["input1"],
@@ -1122,7 +1143,7 @@ EXTENSION_OPERATORS = {
             ["output"],
         ],
     },
-    "round": {
+    "round_float": {
         "node": "math_Round",
         "inputs": [
             ["input"],
@@ -1531,6 +1552,17 @@ def weighted_average_quaternion(*attrs):
     return _create_and_connect_node('weighted_average_quaternion', *flattened_attrs)
 
 
+# Normalize Array
+@noca_op
+def normalize_array(*attrs):
+    return _create_and_connect_node('normalize_array', *attrs)
+
+
+@noca_op
+def normalize_weights_array(*attrs):
+    return _create_and_connect_node('normalize_weights_array', *attrs)
+
+
 # Clamp.h
 @noca_op
 def clamp(attr_a, input_min=0, input_max=1):
@@ -1761,13 +1793,13 @@ def inverse_quaternion(attr_a):
 
 # MinMax.h
 @noca_op
-def min(attr_a, attr_b=1):
-    return _create_and_connect_node('min', attr_a, attr_b)
+def min_float(attr_a, attr_b=1):
+    return _create_and_connect_node('min_float', attr_a, attr_b)
 
 
 @noca_op
-def max(attr_a, attr_b=0):
-    return _create_and_connect_node('max', attr_a, attr_b)
+def max_float(attr_a, attr_b=0):
+    return _create_and_connect_node('max_float', attr_a, attr_b)
 
 
 @noca_op
@@ -1899,8 +1931,8 @@ def floor_angle(attr_a):
 
 
 @noca_op
-def round(attr_a):
-    return _create_and_connect_node('round', attr_a)
+def round_float(attr_a):
+    return _create_and_connect_node('round_float', attr_a)
 
 
 @noca_op

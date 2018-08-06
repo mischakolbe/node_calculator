@@ -2880,6 +2880,19 @@ def _create_and_connect_node(operation, *args):
     # All operations need to have outputs defined in the OPERATORS!
     outputs = OPERATORS[operation]["outputs"]
 
+    # If this node type has a multi-output...
+    if OPERATORS[operation].get("is_multi_output", False):
+        # ...expand the output-list to the number of arguments involved.
+        expanded_node_outputs = len(args) * outputs
+
+        # For each output: Add the index to all axis of the output attributes.
+        new_node_outputs = []
+        for index, output in enumerate(expanded_node_outputs):
+            new_node_outputs.append(
+                [axis.format(multi_output=index) for axis in output]
+            )
+        outputs = new_node_outputs
+
     output_nodes = []
     for output in outputs:
         if len(output) == 1 or output_is_predetermined:
