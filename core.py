@@ -3624,21 +3624,35 @@ if config.EXTENSION_PATH and config.EXTENSION_PATH not in sys.path:
 
 try:
     # Without a given EXTENSION_PATH a relative import is required!
-    if not config.EXTENSION_PATH:
+    if not config.EXTENSION_PATH or not config.EXTENSION_NAME:
         raise ImportError
     # Try to load it via specific path first...
     noca_extension = __import__(config.EXTENSION_NAME)
-    LOG.info("NodeCalculator loaded with extensions from path!")
+    LOG.info(
+        "NodeCalculator loaded with extension %s from path %s!",
+        config.EXTENSION_NAME, config.EXTENSION_PATH
+    )
 
 except ImportError:
     try:
+        if not config.EXTENSION_NAME:
+            raise ImportError
         # ...otherwise: Look for it in the NodeCalculator module itself.
-        noca_extension = __import__(config.EXTENSION_NAME, globals(), locals(), [], level=1)
-        LOG.info("NodeCalculator loaded with local extensions!")
+        noca_extension = __import__(
+            config.EXTENSION_NAME,
+            globals(),
+            locals(),
+            [],
+            level=1
+        )
+        LOG.info(
+            "NodeCalculator loaded with local extension %s!",
+            config.EXTENSION_NAME
+        )
 
     except ImportError:
         has_extension = False
-        LOG.info("NodeCalculator loaded without extensions!")
+        LOG.info("NodeCalculator loaded without extension!")
 
 
 # Load necessary plugins and add extension operators to dictionary
