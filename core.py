@@ -433,7 +433,7 @@ class OperatorMetaClass(object):
         Example:
             >>> Op.average(Node("pCube.t"), [1, 2, 3])
         """
-        return _create_and_connect_node('average', *attrs)
+        return _create_and_connect_node('average', attrs)
 
     @staticmethod
     def blend(attr_a, attr_b, blend_value=0.5):
@@ -2781,8 +2781,132 @@ def _is_valid_maya_attr(plug):
     return False
 
 
+def _get_node_inputs(operation, args_list, new_node):
+    """
+    # Various node-inputs need a separate args-element in the args-list
+    # ALWAYS LIST
+    args_list = [
+        [
+            [
+                <OpenMaya.MPlug object at 0x000001E4D77EDED0>, <OpenMaya.MPlug object at 0x000001E4D77EDF30>, <OpenMaya.MPlug object at 0x000001E4D77EDFB0>
+            ],
+            <OpenMaya.MPlug object at 0x000001E4D77EDCD0>,
+            2
+        ]
+    ]
+
+
+    # Each arg_element (for a node-input) can consist of multiple inputs
+    # For a multi-input THIS is what matters how many inputs are required!
+    # ALWAYS LIST
+    arg_elements = [
+        [
+            <OpenMaya.MPlug object at 0x000001E4D77EDED0>, <OpenMaya.MPlug object at 0x000001E4D77EDF30>, <OpenMaya.MPlug object at 0x000001E4D77EDFB0>
+        ],
+        <OpenMaya.MPlug object at 0x000001E4D77EDCD0>,
+        2
+    ]
+
+
+    # Each arg_item can consist of multiple axis
+    # The length of arg determines how many input-plugs are needed (x, x&y, x&y&z?)
+    # The max length of ALL arg-elements determines how long the output-attr should be (max_len).
+    # LIST OR ITEM
+    arg_item = [
+            <OpenMaya.MPlug object at 0x000001E4D77EDED0>, <OpenMaya.MPlug object at 0x000001E4D77EDF30>, <OpenMaya.MPlug object at 0x000001E4D77EDFB0>
+    ]
+
+
+    # The arg_axis is the most granular element
+    # ALWAYS ITEM
+    arg_axis = <OpenMaya.MPlug object at 0x000001E4D77EDED0>
+    """
+
+    #TODO: Currently args_list can be either 2 or 3 levels deep:
+    # Op.average() passes on a list of lists, whereas other operators pass on a simple list of arguments
+    # Maybe check for depth of list?...
+
+    inputs_list = OPERATORS[operation]["inputs"]
+
+    # Check that dimensions match: args must be of same length as node-inputs:
+    # if len(args) != len(new_node_inputs):
+    #     LOG.info(
+    #         "Dimensions to create node don't match! Given inputs: %s "
+    #         "Expected node-inputs: %s", args, new_node_inputs
+    #     )
+
+    LOG.error("> ARGS_LIST: %s, NODE_INPUTS: %s", args_list, inputs_list)
+
+    # Find the maximum dimension involved to know what to connect. For example:
+    # 1D to 1D needs 1D-input
+    # 1D to 2D needs 2D-input  # "1D" is not a typo! ;)
+    # 3D to 3D needs 3D-input
+
+    # Check len args == len new_node_inputs
+
+    # REMOVE * from passed on args!!!!
+    # Check len args == len new_node_inputs
+    max_arg_axis_len = 0
+    cleaned_inputs_list = []
+    for arg_elements, input_item in zip(args_list, inputs_list):
+        pruned_input_element = []
+
+        # GATHER ALL NECESSARY INPUTS (MULTI-INPUT SETUP!)
+        # Check if there is more than one arg_element for this input_item.
+        is_multi_input_item = False
+        input_items = [input_item]
+        if len(arg_elements) > 1:
+            # If that is the case: Check if the input_item is a multi-input!
+            for input_axis in input_item:
+                if "{multi_input}" in input_axis:
+                    is_multi_input_item = True
+                    break
+
+            if not is_multi_input_item:
+                cmds.error("Should have been a multi-input. Multiple arg_elements given!")
+            else:
+                multi_input_item = []
+                multiplied_inputs = len(arg_elements) * [input_item]
+                for index, multiplied_input in enumerate(multiplied_inputs):
+                    formatted_multiplied_input = []
+                    for axis in multiplied_input:
+                        formatted_axis = axis.format(multi_input=index)
+                        formatted_plug = "{0}.{1}".format(new_node, formatted_axis)
+                        formatted_multiplied_input.append(formatted_plug)
+                    multi_input_item.append(formatted_multiplied_input)
+
+                input_items = multi_input_item
+
+        # PRUNE INPUTS TO WHAT IS NECESSARY FOR THE GIVEN ARGS
+        for arg_item, input_item in zip(arg_elements, input_items):
+            if not isinstance(arg_item, (tuple, list)):
+                arg_item = [arg_item]
+            num_arg_axis = len(arg_item)
+            if num_arg_axis > max_arg_axis_len:
+                max_arg_axis_len = num_arg_axis
+
+            pruned_input_item = input_item[:num_arg_axis]
+            pruned_input_element.append(pruned_input_item)
+
+        cleaned_inputs_list.append(pruned_input_element)
+
+    return cleaned_inputs_list, max_arg_axis_len
+
+
+def array_depth(array):
+    """
+    """
+    if isinstance(array, (tuple, list, dict)):
+
+        for item in array:
+            item_depth = array_depth(item)
+
+        return 1 + item_depth
+    return 0
+
+
 # CREATE, CONNECT AND SETUP NODE ---
-def _create_and_connect_node(operation, *args):
+def _create_and_connect_node(operation, *args): # Rename this to "_create_new_node" or switch with "_create_traced_operation_node"?
     """Create & connect adequately named Maya nodes for the given operation.
 
     Args:
@@ -2803,22 +2927,13 @@ def _create_and_connect_node(operation, *args):
     """
     LOG.debug("Creating a new %s-operationNode with args: %s", operation, args)
 
-    # If a multi_input-attr is given...
-    new_node_inputs = OPERATORS[operation]["inputs"]
-    if OPERATORS[operation].get("is_multi_input", False):
-        # ...create inputs-list with same length as args
-        new_node_inputs = len(args) * new_node_inputs
-
-    # Check that dimensions match: args must be of same length as node-inputs:
-    if len(args) != len(new_node_inputs):
-        LOG.info(
-            "Dimensions to create node don't match! Given inputs: %s "
-            "Expected node-inputs: %s", args, new_node_inputs
-        )
-
     # Unravel all given args and create a new node according to given operation
     unravelled_args_list = [_unravel_item_as_list(arg) for arg in args]
+
+
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
+
+    cleaned_inputs_list, max_arg_axis_len = _get_node_inputs(operation, unravelled_args_list, new_node)
 
     # Set operation attr if specified in OPERATORS for this node-type
     node_operation = OPERATORS[operation].get("operation", None)
@@ -2827,48 +2942,21 @@ def _create_and_connect_node(operation, *args):
             "{0}.operation".format(new_node), node_operation
         )
 
-    # Find the maximum dimension involved to know what to connect. For example:
-    # 1D to 1D needs 1D-input
-    # 1D to 2D needs 2D-input  # "1D" is not a typo! ;)
-    # 3D to 3D needs 3D-input
-    max_dim = max([len(x) for x in unravelled_args_list])
+    for arg_list, inputs_list in zip(unravelled_args_list, cleaned_inputs_list):
+        for arg_element, input_element in zip(arg_list, inputs_list):
+            _unravel_and_set_or_connect_a_to_b(input_element, arg_element)
 
-    # Connect all given args to the inputs of the newly created Maya node.
-    for i, (plug_to_connect, new_node_input) in enumerate(zip(args, new_node_inputs)):
-        new_node_input_list = [
-            "{0}.{1}".format(new_node, _input) for _input in new_node_input
-        ][:max_dim]
-        # multi_input inputs must always be caught and filled!
-        if OPERATORS[operation].get("is_multi_input", False):
-            new_node_input_list = [
-                _input.format(multi_input=i) for _input in new_node_input_list
-            ]
+    output_nodes = _get_node_outputs(operation, new_node, args, max_arg_axis_len)
 
-        # Support for single-dimension-inputs in the OPERATORS.
-        # For example: The blend-attr of a blendColors-node is always 1D, so
-        # only a 1D plug_to_connect must be given!
-        elif len(new_node_input) == 1:
+    # For manifold outputs: Return an NcList (of NcNodes; one for each output)
+    if len(output_nodes) > 1:
+        return NcList(output_nodes)
 
-            if len(_unravel_item_as_list(plug_to_connect)) > 1:
-                msg = (
-                    "Unable to connect multi-dimensional plug {0} to 1D input "
-                    "{1}.{2}".format(plug_to_connect, new_node, new_node_input)
-                )
-                raise RuntimeError(msg)
+    # Usually outputs are singular; one (parent)plug. Return a single NcNode
+    return output_nodes[0]
 
-            else:
-                LOG.debug(
-                    "Directly connecting 1D plug %s to 1D input %s.%s",
-                    plug_to_connect, new_node, new_node_input
-                )
-                _unravel_and_set_or_connect_a_to_b(
-                    new_node + "." + new_node_input[0],
-                    plug_to_connect
-                )
-                continue
 
-        _unravel_and_set_or_connect_a_to_b(new_node_input_list, plug_to_connect)
-
+def _get_node_outputs(operation, new_node, args, max_arg_axis_len):
     # Support for single-dimension-outputs in the OPERATORS.
     # For example: distanceBetween returns 1D attr, no matter what dimension
     # the inputs were
@@ -2900,16 +2988,11 @@ def _create_and_connect_node(operation, *args):
             node = NcNode(new_node, output)
         else:
             # Truncate number of outputs based on how many attrs were processed
-            node = NcNode(new_node, output[:max_dim])
+            node = NcNode(new_node, output[:max_arg_axis_len])
 
         output_nodes.append(node)
 
-    # For manifold outputs: Return an NcList (of NcNodes; one for each output)
-    if len(output_nodes) > 1:
-        return NcList(output_nodes)
-
-    # Usually outputs are singular; one (parent)plug. Return a single NcNode
-    return output_nodes[0]
+    return output_nodes
 
 
 def _create_node_name(operation, *args):
