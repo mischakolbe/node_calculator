@@ -239,7 +239,6 @@ def _operator_lookup_table_init():
                     "input3D[{multi_input}].input3Dz"
                 ],
             ],
-            "is_multi_input": True,
             "outputs": [
                 ["output3Dx", "output3Dy", "output3Dz"],
             ],
@@ -265,7 +264,6 @@ def _operator_lookup_table_init():
                     "input[{multi_input}]",
                 ],
             ],
-            "is_multi_input": True,
             "outputs": [
                 ["output"],
             ],
@@ -351,7 +349,6 @@ def _operator_lookup_table_init():
                     "matrixIn[{multi_input}]"
                 ],
             ],
-            "is_multi_input": True,
             "outputs": [
                 ["matrixSum"],
             ],
@@ -466,7 +463,6 @@ def _operator_lookup_table_init():
                     "input3D[{multi_input}].input3Dz"
                 ],
             ],
-            "is_multi_input": True,
             "outputs": [
                 ["output3Dx", "output3Dy", "output3Dz"],
             ],

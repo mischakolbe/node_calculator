@@ -29,7 +29,36 @@ from node_calculator.core import _create_and_connect_node, _unravel_item_as_list
 REQUIRED_EXTENSION_PLUGINS = ["mayaMathNodes"]
 
 
+
+@noca_op
+def select_array(array_a, array_b):
+    """TODO: Write if it works. And make sure outputs are multi-outputs, too!!
+    """
+    new_node = _create_and_connect_node('select_array', array_a, array_b)
+
+    # Alter outputs here? This is a special case, I think...
+    # multi-output-len should be max-len of (array_a, array_b)
+
+
+    return _create_and_connect_node('select_array', array_a, array_b)
+
+
+
 EXTENSION_OPERATORS = {
+    "select_array": {
+        "node": "math_SelectArray",
+        "inputs": [
+            ["input1[{multi_input}]"],
+            ["input2[{multi_input}]"],
+        ],
+        "outputs": [
+            ["output[{multi_output}]"],
+        ],
+    },
+
+
+
+
     # Absolute.h
     "absolute": {
         "node": "math_Absolute",
