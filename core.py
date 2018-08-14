@@ -2849,7 +2849,7 @@ def _create_and_connect_node(operation, *args): # Rename this to "_create_new_no
 
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
-    node_inputs, max_arg_axis_len = _get_node_inputs(operation, unravelled_args_list, new_node)
+    node_inputs, max_arg_len, max_arg_axis_len = _get_node_inputs(operation, unravelled_args_list, new_node)
 
     # Set operation attr if specified in OPERATORS for this node-type
     node_operation = OPERATORS[operation].get("operation", None)
@@ -2862,7 +2862,7 @@ def _create_and_connect_node(operation, *args): # Rename this to "_create_new_no
         for arg_element, input_element in zip(arg_list, inputs_list):
             _unravel_and_set_or_connect_a_to_b(input_element, arg_element)
 
-    output_nodes = _get_node_outputs(operation, new_node, max_arg_axis_len)
+    output_nodes = _get_node_outputs(operation, new_node, max_arg_len, max_arg_axis_len)
 
     # For manifold outputs: Return an NcList (of NcNodes; one for each output)
     if len(output_nodes) > 1:
@@ -2943,6 +2943,8 @@ def _get_node_inputs(operation, args_list, new_node):
     # 3D to 3D needs 3D-input
     max_arg_axis_len = 0
 
+    max_arg_len = None
+
     cleaned_inputs_list = []
     for arg_elements, input_item in zip(args_list, inputs_list):
         pruned_input_element = []
@@ -2951,14 +2953,18 @@ def _get_node_inputs(operation, args_list, new_node):
         # Check if the current input_item is a multi-input
         is_multi_input_item = False
         for input_axis in input_item:
-            if "{multi_input}" in input_axis:
+            if input_axis and "{multi_input}" in input_axis:
                 is_multi_input_item = True
                 break
 
         if is_multi_input_item:
             LOG.debug("EXPECTING arg_elements to be multi_input!")
             multi_input_item = []
-            multiplied_inputs = len(arg_elements) * [input_item]
+            num_arg_elements = len(arg_elements)
+            if num_arg_elements > max_arg_len:
+                max_arg_len = num_arg_elements
+
+            multiplied_inputs = num_arg_elements * [input_item]
             for index, multiplied_input in enumerate(multiplied_inputs):
                 formatted_multiplied_input = []
                 for axis in multiplied_input:
@@ -2991,10 +2997,10 @@ def _get_node_inputs(operation, args_list, new_node):
 
         cleaned_inputs_list.append(pruned_input_element)
 
-    return cleaned_inputs_list, max_arg_axis_len
+    return cleaned_inputs_list, max_arg_len, max_arg_axis_len
 
 
-def _get_node_outputs(operation, new_node, max_arg_axis_len):
+def _get_node_outputs(operation, new_node, max_arg_len, max_arg_axis_len):
     # Support for single-dimension-outputs in the OPERATORS.
     # For example: distanceBetween returns 1D attr, no matter what dimension
     # the inputs were
@@ -3007,16 +3013,17 @@ def _get_node_outputs(operation, new_node, max_arg_axis_len):
     outputs = OPERATORS[operation]["outputs"]
 
     is_multi_output = False
+
     for output_element in outputs:
         for output_axis in output_element:
-            if "{multi_output}" in output_axis:
+            if output_axis and "{multi_output}" in output_axis:
                 is_multi_output = True
                 break
 
     # If this node type has a multi-output...
     if is_multi_output:
         # TODO: Rewrite:    ...expand the output-list to the number of arguments involved.
-        expanded_node_outputs = max_arg_axis_len * outputs
+        expanded_node_outputs = max_arg_len * outputs
 
         # For each output: Add the index to all axis of the output attributes.
         new_node_outputs = []

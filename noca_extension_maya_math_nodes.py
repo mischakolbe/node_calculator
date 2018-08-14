@@ -34,11 +34,6 @@ REQUIRED_EXTENSION_PLUGINS = ["mayaMathNodes"]
 def select_array(array_a, array_b):
     """TODO: Write if it works. And make sure outputs are multi-outputs, too!!
     """
-    new_node = _create_and_connect_node('select_array', array_a, array_b)
-
-    # Alter outputs here? This is a special case, I think...
-    # multi-output-len should be max-len of (array_a, array_b)
-
 
     return _create_and_connect_node('select_array', array_a, array_b)
 
