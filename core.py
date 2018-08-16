@@ -2843,11 +2843,9 @@ def _create_operation_node(operation, *args):
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
     # Determine the necessary inputs for this node type and args combination.
-    node_inputs, cleaned_args_list, max_arg_len, max_arg_axis_len = _get_node_inputs(
+    node_inputs, cleaned_args, max_arg_len, max_arg_axis_len = _get_node_inputs(
         operation, new_node, unravelled_args_list
     )
-
-    unravelled_args_list = cleaned_args_list #TODO: Clean this up!
 
     # Set operation attr if specified in OPERATORS for this node-type
     node_operation = OPERATORS[operation].get("operation", None)
@@ -2856,9 +2854,8 @@ def _create_operation_node(operation, *args):
             "{0}.operation".format(new_node), node_operation
         )
     # Set or connect all node inputs to the given, unravelled args.
-    for arg_list, inputs_list in zip(unravelled_args_list, node_inputs):
-        print "arg_list, inputs_list:", arg_list, inputs_list
-        for arg_element, input_element in zip(arg_list, inputs_list):
+    for args_list, inputs_list in zip(cleaned_args, node_inputs):
+        for arg_element, input_element in zip(args_list, inputs_list):
             _unravel_and_set_or_connect_a_to_b(input_element, arg_element)
 
     # Determine the necessary outputs for this node and args combination.
@@ -2950,30 +2947,8 @@ def _get_node_inputs(operation, new_node, args_list):
 
         arg_axis = <OpenMaya.MPlug X>
     """
-    inputs_list = OPERATORS[operation]["inputs"]
 
-    # Check that dimensions match: args must be of same length as inputs:
-    if len(args_list) != len(inputs_list):
-        LOG.error(
-            "Dimensions to create node don't match! Given args_list: %s "
-            "Expected inputs_list: %s", args_list, inputs_list
-        )
-
-    max_arg_len = None
-    max_arg_axis_len = 0
-
-    print ")))))", inputs_list, args_list
-
-    # Go through all given args for the node creation and determine the
-    # necessary node inputs based on these args.
-    cleaned_inputs_list = []
-    cleaned_args_list = []
-
-
-
-
-
-    '''
+    ''' TODO: Add this to docString!
     "inputs": [
         ["input1[{multi_input}].x", "input1[{multi_input}].y"],
     ],
@@ -2994,7 +2969,22 @@ def _get_node_inputs(operation, new_node, args_list):
 
 
 
+    inputs_list = OPERATORS[operation]["inputs"]
 
+    # Check that dimensions match: args must be of same length as inputs:
+    if len(args_list) != len(inputs_list):
+        LOG.error(
+            "Dimensions to create node don't match! Given args_list: %s "
+            "Expected inputs_list: %s", args_list, inputs_list
+        )
+
+    max_arg_len = None
+    max_arg_axis_len = 0
+
+    # Go through all given args for the node creation and determine the
+    # necessary node inputs based on these args.
+    cleaned_inputs_list = []
+    cleaned_args_list = []
     for arg_element, input_item in zip(args_list, inputs_list):
         # input_elements = []
 
@@ -3048,8 +3038,6 @@ def _get_node_inputs(operation, new_node, args_list):
             if num_arg_axis == 1 and len(formatted_input_item) > 1:
                 arg_item = arg_item * len(formatted_input_item)
 
-            print ">>>>@@@", arg_item, "\n", formatted_input_item, "\n"
-
             # Prune the amount of input-axis to number of arg-axis.
             pruned_input_item = formatted_input_item[:num_arg_axis]
             pruned_input_element.append(pruned_input_item)
@@ -3062,8 +3050,7 @@ def _get_node_inputs(operation, new_node, args_list):
         cleaned_inputs_list.append(pruned_input_element)
         cleaned_args_list.append(arg_element)
 
-    print "$$$$$$$$$$$$$", cleaned_args_list, "\n", cleaned_inputs_list, max_arg_len, max_arg_axis_len, "\n"
-    return cleaned_inputs_list, cleaned_args_list, max_arg_len, max_arg_axis_len
+    return cleaned_inputs_list, cleaned_args_list, max_arg_len, max_arg_axis_len #TODO: Is cleaned_args_list truly necessary?
 
 
 def _get_node_outputs(operation, new_node, max_arg_len, max_arg_axis_len):
