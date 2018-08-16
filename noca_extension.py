@@ -12,7 +12,7 @@ Note:
 # DON'T import node_calculator.core as noca! It's a cyclical import that fails!
 # Most likely the only two things needed from the node_calculator:
 from node_calculator.core import noca_op
-from node_calculator.core import _create_and_connect_node
+from node_calculator.core import _create_operation_node
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~ PART A FOR ADDITIONAL OPERATORS ~~~~~~~~~~~~~~~~~~~~~~
@@ -67,7 +67,7 @@ Let's look at this example:
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 @noca_op
 def example_operation(attr_a, attr_b=(0, 1, 2), attr_c=False):
-    created_node = _create_and_connect_node(
+    created_node = _create_operation_node(
         'example_operation', attr_a, attr_b, attr_c
     )
     return created_node
@@ -83,7 +83,7 @@ The function arguments will be what the user can specify when calling this
 operation via noca.Op.example_operation(). Feel free to use default values.
 
 Inside the function you can do whatever is necessary to make your operator work.
-Most likely you will want to use the _create_and_connect_node-function at some
+Most likely you will want to use the _create_operation_node-function at some
 point. It works like this:
 >   The first argument must be the name of the operation. It's used as a key to
     look up the data you stored in EXTENSION_OPERATORS! As mentioned: I suggest
@@ -95,7 +95,7 @@ point. It works like this:
     specified in the EXTENSION_OPERATORS associated with it.
 
 To properly integrate your additional operation into the NodeCalculator you
-must return the returned NcNode instance of _create_and_connect_node! That way
+must return the returned NcNode instance of _create_operation_node! That way
 the newly created node and its outputs can be used in further operations.
 
 

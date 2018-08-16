@@ -23,7 +23,7 @@ Note:
 from maya import cmds
 
 from node_calculator.core import noca_op
-from node_calculator.core import _create_and_connect_node, _unravel_item_as_list
+from node_calculator.core import _create_operation_node, _unravel_item_as_list
 
 
 REQUIRED_EXTENSION_PLUGINS = ["mayaMathNodes"]
@@ -35,7 +35,7 @@ def select_array(array_a, array_b):
     """TODO: Write if it works. And make sure outputs are multi-outputs, too!!
     """
 
-    return _create_and_connect_node('select_array', array_a, array_b)
+    return _create_operation_node('select_array', array_a, array_b)
 
 
 
@@ -1395,7 +1395,7 @@ def absolute(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('absolute', attr_a)
+    return _create_operation_node('absolute', attr_a)
 
 
 @noca_op
@@ -1408,7 +1408,7 @@ def absolute_int(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('absolute_int', attr_a)
+    return _create_operation_node('absolute_int', attr_a)
 
 
 @noca_op
@@ -1421,7 +1421,7 @@ def absolute_angle(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('absolute_angle', attr_a)
+    return _create_operation_node('absolute_angle', attr_a)
 
 
 # Add.h
@@ -1436,7 +1436,7 @@ def add(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('add', attr_a, attr_b)
+    return _create_operation_node('add', attr_a, attr_b)
 
 
 @noca_op
@@ -1450,7 +1450,7 @@ def add_int(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('add_int', attr_a, attr_b)
+    return _create_operation_node('add_int', attr_a, attr_b)
 
 
 @noca_op
@@ -1464,7 +1464,7 @@ def add_angle(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('add_angle', attr_a, attr_b)
+    return _create_operation_node('add_angle', attr_a, attr_b)
 
 
 @noca_op
@@ -1478,7 +1478,7 @@ def add_vector(vector_a, vector_b=(0, 0, 0)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('add_vector', vector_a, vector_b)
+    return _create_operation_node('add_vector', vector_a, vector_b)
 
 
 # Array.h
@@ -1493,7 +1493,7 @@ def average(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average', *attrs)
+    return _create_operation_node('average', *attrs)
 
 
 @noca_op
@@ -1506,7 +1506,7 @@ def average_int(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average_int', *attrs)
+    return _create_operation_node('average_int', *attrs)
 
 
 @noca_op
@@ -1519,7 +1519,7 @@ def average_angle(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average_angle', *attrs)
+    return _create_operation_node('average_angle', *attrs)
 
 
 @noca_op
@@ -1532,7 +1532,7 @@ def average_rotation(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average_rotation', *attrs)
+    return _create_operation_node('average_rotation', *attrs)
 
 
 @noca_op
@@ -1545,7 +1545,7 @@ def average_vector(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average_vector', *attrs)
+    return _create_operation_node('average_vector', *attrs)
 
 
 @noca_op
@@ -1558,7 +1558,7 @@ def average_matrix(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average_matrix', *attrs)
+    return _create_operation_node('average_matrix', *attrs)
 
 
 @noca_op
@@ -1571,7 +1571,7 @@ def average_quaternion(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('average_quaternion', *attrs)
+    return _create_operation_node('average_quaternion', *attrs)
 
 
 # Sum
@@ -1585,7 +1585,7 @@ def sum(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('sum', *attrs)
+    return _create_operation_node('sum', *attrs)
 
 
 @noca_op
@@ -1598,7 +1598,7 @@ def sum_int(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('sum_int', *attrs)
+    return _create_operation_node('sum_int', *attrs)
 
 
 @noca_op
@@ -1611,7 +1611,7 @@ def sum_angle(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('sum_angle', *attrs)
+    return _create_operation_node('sum_angle', *attrs)
 
 
 @noca_op
@@ -1624,7 +1624,7 @@ def sum_vector(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('sum_vector', *attrs)
+    return _create_operation_node('sum_vector', *attrs)
 
 
 # Min/Max Element
@@ -1638,7 +1638,7 @@ def min_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('min_element', *attrs)
+    return _create_operation_node('min_element', *attrs)
 
 
 @noca_op
@@ -1651,7 +1651,7 @@ def min_int_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('min_int_element', *attrs)
+    return _create_operation_node('min_int_element', *attrs)
 
 
 @noca_op
@@ -1664,7 +1664,7 @@ def min_angle_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('min_angle_element', *attrs)
+    return _create_operation_node('min_angle_element', *attrs)
 
 
 @noca_op
@@ -1677,7 +1677,7 @@ def max_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('max_element', *attrs)
+    return _create_operation_node('max_element', *attrs)
 
 
 @noca_op
@@ -1690,7 +1690,7 @@ def max_int_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('max_int_element', *attrs)
+    return _create_operation_node('max_int_element', *attrs)
 
 
 @noca_op
@@ -1703,7 +1703,7 @@ def max_angle_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('max_angle_element', *attrs)
+    return _create_operation_node('max_angle_element', *attrs)
 
 
 # WeightedAverage
@@ -1717,7 +1717,7 @@ def weighted_average(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('weighted_average', *attrs)
+    return _create_operation_node('weighted_average', *attrs)
 
 
 @noca_op
@@ -1730,7 +1730,7 @@ def weighted_average_int(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('weighted_average_int', *attrs)
+    return _create_operation_node('weighted_average_int', *attrs)
 
 
 @noca_op
@@ -1743,7 +1743,7 @@ def weighted_average_angle(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('weighted_average_angle', *attrs)
+    return _create_operation_node('weighted_average_angle', *attrs)
 
 
 @noca_op
@@ -1766,7 +1766,7 @@ def weighted_average_rotation(*attrs):
             )
         flattened_attrs.append(unravelled_items)
 
-    return _create_and_connect_node('weighted_average_rotation', *flattened_attrs)
+    return _create_operation_node('weighted_average_rotation', *flattened_attrs)
 
 
 @noca_op
@@ -1789,7 +1789,7 @@ def weighted_average_vector(*attrs):
             )
         flattened_attrs.append(unravelled_items)
 
-    return _create_and_connect_node('weighted_average_vector', *flattened_attrs)
+    return _create_operation_node('weighted_average_vector', *flattened_attrs)
 
 
 @noca_op
@@ -1802,7 +1802,7 @@ def weighted_average_matrix(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('weighted_average_matrix', *attrs)
+    return _create_operation_node('weighted_average_matrix', *attrs)
 
 
 @noca_op
@@ -1825,7 +1825,7 @@ def weighted_average_quaternion(*attrs):
             )
         flattened_attrs.append(unravelled_items)
 
-    return _create_and_connect_node('weighted_average_quaternion', *flattened_attrs)
+    return _create_operation_node('weighted_average_quaternion', *flattened_attrs)
 
 
 # Normalize Array
@@ -1839,7 +1839,7 @@ def normalize_array(*attrs):
     Returns:
         NcList: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('normalize_array', *attrs)
+    return _create_operation_node('normalize_array', *attrs)
 
 
 @noca_op
@@ -1852,7 +1852,7 @@ def normalize_weights_array(*attrs):
     Returns:
         NcList: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('normalize_weights_array', *attrs)
+    return _create_operation_node('normalize_weights_array', *attrs)
 
 
 # Clamp.h
@@ -1868,7 +1868,7 @@ def clamp(attr_a, input_min=0, input_max=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('clamp', attr_a, input_min, input_max)
+    return _create_operation_node('clamp', attr_a, input_min, input_max)
 
 
 @noca_op
@@ -1883,7 +1883,7 @@ def clamp_int(attr_a, input_min=0, input_max=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('clamp_int', attr_a, input_min, input_max)
+    return _create_operation_node('clamp_int', attr_a, input_min, input_max)
 
 
 @noca_op
@@ -1898,7 +1898,7 @@ def clamp_angle(attr_a, input_min=0, input_max=360):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('clamp_angle', attr_a, input_min, input_max)
+    return _create_operation_node('clamp_angle', attr_a, input_min, input_max)
 
 
 # Condition.h
@@ -1915,7 +1915,7 @@ def compare(attr_a, attr_b=0, operation=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('compare', attr_a, attr_b, operation)
+    return _create_operation_node('compare', attr_a, attr_b, operation)
 
 
 @noca_op
@@ -1930,7 +1930,7 @@ def compare_angle(attr_a, attr_b=0, operation=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('compare_angle', attr_a, attr_b, operation)
+    return _create_operation_node('compare_angle', attr_a, attr_b, operation)
 
 
 # Select
@@ -1946,7 +1946,7 @@ def select(attr_a, attr_b=0, condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select', attr_a, attr_b, condition)
+    return _create_operation_node('select', attr_a, attr_b, condition)
 
 
 @noca_op
@@ -1961,7 +1961,7 @@ def select_int(attr_a, attr_b=0, condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select_int', attr_a, attr_b, condition)
+    return _create_operation_node('select_int', attr_a, attr_b, condition)
 
 
 @noca_op
@@ -1976,7 +1976,7 @@ def select_angle(attr_a, attr_b=0, condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select_angle', attr_a, attr_b, condition)
+    return _create_operation_node('select_angle', attr_a, attr_b, condition)
 
 
 @noca_op
@@ -1991,7 +1991,7 @@ def select_rotation(vector_a, vector_b=(0, 0, 0), condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select_rotation', vector_a, vector_b, condition)
+    return _create_operation_node('select_rotation', vector_a, vector_b, condition)
 
 
 @noca_op
@@ -2006,7 +2006,7 @@ def select_vector(vector_a, vector_b=(0, 0, 0), condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select_vector', vector_a, vector_b, condition)
+    return _create_operation_node('select_vector', vector_a, vector_b, condition)
 
 
 @noca_op
@@ -2021,7 +2021,7 @@ def select_matrix(matrix_a, matrix_b, condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select_matrix', matrix_a, matrix_b, condition)
+    return _create_operation_node('select_matrix', matrix_a, matrix_b, condition)
 
 
 @noca_op
@@ -2036,7 +2036,7 @@ def select_quaternion(attr_a, attr_b=(0, 0, 0, 1), condition=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('select_quaternion', attr_a, attr_b, condition)
+    return _create_operation_node('select_quaternion', attr_a, attr_b, condition)
 
 
 # Logical
@@ -2051,7 +2051,7 @@ def and_bool(attr_a, attr_b=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('and_bool', attr_a, attr_b)
+    return _create_operation_node('and_bool', attr_a, attr_b)
 
 
 @noca_op
@@ -2065,7 +2065,7 @@ def or_bool(attr_a, attr_b=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('or_bool', attr_a, attr_b)
+    return _create_operation_node('or_bool', attr_a, attr_b)
 
 
 @noca_op
@@ -2079,7 +2079,7 @@ def xor_bool(attr_a, attr_b=False):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('xor_bool', attr_a, attr_b)
+    return _create_operation_node('xor_bool', attr_a, attr_b)
 
 
 @noca_op
@@ -2093,7 +2093,7 @@ def and_int(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('and_int', attr_a, attr_b)
+    return _create_operation_node('and_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2107,7 +2107,7 @@ def or_int(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('or_int', attr_a, attr_b)
+    return _create_operation_node('or_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2121,7 +2121,7 @@ def xor_int(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('xor_int', attr_a, attr_b)
+    return _create_operation_node('xor_int', attr_a, attr_b)
 
 
 # Convert.h
@@ -2136,7 +2136,7 @@ def rotation_from_matrix(attr_a, rotation_order=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('rotation_from_matrix', attr_a, rotation_order)
+    return _create_operation_node('rotation_from_matrix', attr_a, rotation_order)
 
 
 @noca_op
@@ -2150,7 +2150,7 @@ def rotation_from_quaternion(attr_a, rotation_order=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('rotation_from_quaternion', attr_a, rotation_order)
+    return _create_operation_node('rotation_from_quaternion', attr_a, rotation_order)
 
 
 @noca_op
@@ -2164,7 +2164,7 @@ def quaternion_from_matrix(attr_a, rotation_order=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('quaternion_from_matrix', attr_a, rotation_order)
+    return _create_operation_node('quaternion_from_matrix', attr_a, rotation_order)
 
 
 @noca_op
@@ -2178,7 +2178,7 @@ def quaternion_from_rotation(attr_a, rotation_order=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('quaternion_from_rotation', attr_a, rotation_order)
+    return _create_operation_node('quaternion_from_rotation', attr_a, rotation_order)
 
 
 @noca_op
@@ -2191,7 +2191,7 @@ def translation_from_matrix(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('translation_from_matrix', attr_a)
+    return _create_operation_node('translation_from_matrix', attr_a)
 
 
 @noca_op
@@ -2204,7 +2204,7 @@ def scale_from_matrix(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('scale_from_matrix', attr_a)
+    return _create_operation_node('scale_from_matrix', attr_a)
 
 
 @noca_op
@@ -2224,7 +2224,7 @@ def matrix_from_trs(
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    created_node = _create_and_connect_node(
+    created_node = _create_operation_node(
         'matrix_from_trs',
         translation,
         rotation,
@@ -2245,7 +2245,7 @@ def axis_from_matrix(attr_a, axis=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('axis_from_matrix', attr_a, axis)
+    return _create_operation_node('axis_from_matrix', attr_a, axis)
 
 
 # Distance.h
@@ -2260,7 +2260,7 @@ def distance_points(vector_a, vector_b=(0, 0, 0)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('distance_points', vector_a, vector_b)
+    return _create_operation_node('distance_points', vector_a, vector_b)
 
 
 @noca_op
@@ -2275,8 +2275,8 @@ def distance_transforms(matrix_a, matrix_b=None):
         NcNode: Instance with node and output-attribute(s)
     """
     if matrix_b is None:
-        return _create_and_connect_node('distance_transforms', matrix_a)
-    return _create_and_connect_node('distance_transforms', matrix_a, matrix_b)
+        return _create_operation_node('distance_transforms', matrix_a)
+    return _create_operation_node('distance_transforms', matrix_a, matrix_b)
 
 
 # Divide.h
@@ -2291,7 +2291,7 @@ def divide(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('divide', attr_a, attr_b)
+    return _create_operation_node('divide', attr_a, attr_b)
 
 
 @noca_op
@@ -2305,7 +2305,7 @@ def divide_by_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('divide_by_int', attr_a, attr_b)
+    return _create_operation_node('divide_by_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2319,7 +2319,7 @@ def divide_angle(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('divide_angle', attr_a, attr_b)
+    return _create_operation_node('divide_angle', attr_a, attr_b)
 
 
 @noca_op
@@ -2333,7 +2333,7 @@ def divide_angle_by_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('divide_angle_by_int', attr_a, attr_b)
+    return _create_operation_node('divide_angle_by_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2347,7 +2347,7 @@ def modulus_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('modulus_int', attr_a, attr_b)
+    return _create_operation_node('modulus_int', attr_a, attr_b)
 
 
 # Interpolate.h
@@ -2363,7 +2363,7 @@ def lerp(attr_a, attr_b=0, alpha=0.5):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('lerp', attr_a, attr_b, alpha)
+    return _create_operation_node('lerp', attr_a, attr_b, alpha)
 
 
 @noca_op
@@ -2378,7 +2378,7 @@ def lerp_angle(attr_a, attr_b=0, alpha=0.5):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('lerp_angle', attr_a, attr_b, alpha)
+    return _create_operation_node('lerp_angle', attr_a, attr_b, alpha)
 
 
 @noca_op
@@ -2393,7 +2393,7 @@ def lerp_vector(vector_a, vector_b=(0, 0, 0), alpha=0.5):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('lerp_vector', vector_a, vector_b, alpha)
+    return _create_operation_node('lerp_vector', vector_a, vector_b, alpha)
 
 
 @noca_op
@@ -2408,7 +2408,7 @@ def lerp_matrix(matrix_a, matrix_b, alpha=0.5):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('lerp_matrix', matrix_a, matrix_b, alpha)
+    return _create_operation_node('lerp_matrix', matrix_a, matrix_b, alpha)
 
 
 @noca_op
@@ -2424,7 +2424,7 @@ def slerp_quaternion(attr_a, attr_b=(0, 0, 0, 0), alpha=0.5, interpolation_type=
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('slerp_quaternion', attr_a, attr_b, alpha, interpolation_type)
+    return _create_operation_node('slerp_quaternion', attr_a, attr_b, alpha, interpolation_type)
 
 
 # Inverse.h
@@ -2438,7 +2438,7 @@ def inverse_rotation(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('inverse_rotation', attr_a)
+    return _create_operation_node('inverse_rotation', attr_a)
 
 
 @noca_op
@@ -2451,7 +2451,7 @@ def inverse_matrix(matrix_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('inverse_matrix', matrix_a)
+    return _create_operation_node('inverse_matrix', matrix_a)
 
 
 @noca_op
@@ -2464,7 +2464,7 @@ def inverse_quaternion(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('inverse_quaternion', attr_a)
+    return _create_operation_node('inverse_quaternion', attr_a)
 
 
 # MinMax.h
@@ -2479,7 +2479,7 @@ def min_float(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('min_float', attr_a, attr_b)
+    return _create_operation_node('min_float', attr_a, attr_b)
 
 
 @noca_op
@@ -2493,7 +2493,7 @@ def max_float(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('max_float', attr_a, attr_b)
+    return _create_operation_node('max_float', attr_a, attr_b)
 
 
 @noca_op
@@ -2507,7 +2507,7 @@ def min_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('min_int', attr_a, attr_b)
+    return _create_operation_node('min_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2521,7 +2521,7 @@ def max_int(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('max_int', attr_a, attr_b)
+    return _create_operation_node('max_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2535,7 +2535,7 @@ def min_angle(attr_a, attr_b=360):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('min_angle', attr_a, attr_b)
+    return _create_operation_node('min_angle', attr_a, attr_b)
 
 
 @noca_op
@@ -2549,7 +2549,7 @@ def max_angle(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('max_angle', attr_a, attr_b)
+    return _create_operation_node('max_angle', attr_a, attr_b)
 
 
 # Multiply.h
@@ -2564,7 +2564,7 @@ def multiply(attr_a, attr_b=1.0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply', attr_a, attr_b)
+    return _create_operation_node('multiply', attr_a, attr_b)
 
 
 @noca_op
@@ -2578,7 +2578,7 @@ def multiply_by_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_by_int', attr_a, attr_b)
+    return _create_operation_node('multiply_by_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2592,7 +2592,7 @@ def multiply_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_int', attr_a, attr_b)
+    return _create_operation_node('multiply_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2606,7 +2606,7 @@ def multiply_angle(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_angle', attr_a, attr_b)
+    return _create_operation_node('multiply_angle', attr_a, attr_b)
 
 
 @noca_op
@@ -2620,7 +2620,7 @@ def multiply_angle_by_int(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_angle_by_int', attr_a, attr_b)
+    return _create_operation_node('multiply_angle_by_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2634,7 +2634,7 @@ def multiply_rotation(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_rotation', attr_a, attr_b)
+    return _create_operation_node('multiply_rotation', attr_a, attr_b)
 
 
 @noca_op
@@ -2648,7 +2648,7 @@ def multiply_vector(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_vector', attr_a, attr_b)
+    return _create_operation_node('multiply_vector', attr_a, attr_b)
 
 
 @noca_op
@@ -2663,8 +2663,8 @@ def multiply_vector_by_matrix(attr_a, attr_b=None):
         NcNode: Instance with node and output-attribute(s)
     """
     if attr_b is None:
-        return _create_and_connect_node('multiply_vector_by_matrix', attr_a)
-    return _create_and_connect_node('multiply_vector_by_matrix', attr_a, attr_b)
+        return _create_operation_node('multiply_vector_by_matrix', attr_a)
+    return _create_operation_node('multiply_vector_by_matrix', attr_a, attr_b)
 
 
 @noca_op
@@ -2679,8 +2679,8 @@ def multiply_matrix(matrix_a, matrix_b=None):
         NcNode: Instance with node and output-attribute(s)
     """
     if matrix_b is None:
-        return _create_and_connect_node('multiply_matrix', matrix_a)
-    return _create_and_connect_node('multiply_matrix', matrix_a, matrix_b)
+        return _create_operation_node('multiply_matrix', matrix_a)
+    return _create_operation_node('multiply_matrix', matrix_a, matrix_b)
 
 
 @noca_op
@@ -2694,7 +2694,7 @@ def multiply_quaternion(attr_a, attr_b=(0, 0, 0, 1)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('multiply_quaternion', attr_a, attr_b)
+    return _create_operation_node('multiply_quaternion', attr_a, attr_b)
 
 
 # Negate.h
@@ -2708,7 +2708,7 @@ def negate(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('negate', attr_a)
+    return _create_operation_node('negate', attr_a)
 
 
 @noca_op
@@ -2721,7 +2721,7 @@ def negate_int(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('negate_int', attr_a)
+    return _create_operation_node('negate_int', attr_a)
 
 
 @noca_op
@@ -2734,7 +2734,7 @@ def negate_angle(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('negate_angle', attr_a)
+    return _create_operation_node('negate_angle', attr_a)
 
 
 @noca_op
@@ -2747,7 +2747,7 @@ def negate_vector(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('negate_vector', attr_a)
+    return _create_operation_node('negate_vector', attr_a)
 
 
 # Power.h
@@ -2762,7 +2762,7 @@ def power(attr_a, exponent=2):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('power', attr_a, exponent)
+    return _create_operation_node('power', attr_a, exponent)
 
 
 @noca_op
@@ -2775,7 +2775,7 @@ def square_root(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('square_root', attr_a)
+    return _create_operation_node('square_root', attr_a)
 
 
 # Round.h
@@ -2789,7 +2789,7 @@ def ceil(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('ceil', attr_a)
+    return _create_operation_node('ceil', attr_a)
 
 
 @noca_op
@@ -2802,7 +2802,7 @@ def ceil_angle(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('ceil_angle', attr_a)
+    return _create_operation_node('ceil_angle', attr_a)
 
 
 @noca_op
@@ -2815,7 +2815,7 @@ def floor(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('floor', attr_a)
+    return _create_operation_node('floor', attr_a)
 
 
 @noca_op
@@ -2828,7 +2828,7 @@ def floor_angle(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('floor_angle', attr_a)
+    return _create_operation_node('floor_angle', attr_a)
 
 
 @noca_op
@@ -2841,7 +2841,7 @@ def round_float(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('round_float', attr_a)
+    return _create_operation_node('round_float', attr_a)
 
 
 @noca_op
@@ -2854,7 +2854,7 @@ def round_angle(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('round_angle', attr_a)
+    return _create_operation_node('round_angle', attr_a)
 
 
 # Subtract.h
@@ -2869,7 +2869,7 @@ def subtract(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('subtract', attr_a, attr_b)
+    return _create_operation_node('subtract', attr_a, attr_b)
 
 
 @noca_op
@@ -2883,7 +2883,7 @@ def subtract_int(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('subtract_int', attr_a, attr_b)
+    return _create_operation_node('subtract_int', attr_a, attr_b)
 
 
 @noca_op
@@ -2897,7 +2897,7 @@ def subtract_angle(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('subtract_angle', attr_a, attr_b)
+    return _create_operation_node('subtract_angle', attr_a, attr_b)
 
 
 @noca_op
@@ -2911,7 +2911,7 @@ def subtract_vector(attr_a, attr_b=(0, 0, 0)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('subtract_vector', attr_a, attr_b)
+    return _create_operation_node('subtract_vector', attr_a, attr_b)
 
 
 # Trig.h
@@ -2925,7 +2925,7 @@ def sin(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('sin', attr_a)
+    return _create_operation_node('sin', attr_a)
 
 
 @noca_op
@@ -2938,7 +2938,7 @@ def asin(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('asin', attr_a)
+    return _create_operation_node('asin', attr_a)
 
 
 @noca_op
@@ -2951,7 +2951,7 @@ def cos(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('cos', attr_a)
+    return _create_operation_node('cos', attr_a)
 
 
 @noca_op
@@ -2964,7 +2964,7 @@ def acos(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('acos', attr_a)
+    return _create_operation_node('acos', attr_a)
 
 
 @noca_op
@@ -2977,7 +2977,7 @@ def tan(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('tan', attr_a)
+    return _create_operation_node('tan', attr_a)
 
 
 @noca_op
@@ -2990,7 +2990,7 @@ def atan(attr_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('atan', attr_a)
+    return _create_operation_node('atan', attr_a)
 
 
 @noca_op
@@ -3004,7 +3004,7 @@ def atan2(attr_a, attr_b=1):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('atan2', attr_a, attr_b)
+    return _create_operation_node('atan2', attr_a, attr_b)
 
 
 # Twist.h
@@ -3020,7 +3020,7 @@ def twist_from_rotation(attr_a, axis=0, rotation_order=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('twist_from_rotation', attr_a, axis, rotation_order)
+    return _create_operation_node('twist_from_rotation', attr_a, axis, rotation_order)
 
 
 @noca_op
@@ -3035,7 +3035,7 @@ def twist_from_matrix(matrix_a, axis=0, rotation_order=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('twist_from_matrix', matrix_a, axis, rotation_order)
+    return _create_operation_node('twist_from_matrix', matrix_a, axis, rotation_order)
 
 
 # VectorOps.h
@@ -3049,7 +3049,7 @@ def vector_length(vector_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('vector_length', vector_a)
+    return _create_operation_node('vector_length', vector_a)
 
 
 @noca_op
@@ -3062,7 +3062,7 @@ def vector_length_squared(vector_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('vector_length_squared', vector_a)
+    return _create_operation_node('vector_length_squared', vector_a)
 
 
 @noca_op
@@ -3075,7 +3075,7 @@ def normalize_vector(vector_a):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('normalize_vector', vector_a)
+    return _create_operation_node('normalize_vector', vector_a)
 
 
 @noca_op
@@ -3089,7 +3089,7 @@ def dot_product(vector_a, vector_b=(1, 0, 0)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('dot_product', vector_a, vector_b)
+    return _create_operation_node('dot_product', vector_a, vector_b)
 
 
 @noca_op
@@ -3103,7 +3103,7 @@ def angle_between_vectors(vector_a, vector_b=(1, 0, 0)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('angle_between_vectors', vector_a, vector_b)
+    return _create_operation_node('angle_between_vectors', vector_a, vector_b)
 
 
 @noca_op
@@ -3117,4 +3117,4 @@ def cross_product(vector_a, vector_b=(1, 0, 0)):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_and_connect_node('cross_product', vector_a, vector_b)
+    return _create_operation_node('cross_product', vector_a, vector_b)

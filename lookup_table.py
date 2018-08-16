@@ -211,8 +211,7 @@ def _operator_lookup_table_init():
         possible flags:
         - node: Type of Maya node necessary
         - inputs: input attributes (list of lists)
-        - output: output attributes (list)
-        - is_multi_input: any number of input attrs possible? (array attr)
+        - outputs: output attributes (list)
         - operation: set operation-attr for different modes of a node
         - output_is_predetermined: should always ALL output attrs be added?
     """

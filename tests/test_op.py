@@ -113,11 +113,11 @@ def _test_regular_op(operator):
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
         node_outputs = node_data.get("outputs", None)
-        node_is_multi_input = node_data.get("is_multi_input", False)
         node_operation = node_data.get("operation", None)
         node_output_is_predetermined = node_data.get("output_is_predetermined", False)
 
-        if node_is_multi_input:
+        # Take care of multi-input nodes
+        if operator in ["add", "sub"]:
             new_node_inputs = []
             for i in range(2):
                 input_item = [x.format(multi_input=i) for x in node_inputs[0]]
@@ -154,7 +154,6 @@ def _test_regular_op(operator):
         except AttributeError:
             noca_operator_func = getattr(noca.Op, true_operator)
 
-        # Run noca operation
         result = noca_operator_func(*actual_inputs)
         result_plug.attrs = result
 
@@ -167,7 +166,9 @@ def _test_regular_op(operator):
         for node_input, desired_input in zip(node_inputs, actual_inputs):
             if isinstance(node_input, (tuple, list)):
                 node_input = node_input[0]
-            input_plug = "{}.{}".format(result_node_name, node_input)
+            input_plug = "{}.{}".format(
+                result_node_name, node_input.format(multi_input="0")
+            )
 
             # Check the input plug actually exists
             input_exists = cmds.objExists(input_plug)
@@ -386,6 +387,7 @@ class TestOperators(TestCase):
         ]
 
         result = noca.Op.pair_blend(*input_plugs)
+        print "^^^", result
         self.c.t = result[0]
         self.c.r = result[1]
 
@@ -395,10 +397,13 @@ class TestOperators(TestCase):
         # Test that the created node is of the correct type
         self.assertEqual(cmds.nodeType(result.nodes[0]), node_type)
 
+        print ">>>", result
+
         # Check the correct plug is connected into the input-plug
         input_translate1 = cmds.listConnections(
             "{}.inTranslate1".format(result[0].node), plugs=True
         )
+        print "~~~", input_translate1
         self.assertEqual(input_translate1, ["A.translate"])
 
         input_translate2 = cmds.listConnections(
