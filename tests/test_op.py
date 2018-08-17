@@ -387,7 +387,6 @@ class TestOperators(TestCase):
         ]
 
         result = noca.Op.pair_blend(*input_plugs)
-        print "^^^", result
         self.c.t = result[0]
         self.c.r = result[1]
 
@@ -397,13 +396,10 @@ class TestOperators(TestCase):
         # Test that the created node is of the correct type
         self.assertEqual(cmds.nodeType(result.nodes[0]), node_type)
 
-        print ">>>", result
-
         # Check the correct plug is connected into the input-plug
         input_translate1 = cmds.listConnections(
             "{}.inTranslate1".format(result[0].node), plugs=True
         )
-        print "~~~", input_translate1
         self.assertEqual(input_translate1, ["A.translate"])
 
         input_translate2 = cmds.listConnections(

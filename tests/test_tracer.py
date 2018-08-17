@@ -50,7 +50,7 @@ class TestTracerClass(TestCase):
             "cmds.setAttr(var1 + '.operation', 1)",
             "cmds.connectAttr('A.translateX', var1 + '.input1X', force=True)",
             "cmds.setAttr(var1 + '.input2X', (val1 + 2) / 2)",
-            "var2 = cmds.createNode('plusMinusAverage', name='nc_SUB_list_outputX_plusMinusAverage')",
+            "var2 = cmds.createNode('plusMinusAverage', name='nc_SUB_list_plusMinusAverage')",
             "cmds.setAttr(var2 + '.operation', 2)",
             "cmds.connectAttr('B.scale', var2 + '.input3D[0]', force=True)",
             "cmds.connectAttr(var1 + '.outputX', var2 + '.input3D[1].input3Dx', force=True)",

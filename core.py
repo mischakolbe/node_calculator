@@ -2614,7 +2614,6 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
             obj_b_unravelled_list, obj_a_dim
         )
 
-    print "OBJ_A, OBJ_B", obj_a, obj_b
     # If plug consolidation is allowed: Try to do so.
     auto_consolidate_allowed = _is_consolidation_allowed([obj_a, obj_b])
     if GLOBAL_AUTO_CONSOLIDATE and auto_consolidate_allowed:
@@ -2834,19 +2833,24 @@ def _create_operation_node(operation, *args):
             each of the outputs.
     """
     LOG.debug("Creating a new %s-operationNode with args: %s", operation, args)
-    print "ARGS:", args
+
     # Unravel all given args to unify how they are passed on.
     unravelled_args_list = [_unravel_item_as_list(arg) for arg in args]
-    print "unravelled_args_list:", unravelled_args_list
+
+    # Find the maximum dimension involved to know what to connect. For example:
+    # 1D to 1D needs 1D-input
+    # 1D to 2D needs 2D-input  # "1D" is not a typo! ;)
+    # 3D to 3D needs 3D-input
+    max_dim = max([len(x) for x in unravelled_args_list])
 
     # Create a named node of appropriate type for the given operation.
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
     # Determine the necessary inputs for this node type and args combination.
-    node_inputs, cleaned_args, max_arg_len, max_arg_axis_len = _get_node_inputs(
+    clean_inputs, clean_args, max_multi_len, max_axis_len = _get_node_inputs(
         operation, new_node, unravelled_args_list
     )
-
+    print ">>>>>>>>", max_axis_len
     # Set operation attr if specified in OPERATORS for this node-type
     node_operation = OPERATORS[operation].get("operation", None)
     if node_operation:
@@ -2854,13 +2858,13 @@ def _create_operation_node(operation, *args):
             "{0}.operation".format(new_node), node_operation
         )
     # Set or connect all node inputs to the given, unravelled args.
-    for args_list, inputs_list in zip(cleaned_args, node_inputs):
+    for args_list, inputs_list in zip(clean_args, clean_inputs):
         for arg_element, input_element in zip(args_list, inputs_list):
             _unravel_and_set_or_connect_a_to_b(input_element, arg_element)
 
     # Determine the necessary outputs for this node and args combination.
     output_nodes = _get_node_outputs(
-        operation, new_node, max_arg_len, max_arg_axis_len
+        operation, new_node, max_multi_len, max_axis_len
     )
 
     # For manifold outputs: Return an NcList of NcNodes; one for each output.
@@ -2911,9 +2915,10 @@ def _get_node_inputs(operation, new_node, args_list):
             attr. This is an ambiguous connection that can't be resolved.
 
     Returns:
-        tuple: (cleaned_inputs_list, max_arg_len, max_arg_axis_len)
-            > cleaned_inputs_list holds all necessary node inputs for given args.
-            > max_arg_len holds the highest dimension of multi_inputs.
+        tuple: (clean_inputs_list, clean_args_list, max_arg_element_len, max_arg_axis_len)
+            > clean_inputs_list holds all necessary node inputs for given args.
+            > clean_args_list holds args that were adjusted to match clean_inputs_list.
+            > max_arg_element_len holds the highest dimension of multi_inputs.
             > max_arg_axis_len holds highest number of attribute axis involved.
 
     Example:
@@ -2947,28 +2952,17 @@ def _get_node_inputs(operation, new_node, args_list):
 
         arg_axis = <OpenMaya.MPlug X>
     """
-
-    ''' TODO: Add this to docString!
-    "inputs": [
-        ["input1[{multi_input}].x", "input1[{multi_input}].y"],
-    ],
-
-    BECOMES:
-
-    "inputs": [ # list level
-        [ # element level
-            [ # item level
-                "input1[0].x", "input1[0].y" # axis level
-            ],
-            [
-                "input1[1].x", "input1[1].y"
-            ],
-        ]
-    ],
-    '''
-
-
-
+    # inputs_list = [
+    #     ["input1[{multi_input}].x", "input1[{multi_input}].y"],
+    # ]
+    # WILL BECOME:
+    # cleaned_inputs_list = [ # list level
+    #     [ # element level
+    #         [ # item level
+    #             "input1[0].x", "input1[0].y" # axis level
+    #         ]
+    #     ]
+    # ]
     inputs_list = OPERATORS[operation]["inputs"]
 
     # Check that dimensions match: args must be of same length as inputs:
@@ -2978,15 +2972,14 @@ def _get_node_inputs(operation, new_node, args_list):
             "Expected inputs_list: %s", args_list, inputs_list
         )
 
-    max_arg_len = None
+    max_arg_element_len = None
     max_arg_axis_len = 0
 
     # Go through all given args for the node creation and determine the
     # necessary node inputs based on these args.
-    cleaned_inputs_list = []
-    cleaned_args_list = []
+    clean_inputs_list = []
+    clean_args_list = []
     for arg_element, input_item in zip(args_list, inputs_list):
-        # input_elements = []
 
         # Check if the current input_item is a multi-input
         is_multi_input_item = False
@@ -2995,38 +2988,43 @@ def _get_node_inputs(operation, new_node, args_list):
                 is_multi_input_item = True
                 break
 
-        # If the current input_item is a multi-index, it must be multiplied in
-        # order to match the input_element to the arg_element!
         if is_multi_input_item:
             LOG.debug("Expecting %s to be multi_input!", arg_element)
+            # If the current input_item is a multi-index, it must be multiplied
+            # in order to match the input_element to the arg_element!
             num_input_items = len(arg_element)
-            if num_input_items > max_arg_len:
-                max_arg_len = num_input_items
+            if num_input_items > max_arg_element_len:
+                max_arg_element_len = num_input_items
             input_element = num_input_items * [input_item]
         else:
             LOG.debug("Expecting %s to be single_input!", arg_element)
+            # For a non-multi-index input_item the input_element simply is
+            # the input_element wrapped inside a list. The arg_element must
+            # be wrapped into a list, too to match the two!
             input_element = [input_item]
             arg_element = [arg_element]
+
+
 
         # Concatenate the input axis with their node
         formatted_input_element = []
         for index, input_item in enumerate(input_element):
-            formatted_multiplied_input = []
+            formatted_input_item = []
             for axis in input_item:
                 formatted_axis = axis.format(multi_input=index)
                 formatted_plug = "{0}.{1}".format(new_node, formatted_axis)
-                formatted_multiplied_input.append(formatted_plug)
-            formatted_input_element.append(formatted_multiplied_input)
+                formatted_input_item.append(formatted_plug)
+            formatted_input_element.append(formatted_input_item)
 
         # Prune node inputs to what is necessary for given args.
         pruned_input_element = []
         for arg_item, formatted_input_item in zip(arg_element, formatted_input_element):
-
+            # Unify the arg_item(s): Should always be a list!
             if not isinstance(arg_item, (tuple, list)):
                 arg_item = [arg_item]
 
-            num_arg_axis = len(arg_item)
             # Prevent an ambiguous connection from a multi-arg into a 1D input!
+            num_arg_axis = len(arg_item)
             if num_arg_axis > 1 and len(formatted_input_item) == 1:
                 msg = (
                     "Unable to connect multi-dimensional args {0} to 1D input "
@@ -3047,24 +3045,24 @@ def _get_node_inputs(operation, new_node, args_list):
             if num_arg_axis > max_arg_axis_len:
                 max_arg_axis_len = num_arg_axis
 
-        cleaned_inputs_list.append(pruned_input_element)
-        cleaned_args_list.append(arg_element)
+        clean_inputs_list.append(pruned_input_element)
+        clean_args_list.append(arg_element)
 
-    return cleaned_inputs_list, cleaned_args_list, max_arg_len, max_arg_axis_len #TODO: Is cleaned_args_list truly necessary?
+    return clean_inputs_list, clean_args_list, max_arg_element_len, max_arg_axis_len
 
 
-def _get_node_outputs(operation, new_node, max_arg_len, max_arg_axis_len):
+def _get_node_outputs(operation, new_node, max_multi_len, max_axis_len):
     """Get node-outputs based on operation-type and involved arguments.
 
     Note:
-        See docString of _get_node_inputs for origin of max_arg_len and
-        max_arg_axis_len, as well as what output_element or output_axis means.
+        See docString of _get_node_inputs for origin of max_multi_len and
+        max_axis_len, as well as what output_element or output_axis means.
 
     Args:
         operation (str): Operation the new node has to perform.
         new_node (str): Name of newly created Maya node.
-        max_arg_len (int or None): Highest dimension of multi_inputs.
-        max_arg_axis_len (int): Highest dimension of attribute axis.
+        max_multi_len (int or None): Highest dimension of multi_inputs.
+        max_axis_len (int): Highest dimension of attribute axis.
 
     Returns:
         list: List of NcNode instances that hold an attribute according to the
@@ -3083,11 +3081,11 @@ def _get_node_outputs(operation, new_node, max_arg_len, max_arg_axis_len):
 
     # If this node type has a multi-output...
     if is_multi_output:
-        if max_arg_len is None:
-            max_arg_len = 1
+        if max_multi_len is None:
+            max_multi_len = 1
 
         # ...expand the output-list to the number of multi-input arguments.
-        expanded_node_outputs = max_arg_len * outputs
+        expanded_node_outputs = max_multi_len * outputs
 
         # For each output: Add the index to all axis of the output attributes.
         new_node_outputs = []
@@ -3114,7 +3112,7 @@ def _get_node_outputs(operation, new_node, max_arg_len, max_arg_axis_len):
             node = NcNode(new_node, output)
         else:
             # Truncate number of outputs based on how many attrs were processed
-            node = NcNode(new_node, output[:max_arg_axis_len])
+            node = NcNode(new_node, output[:max_axis_len])
 
         output_nodes.append(node)
 
