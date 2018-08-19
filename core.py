@@ -23,21 +23,7 @@ Note:
     * nodes: Returns Maya nodes inside NcList: [node, ...] (list of strings)
 
 
-Example:
-    ::
-
-        import node_calculator.core as noca
-
-        a = noca.Node("pCube1")
-        b = noca.Node("pCube2")
-        c = noca.Node("pCube3")
-
-        with noca.Tracer(pprint_trace=True):
-            e = b.add_float(value=c.tx)
-            a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
-
-
-    Supported operations::
+Supported operations::
 
         # basic math
         +, -, *, /, **
@@ -112,7 +98,7 @@ Example:
         c = noca.Node("pCube3")
 
         with noca.Tracer(pprint_trace=True):
-            e = b.add_float(value=c.tx)
+            e = b.add_float("someAttr", value=c.tx)
             a.s = noca.Op.condition(b.ty - 2 > c.tz, e, [1, 2, 3])
 """
 
@@ -456,7 +442,7 @@ class OperatorMetaClass(object):
         return _create_operation_node('blend', attr_a, attr_b, blend_value)
 
     @staticmethod
-    def choice(*inputs, **kwargs):
+    def choice(inputs, selector=0):
         """Create choice-node to switch between various input attributes.
 
         Note:
@@ -465,8 +451,8 @@ class OperatorMetaClass(object):
 
         Args:
             inputs (list): Any number of input values or plugs
-            kwargs (dict): Optional "selector" keyword for selector-attr on
-                choice node.
+            selector (NcNode or NcAttrs or int): Selector-attr on choice node
+                to select one of the inputs based on their index.
 
         Returns:
             NcNode: Instance with choice-node and output-attribute(s)
@@ -475,17 +461,10 @@ class OperatorMetaClass(object):
             option_a = Node("pCube1.tx")
             option_b = Node("pCube2.tx")
             switch_attr = Node("pSphere1").add_bool("optionSwitch")
-            choice_node = Op.choice(option_a, option_b, selector=switch_attr)
+            choice_node = Op.choice([option_a, option_b], selector=switch_attr)
             Node("pTorus1").tx = choice_node
         """
-        choice_node_obj = _create_operation_node('choice', inputs)
-
-        # Since this is a multi-attr node it's hard to filter out the selector
-        # keyword in a perfect manner. This should do fine though.
-        _unravel_and_set_or_connect_a_to_b(
-            choice_node_obj.selector,
-            kwargs.get("selector", 0)
-        )
+        choice_node_obj = _create_operation_node('choice', inputs, selector)
 
         return choice_node_obj
 
@@ -1584,14 +1563,17 @@ class NcBaseNode(NcBaseClass):
         Returns:
             executable: Function that will be added to class methods.
         """
-        def func(name, **kwargs):
+        def func(*args, **kwargs):
             """Create an attribute with given name and kwargs.
 
             Note:
                 kwargs are exactly the same as in cmds.addAttr()!
 
+                The name is awkwardly gathered through args, because the error
+                when no name was specified was very cryptic!
+
             Args:
-                name (str): Name for the new attribute to be created
+                args (list): Should only contain the name for the new attr
                 kwargs (dict): User specified attributes to be set on new attr
 
             Returns:
@@ -1600,6 +1582,34 @@ class NcBaseNode(NcBaseClass):
             Example:
                 >>> Node("pCube1").add_bool(value=True)
             """
+            name = None
+            # Multiple args are nonsensical for attribute creation.
+            if len(args) > 1:
+                msg = "Multiple args given for creation of {0} attr!".format(
+                    attr_type
+                )
+                cmds.error(msg)
+
+            # A single args-item can be assumed to be the name.
+            if args:
+                name = args[0]
+
+            # If no name was specified, try to find it in the kwargs.
+            else:
+                name = kwargs.pop("name", None)
+                if not name:
+                    name_flags = ["niceName", "longName", "shortName"]
+                    for name_flag in name_flags:
+                        name = kwargs.get(name_flag, None)
+                        if name:
+                            break
+
+            if not name:
+                msg = "No name was given for creation of {0} attr!".format(
+                    attr_type
+                )
+                cmds.error(msg)
+
             data_type = default_data_type
             # Since I opted for attributeType for all types that allowed
             # dataType and attributeType: Only a dataType keyword is relevant.
@@ -2837,20 +2847,14 @@ def _create_operation_node(operation, *args):
     # Unravel all given args to unify how they are passed on.
     unravelled_args_list = [_unravel_item_as_list(arg) for arg in args]
 
-    # Find the maximum dimension involved to know what to connect. For example:
-    # 1D to 1D needs 1D-input
-    # 1D to 2D needs 2D-input  # "1D" is not a typo! ;)
-    # 3D to 3D needs 3D-input
-    max_dim = max([len(x) for x in unravelled_args_list])
-
     # Create a named node of appropriate type for the given operation.
     new_node = _create_traced_operation_node(operation, unravelled_args_list)
 
     # Determine the necessary inputs for this node type and args combination.
-    clean_inputs, clean_args, max_multi_len, max_axis_len = _get_node_inputs(
+    clean_inputs, clean_args, max_array_len, max_axis_len = _get_node_inputs(
         operation, new_node, unravelled_args_list
     )
-    print ">>>>>>>>", max_axis_len
+
     # Set operation attr if specified in OPERATORS for this node-type
     node_operation = OPERATORS[operation].get("operation", None)
     if node_operation:
@@ -2864,7 +2868,7 @@ def _create_operation_node(operation, *args):
 
     # Determine the necessary outputs for this node and args combination.
     output_nodes = _get_node_outputs(
-        operation, new_node, max_multi_len, max_axis_len
+        operation, new_node, max_array_len, max_axis_len
     )
 
     # For manifold outputs: Return an NcList of NcNodes; one for each output.
@@ -2878,31 +2882,46 @@ def _get_node_inputs(operation, new_node, args_list):
     """Get node-inputs based on operation-type and involved arguments.
 
     Note:
+        To anyone delving deep enough into the NodeCalculator to reach this
+        point; I apologize. This function in particular is difficult to grasp.
+        The main idea is to find which node-inputs (defined in the OPERATORS-
+        dictionary) are needed for the given args. Dealing with array-inputs
+        and often 3D-inputs is the difficult part. I hope the following
+        explanation will make it easier to understand what is happening.
+
         Within this function we deal a lot with different levels of arguments:
         args_list (list)
           > arg_element (list)
               > arg_item (list or MPlug/value/...)
                   > arg_axis (MPlug/value/...)
 
+        The arg_item-level might seem redundant. The reason for its existence
+        are array-input attributes (input[0], etc.). They need to be a list of
+        items under one arg_element. That way one can loop over all array-input
+        arg_items in an arg_element and get the correct indices, even if there
+        is a mix of non-array input attrs and array-input attrs. Without this
+        extra layer an input before the array-input would throw off the indices
+        by 1!
+
 
         The ARGS_LIST is made up of the various arguments that will connect
         into the node.
-        > [multi-input-values, translation-values, rotation-values, ...]
+        > [array-values, translation-values, rotation-values, ...]
 
         The ARG_ELEMENT is what will set/connect into an attribute "section"
-        of a node. For multi-inputs THIS is what matters(!), because one
-        attribute section (input[{multi_input}]) will actually be made up of
+        of a node. For array-inputs THIS is what matters(!), because one
+        attribute section (input[{array}]) will actually be made up of
         many inputs.
-        > [multi-input-values]
+        > [array-values]
 
         The ARG_ITEM is one particular arg_element. For arg_elements that are
-        multi-input the arg_item is a specific input of a multi-input. For
-        non-multi-inputs the arg_elements & the arg_item are equivalent!
-        > [multi-input-value[0]]
+        array-input the arg_item is a specific input of a array-input. For
+        non-array-inputs the arg_elements & the arg_item are equivalent!
+        > [array-input-value[0]]
 
         The ARG_AXIS is the most granular item, referring to a particular Maya
         node attribute.
-        > [multi-input-value[0].valueX]
+        > [array-value[0].valueX]
 
     Args:
         operation (str): Operation the new node has to perform.
@@ -2918,7 +2937,7 @@ def _get_node_inputs(operation, new_node, args_list):
         tuple: (clean_inputs_list, clean_args_list, max_arg_element_len, max_arg_axis_len)
             > clean_inputs_list holds all necessary node inputs for given args.
             > clean_args_list holds args that were adjusted to match clean_inputs_list.
-            > max_arg_element_len holds the highest dimension of multi_inputs.
+            > max_arg_element_len holds the highest dimension of array attrs.
             > max_arg_axis_len holds highest number of attribute axis involved.
 
     Example:
@@ -2939,7 +2958,7 @@ def _get_node_inputs(operation, new_node, args_list):
         ]
 
 
-        # Note: This example would be for a multi-input attribute of a node!
+        # Note: This example would be for an array-input attribute of a node!
         arg_elements = [
             [<OpenMaya.MPlug X>, <OpenMaya.MPlug Y>, <OpenMaya.MPlug Z>],
             <OpenMaya.MPlug A>,
@@ -2952,18 +2971,12 @@ def _get_node_inputs(operation, new_node, args_list):
 
         arg_axis = <OpenMaya.MPlug X>
     """
-    # inputs_list = [
-    #     ["input1[{multi_input}].x", "input1[{multi_input}].y"],
-    # ]
-    # WILL BECOME:
-    # cleaned_inputs_list = [ # list level
-    #     [ # element level
-    #         [ # item level
-    #             "input1[0].x", "input1[0].y" # axis level
-    #         ]
-    #     ]
-    # ]
     inputs_list = OPERATORS[operation]["inputs"]
+    LOG.debug(
+        "_get_node_inputs with args_list %s & inputs_list %s",
+        args_list,
+        inputs_list
+    )
 
     # Check that dimensions match: args must be of same length as inputs:
     if len(args_list) != len(inputs_list):
@@ -2972,52 +2985,82 @@ def _get_node_inputs(operation, new_node, args_list):
             "Expected inputs_list: %s", args_list, inputs_list
         )
 
-    max_arg_element_len = None
-    max_arg_axis_len = 0
-
     # Go through all given args for the node creation and determine the
     # necessary node inputs based on these args.
-    clean_inputs_list = []
-    clean_args_list = []
-    for arg_element, input_item in zip(args_list, inputs_list):
-
-        # Check if the current input_item is a multi-input
-        is_multi_input_item = False
-        for input_axis in input_item:
-            if input_axis and "{multi_input}" in input_axis:
-                is_multi_input_item = True
+    max_arg_element_len = None
+    adjusted_args_list = []
+    adjusted_inputs_list = []
+    for arg_element, input_element in zip(args_list, inputs_list):
+        # Check if the current input_element is an array-input
+        is_array_element = False
+        for input_axis in input_element:
+            if input_axis and "{array}" in input_axis:
+                is_array_element = True
                 break
 
-        if is_multi_input_item:
-            LOG.debug("Expecting %s to be multi_input!", arg_element)
-            # If the current input_item is a multi-index, it must be multiplied
+        if is_array_element:
+            LOG.debug("Expecting %s to be for array input!", arg_element)
+            # If the current input_element is an array, it must be multiplied
             # in order to match the input_element to the arg_element!
-            num_input_items = len(arg_element)
-            if num_input_items > max_arg_element_len:
-                max_arg_element_len = num_input_items
-            input_element = num_input_items * [input_item]
+            num_arg_items = len(arg_element)
+            if num_arg_items > max_arg_element_len:
+                max_arg_element_len = num_arg_items
+
+            # Add array-inputs to input element, equal to the number of args.
+            input_items = []
+            for _ in range(num_arg_items):
+                input_items.append(input_element)
+            adjusted_inputs_list.append(input_items)
+
+            # Take the one arg_element and split its content into arg_items.
+            arg_items = []
+            for arg_item in arg_element:
+                if not isinstance(arg_item, (tuple, list)):
+                    arg_item = [arg_item]
+                arg_items.append(arg_item)
+            adjusted_args_list.append(arg_items)
+
         else:
-            LOG.debug("Expecting %s to be single_input!", arg_element)
-            # For a non-multi-index input_item the input_element simply is
+            LOG.debug("Expecting %s to be for single input!", arg_element)
+            # For a non-array input_item the input_element simply is
             # the input_element wrapped inside a list. The arg_element must
             # be wrapped into a list, too to match the two!
-            input_element = [input_item]
-            arg_element = [arg_element]
+            adjusted_args_list.append([arg_element])
+            adjusted_inputs_list.append([input_element])
 
+    LOG.debug(
+        "_get_node_inputs with adjusted_args_list %s & adjusted_inputs_list %s",
+        adjusted_args_list,
+        adjusted_inputs_list
+    )
 
+    # Find the maximum dimension involved to know what to connect. For example:
+    # 1D to 1D needs 1D-input
+    # 1D to 2D needs 2D-input  # "1D" is not a typo! ;)
+    # 3D to 3D needs 3D-input
+    max_dim = 0
+    for adjusted_arg_element in zip(*adjusted_args_list):
+        max_element_dim = max([len(x) for x in adjusted_arg_element])
+        if max_element_dim > max_dim:
+            max_dim = max_element_dim
 
+    max_arg_axis_len = 0
+    clean_inputs_list = []
+    clean_args_list = []
+    for arg_element, input_element in zip(adjusted_args_list, adjusted_inputs_list):
         # Concatenate the input axis with their node
         formatted_input_element = []
         for index, input_item in enumerate(input_element):
             formatted_input_item = []
             for axis in input_item:
-                formatted_axis = axis.format(multi_input=index)
+                formatted_axis = axis.format(array=index)
                 formatted_plug = "{0}.{1}".format(new_node, formatted_axis)
                 formatted_input_item.append(formatted_plug)
             formatted_input_element.append(formatted_input_item)
 
         # Prune node inputs to what is necessary for given args.
         pruned_input_element = []
+        pruned_arg_element = []
         for arg_item, formatted_input_item in zip(arg_element, formatted_input_element):
             # Unify the arg_item(s): Should always be a list!
             if not isinstance(arg_item, (tuple, list)):
@@ -3032,13 +3075,15 @@ def _get_node_inputs(operation, new_node, args_list):
                 )
                 raise RuntimeError(msg)
 
-            # A singular arg_element can connect into a multi-dimensional input.
+            # A single axis arg_item can connect into a multi-dimensional input.
             if num_arg_axis == 1 and len(formatted_input_item) > 1:
-                arg_item = arg_item * len(formatted_input_item)
+                num_arg_axis = max_dim
+                arg_item = arg_item * num_arg_axis
 
-            # Prune the amount of input-axis to number of arg-axis.
+            # Prune the amount of input-axis to the number of arg-axis.
             pruned_input_item = formatted_input_item[:num_arg_axis]
             pruned_input_element.append(pruned_input_item)
+            pruned_arg_element.append(arg_item)
 
             # Find the maximum amount of used axis for all involved plugs.
             # This will determine how many output-axis are passed on!
@@ -3046,22 +3091,34 @@ def _get_node_inputs(operation, new_node, args_list):
                 max_arg_axis_len = num_arg_axis
 
         clean_inputs_list.append(pruned_input_element)
-        clean_args_list.append(arg_element)
+        clean_args_list.append(pruned_arg_element)
 
-    return clean_inputs_list, clean_args_list, max_arg_element_len, max_arg_axis_len
+    LOG.debug(
+        "_get_node_inputs with clean_inputs_list %s & clean_args_list %s",
+        clean_inputs_list,
+        clean_args_list
+    )
+
+    return_val = (
+        clean_inputs_list,
+        clean_args_list,
+        max_arg_element_len,
+        max_arg_axis_len
+    )
+    return return_val
 
 
-def _get_node_outputs(operation, new_node, max_multi_len, max_axis_len):
+def _get_node_outputs(operation, new_node, max_array_len, max_axis_len):
     """Get node-outputs based on operation-type and involved arguments.
 
     Note:
-        See docString of _get_node_inputs for origin of max_multi_len and
+        See docString of _get_node_inputs for origin of max_array_len and
         max_axis_len, as well as what output_element or output_axis means.
 
     Args:
         operation (str): Operation the new node has to perform.
         new_node (str): Name of newly created Maya node.
-        max_multi_len (int or None): Highest dimension of multi_inputs.
+        max_array_len (int or None): Highest dimension of arrays.
         max_axis_len (int): Highest dimension of attribute axis.
 
     Returns:
@@ -3071,27 +3128,27 @@ def _get_node_outputs(operation, new_node, max_multi_len, max_axis_len):
     # Get the outputs for the created node, defined in OPERATORS dictionary.
     outputs = OPERATORS[operation]["outputs"]
 
-    # Determine whether this is a multi-output node.
-    is_multi_output = False
+    # Determine whether this is an array-output node.
+    is_array = False
     for output_element in outputs:
         for output_axis in output_element:
-            if output_axis and "{multi_output}" in output_axis:
-                is_multi_output = True
+            if output_axis and "{array}" in output_axis:
+                is_array = True
                 break
 
-    # If this node type has a multi-output...
-    if is_multi_output:
-        if max_multi_len is None:
-            max_multi_len = 1
+    # If this node type has an array-output...
+    if is_array:
+        if max_array_len is None:
+            max_array_len = 1
 
-        # ...expand the output-list to the number of multi-input arguments.
-        expanded_node_outputs = max_multi_len * outputs
+        # ...expand the output-list to the number of array-input arguments.
+        expanded_node_outputs = max_array_len * outputs
 
         # For each output: Add the index to all axis of the output attributes.
         new_node_outputs = []
         for index, output in enumerate(expanded_node_outputs):
             new_node_outputs.append(
-                [axis.format(multi_output=index) for axis in output]
+                [axis.format(array=index) for axis in output]
             )
         outputs = new_node_outputs
 

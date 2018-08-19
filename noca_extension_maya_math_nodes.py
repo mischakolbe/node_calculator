@@ -8,15 +8,6 @@ Note:
     This is a functioning example for what a possible NodeCalculator extension
     could look like, using proprietary/custom nodes.
 
-    The following nodes are currently not implemented! They have multiple
-    multi-index inputs, which is currently not supported. (You can still
-    manually create and connect them though)
-    - SelectArray
-    - SelectIntArray
-    - SelectAngleArray
-    - SelectVectorArray
-    - SelectMatrixArray
-
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 """
 
@@ -29,31 +20,7 @@ from node_calculator.core import _create_operation_node, _unravel_item_as_list
 REQUIRED_EXTENSION_PLUGINS = ["mayaMathNodes"]
 
 
-
-@noca_op
-def select_array(array_a, array_b):
-    """TODO: Write if it works. And make sure outputs are multi-outputs, too!!
-    """
-
-    return _create_operation_node('select_array', array_a, array_b)
-
-
-
 EXTENSION_OPERATORS = {
-    "select_array": {
-        "node": "math_SelectArray",
-        "inputs": [
-            ["input1[{multi_input}]"],
-            ["input2[{multi_input}]"],
-        ],
-        "outputs": [
-            ["output[{multi_output}]"],
-        ],
-    },
-
-
-
-
     # Absolute.h
     "absolute": {
         "node": "math_Absolute",
@@ -85,7 +52,7 @@ EXTENSION_OPERATORS = {
 
 
     # Add.h
-    "add": {
+    "add_float": {
         "node": "math_Add",
         "inputs": [
             ["input1"],
@@ -132,313 +99,273 @@ EXTENSION_OPERATORS = {
     "average": {
         "node": "math_Average",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "average_int": {
         "node": "math_AverageInt",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "average_angle": {
         "node": "math_AverageAngle",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "average_rotation": {
         "node": "math_AverageRotation",
         "inputs": [
             [
-                "input[{multi_input}].inputX",
-                "input[{multi_input}].inputY",
-                "input[{multi_input}].inputZ",
+                "input[{array}].inputX",
+                "input[{array}].inputY",
+                "input[{array}].inputZ",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_input": True,
     },
     "average_vector": {
         "node": "math_AverageVector",
         "inputs": [
             [
-                "input[{multi_input}].inputX",
-                "input[{multi_input}].inputY",
-                "input[{multi_input}].inputZ",
+                "input[{array}].inputX",
+                "input[{array}].inputY",
+                "input[{array}].inputZ",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_input": True,
     },
     "average_matrix": {
         "node": "math_AverageMatrix",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "average_quaternion": {
         "node": "math_AverageQuaternion",
         "inputs": [
             [
-                "input[{multi_input}].inputX",
-                "input[{multi_input}].inputY",
-                "input[{multi_input}].inputZ",
-                "input[{multi_input}].inputW",
+                "input[{array}].inputX",
+                "input[{array}].inputY",
+                "input[{array}].inputZ",
+                "input[{array}].inputW",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ", "outputW"],
         ],
-        "is_multi_input": True,
     },
     # Sum
     "sum": {
         "node": "math_Sum",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "sum_int": {
         "node": "math_SumInt",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "sum_angle": {
         "node": "math_SumAngle",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "sum_vector": {
         "node": "math_SumVector",
         "inputs": [
             [
-                "input[{multi_input}].inputX",
-                "input[{multi_input}].inputY",
-                "input[{multi_input}].inputZ",
+                "input[{array}].inputX",
+                "input[{array}].inputY",
+                "input[{array}].inputZ",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_input": True,
     },
     # Min/Max Element
     "min_element": {
         "node": "math_MinElement",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "min_int_element": {
         "node": "math_MinIntElement",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "min_angle_element": {
         "node": "math_MinAngleElement",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "max_element": {
         "node": "math_MaxElement",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "max_int_element": {
         "node": "math_MaxIntElement",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "max_angle_element": {
         "node": "math_MaxAngleElement",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     # WeightedAverage
     "weighted_average": {
         "node": "math_WeightedAverage",
         "inputs": [
-            [
-                "input[{multi_input}].value",
-                "input[{multi_input}].weight",
-            ],
+            ["input[{array}].value", "input[{array}].weight"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "weighted_average_int": {
         "node": "math_WeightedAverageInt",
         "inputs": [
-            [
-                "input[{multi_input}].value",
-                "input[{multi_input}].weight",
-            ],
+            ["input[{array}].value", "input[{array}].weight"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "weighted_average_angle": {
         "node": "math_WeightedAverageAngle",
         "inputs": [
-            [
-                "input[{multi_input}].value",
-                "input[{multi_input}].weight",
-            ],
+            ["input[{array}].value", "input[{array}].weight"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "weighted_average_rotation": {
         "node": "math_WeightedAverageRotation",
         "inputs": [
             [
-                "input[{multi_input}].value.valueX",
-                "input[{multi_input}].value.valueY",
-                "input[{multi_input}].value.valueZ",
-                "input[{multi_input}].weight",
+                "input[{array}].value.valueX",
+                "input[{array}].value.valueY",
+                "input[{array}].value.valueZ",
+                "input[{array}].weight",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_input": True,
     },
     "weighted_average_vector": {
         "node": "math_WeightedAverageVector",
         "inputs": [
             [
-                "input[{multi_input}].value.valueX",
-                "input[{multi_input}].value.valueY",
-                "input[{multi_input}].value.valueZ",
-                "input[{multi_input}].weight",
+                "input[{array}].value.valueX",
+                "input[{array}].value.valueY",
+                "input[{array}].value.valueZ",
+                "input[{array}].weight",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ"],
         ],
-        "is_multi_input": True,
     },
     "weighted_average_matrix": {
         "node": "math_WeightedAverageMatrix",
         "inputs": [
-            [
-                "input[{multi_input}].value",
-                "input[{multi_input}].weight",
-            ],
+            ["input[{array}].value", "input[{array}].weight"],
         ],
         "outputs": [
             ["output"],
         ],
-        "is_multi_input": True,
     },
     "weighted_average_quaternion": {
         "node": "math_WeightedAverageQuaternion",
         "inputs": [
             [
-                "input[{multi_input}].value.valueX",
-                "input[{multi_input}].value.valueY",
-                "input[{multi_input}].value.valueZ",
-                "input[{multi_input}].value.valueW",
-                "input[{multi_input}].weight",
+                "input[{array}].value.valueX",
+                "input[{array}].value.valueY",
+                "input[{array}].value.valueZ",
+                "input[{array}].value.valueW",
+                "input[{array}].weight",
             ],
         ],
         "outputs": [
             ["outputX", "outputY", "outputZ", "outputW"],
         ],
-        "is_multi_input": True,
     },
     # Normalize
     "normalize_array": {
         "node": "math_NormalizeArray",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
-            ["output[{multi_output}]"],
+            ["output[{array}]"],
         ],
-        "is_multi_input": True,
-        "is_multi_output": True,
     },
     "normalize_weights_array": {
         "node": "math_NormalizeWeightsArray",
         "inputs": [
-            ["input[{multi_input}]"],
+            ["input[{array}]"],
         ],
         "outputs": [
-            ["output[{multi_output}]"],
+            ["output[{array}]"],
         ],
-        "is_multi_input": True,
-        "is_multi_output": True,
     },
 
 
@@ -580,6 +507,62 @@ EXTENSION_OPERATORS = {
             ["outputX", "outputY", "outputZ", "outputW"],
         ],
         "output_is_predetermined": True,
+    },
+    # Select Array
+    "select_array": {
+        "node": "math_SelectArray",
+        "inputs": [
+            ["input1[{array}]"],
+            ["input2[{array}]"],
+            ["condition"],
+        ],
+        "outputs": [
+            ["output[{array}]"],
+        ],
+    },
+    "select_int_array": {
+        "node": "math_SelectIntArray",
+        "inputs": [
+            ["input1[{array}]"],
+            ["input2[{array}]"],
+            ["condition"],
+        ],
+        "outputs": [
+            ["output[{array}]"],
+        ],
+    },
+    "select_angle_array": {
+        "node": "math_SelectAngleArray",
+        "inputs": [
+            ["input1[{array}]"],
+            ["input2[{array}]"],
+            ["condition"],
+        ],
+        "outputs": [
+            ["output[{array}]"],
+        ],
+    },
+    "select_vector_array": {
+        "node": "math_SelectVectorArray",
+        "inputs": [
+            ["input1[{array}].input1X", "input1[{array}].input1Y", "input1[{array}].input1Z"],
+            ["input2[{array}].input2X", "input2[{array}].input2Y", "input2[{array}].input2Z"],
+            ["condition"],
+        ],
+        "outputs": [
+            ["output[{array}].outputX", "output[{array}].outputY", "output[{array}].outputZ"],
+        ],
+    },
+    "select_matrix_array": {
+        "node": "math_SelectMatrixArray",
+        "inputs": [
+            ["input1[{array}]"],
+            ["input2[{array}]"],
+            ["condition"],
+        ],
+        "outputs": [
+            ["output[{array}]"],
+        ],
     },
     # Logical
     "and_bool": {
@@ -1426,8 +1409,12 @@ def absolute_angle(attr_a):
 
 # Add.h
 @noca_op
-def add(attr_a, attr_b=0):
+def add_float(attr_a, attr_b=0):
     """Create math_Add-node to add attributes together.
+
+    Note:
+        Called "add_float" instead of "add" to prevent naming collision with
+        default NodeCalculator operator!
 
     Args:
         attr_a (NcNode or NcAttrs or string): Maya node attribute.
@@ -1436,7 +1423,7 @@ def add(attr_a, attr_b=0):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('add', attr_a, attr_b)
+    return _create_operation_node('add_float', attr_a, attr_b)
 
 
 @noca_op
@@ -1493,7 +1480,7 @@ def average(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average', *attrs)
+    return _create_operation_node('average', attrs)
 
 
 @noca_op
@@ -1506,7 +1493,7 @@ def average_int(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average_int', *attrs)
+    return _create_operation_node('average_int', attrs)
 
 
 @noca_op
@@ -1519,7 +1506,7 @@ def average_angle(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average_angle', *attrs)
+    return _create_operation_node('average_angle', attrs)
 
 
 @noca_op
@@ -1532,7 +1519,7 @@ def average_rotation(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average_rotation', *attrs)
+    return _create_operation_node('average_rotation', attrs)
 
 
 @noca_op
@@ -1545,7 +1532,7 @@ def average_vector(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average_vector', *attrs)
+    return _create_operation_node('average_vector', attrs)
 
 
 @noca_op
@@ -1558,7 +1545,7 @@ def average_matrix(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average_matrix', *attrs)
+    return _create_operation_node('average_matrix', attrs)
 
 
 @noca_op
@@ -1571,7 +1558,7 @@ def average_quaternion(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('average_quaternion', *attrs)
+    return _create_operation_node('average_quaternion', attrs)
 
 
 # Sum
@@ -1585,7 +1572,7 @@ def sum(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('sum', *attrs)
+    return _create_operation_node('sum', attrs)
 
 
 @noca_op
@@ -1598,7 +1585,7 @@ def sum_int(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('sum_int', *attrs)
+    return _create_operation_node('sum_int', attrs)
 
 
 @noca_op
@@ -1611,7 +1598,7 @@ def sum_angle(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('sum_angle', *attrs)
+    return _create_operation_node('sum_angle', attrs)
 
 
 @noca_op
@@ -1624,7 +1611,7 @@ def sum_vector(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('sum_vector', *attrs)
+    return _create_operation_node('sum_vector', attrs)
 
 
 # Min/Max Element
@@ -1638,7 +1625,7 @@ def min_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('min_element', *attrs)
+    return _create_operation_node('min_element', attrs)
 
 
 @noca_op
@@ -1651,7 +1638,7 @@ def min_int_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('min_int_element', *attrs)
+    return _create_operation_node('min_int_element', attrs)
 
 
 @noca_op
@@ -1664,7 +1651,7 @@ def min_angle_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('min_angle_element', *attrs)
+    return _create_operation_node('min_angle_element', attrs)
 
 
 @noca_op
@@ -1677,7 +1664,7 @@ def max_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('max_element', *attrs)
+    return _create_operation_node('max_element', attrs)
 
 
 @noca_op
@@ -1690,7 +1677,7 @@ def max_int_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('max_int_element', *attrs)
+    return _create_operation_node('max_int_element', attrs)
 
 
 @noca_op
@@ -1703,7 +1690,7 @@ def max_angle_element(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('max_angle_element', *attrs)
+    return _create_operation_node('max_angle_element', attrs)
 
 
 # WeightedAverage
@@ -1717,7 +1704,7 @@ def weighted_average(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('weighted_average', *attrs)
+    return _create_operation_node('weighted_average', attrs)
 
 
 @noca_op
@@ -1730,7 +1717,7 @@ def weighted_average_int(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('weighted_average_int', *attrs)
+    return _create_operation_node('weighted_average_int', attrs)
 
 
 @noca_op
@@ -1743,7 +1730,7 @@ def weighted_average_angle(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('weighted_average_angle', *attrs)
+    return _create_operation_node('weighted_average_angle', attrs)
 
 
 @noca_op
@@ -1766,7 +1753,7 @@ def weighted_average_rotation(*attrs):
             )
         flattened_attrs.append(unravelled_items)
 
-    return _create_operation_node('weighted_average_rotation', *flattened_attrs)
+    return _create_operation_node('weighted_average_rotation', flattened_attrs)
 
 
 @noca_op
@@ -1789,7 +1776,7 @@ def weighted_average_vector(*attrs):
             )
         flattened_attrs.append(unravelled_items)
 
-    return _create_operation_node('weighted_average_vector', *flattened_attrs)
+    return _create_operation_node('weighted_average_vector', flattened_attrs)
 
 
 @noca_op
@@ -1802,7 +1789,7 @@ def weighted_average_matrix(*attrs):
     Returns:
         NcNode: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('weighted_average_matrix', *attrs)
+    return _create_operation_node('weighted_average_matrix', attrs)
 
 
 @noca_op
@@ -1825,7 +1812,7 @@ def weighted_average_quaternion(*attrs):
             )
         flattened_attrs.append(unravelled_items)
 
-    return _create_operation_node('weighted_average_quaternion', *flattened_attrs)
+    return _create_operation_node('weighted_average_quaternion', flattened_attrs)
 
 
 # Normalize Array
@@ -1839,7 +1826,7 @@ def normalize_array(*attrs):
     Returns:
         NcList: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('normalize_array', *attrs)
+    return _create_operation_node('normalize_array', attrs)
 
 
 @noca_op
@@ -1852,7 +1839,7 @@ def normalize_weights_array(*attrs):
     Returns:
         NcList: Instance with node and output-attribute(s)
     """
-    return _create_operation_node('normalize_weights_array', *attrs)
+    return _create_operation_node('normalize_weights_array', attrs)
 
 
 # Clamp.h
@@ -2037,6 +2024,87 @@ def select_quaternion(attr_a, attr_b=(0, 0, 0, 1), condition=False):
         NcNode: Instance with node and output-attribute(s)
     """
     return _create_operation_node('select_quaternion', attr_a, attr_b, condition)
+
+
+# Select Array
+@noca_op
+def select_array(array_a, array_b, condition=False):
+    """Create math_SelectArray-node to select array_a/array_b based on condition.
+
+    Args:
+        attr_a (list): Array of inputs (NcNode, NcAttrs, float).
+        attr_b (list): Array of inputs (NcNode, NcAttrs, float).
+        condition (NcNode or NcAttrs or bool): If set to False the node output
+            is attr_a, if set to True the node output is attr_b.
+
+    Returns:
+        NcNode: Instance with node and output-attribute(s)
+    """
+    return _create_operation_node('select_array', array_a, array_b, condition)
+
+
+@noca_op
+def select_int_array(array_a, array_b, condition=False):
+    """Create math_SelectIntArray-node to select array_a/array_b based on condition.
+
+    Args:
+        attr_a (list): Array of inputs (NcNode, NcAttrs, int).
+        attr_b (list): Array of inputs (NcNode, NcAttrs, int).
+        condition (NcNode or NcAttrs or bool): If set to False the node output
+            is attr_a, if set to True the node output is attr_b.
+
+    Returns:
+        NcNode: Instance with node and output-attribute(s)
+    """
+    return _create_operation_node('select_int_array', array_a, array_b, condition)
+
+
+@noca_op
+def select_angle_array(array_a, array_b, condition=False):
+    """Create math_SelectAngleArray-node to select array_a/array_b based on condition.
+
+    Args:
+        attr_a (list): Array of inputs (NcNode, NcAttrs, angle).
+        attr_b (list): Array of inputs (NcNode, NcAttrs, angle).
+        condition (NcNode or NcAttrs or bool): If set to False the node output
+            is attr_a, if set to True the node output is attr_b.
+
+    Returns:
+        NcNode: Instance with node and output-attribute(s)
+    """
+    return _create_operation_node('select_angle_array', array_a, array_b, condition)
+
+
+@noca_op
+def select_vector_array(array_a, array_b, condition=False):
+    """Create math_SelectVectorArray-node to select array_a/array_b based on condition.
+
+    Args:
+        attr_a (list): Array of inputs (NcNode, NcAttrs, list).
+        attr_b (list): Array of inputs (NcNode, NcAttrs, list).
+        condition (NcNode or NcAttrs or bool): If set to False the node output
+            is attr_a, if set to True the node output is attr_b.
+
+    Returns:
+        NcNode: Instance with node and output-attribute(s)
+    """
+    return _create_operation_node('select_vector_array', array_a, array_b, condition)
+
+
+@noca_op
+def select_matrix_array(array_a, array_b, condition=False):
+    """Create math_SelectMatrixArray-node to select array_a/array_b based on condition.
+
+    Args:
+        attr_a (list): Array of inputs (NcNode, NcAttrs, matrix).
+        attr_b (list): Array of inputs (NcNode, NcAttrs, matrix).
+        condition (NcNode or NcAttrs or bool): If set to False the node output
+            is attr_a, if set to True the node output is attr_b.
+
+    Returns:
+        NcNode: Instance with node and output-attribute(s)
+    """
+    return _create_operation_node('select_matrix_array', array_a, array_b, condition)
 
 
 # Logical

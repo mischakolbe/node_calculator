@@ -6,6 +6,10 @@ Note:
     repo or so) you simply have to add the folder where this noca_extension
     module will live to the __init__.py of the node_calculator-module!
 
+    Check noca_extension_maya_math_nodes.py to see an example of how to write a
+    NodeCalculator extension.
+
+
 :author: You ;)
 """
 
@@ -35,16 +39,20 @@ Mandatory flags:
 - outputs: output attributes (list)
 
 Optional flags:
-- is_multi_input: any number of input attrs possible? (array attr)
 - operation: many Maya nodes have an "operation" attribute that sets the
     operation mode of the node. Use this flag to set this attribute.
 - output_is_predetermined: should outputs be truncated to dimensionality of
     inputs or should they always stay exactly as specified?
+
+
+Check here to see lots of examples for the EXTENSION_OPERATORS-dictionary:
+_operator_lookup_table_init (in lookup_table.py)
 '''
 EXTENSION_OPERATORS = {
     # "example_operation": {
     #     "node": "mayaNodeForThisOperation",
     #     "inputs": [
+    #         ["input[{array}].inX", "input[{array}].inY", "input[{array}].inZ"],
     #         ["input1X", "input1Y", "input1Z"],
     #         ["input2X", "input2Y", "input2Z"],
     #         ["singleInputParam"],
@@ -52,7 +60,6 @@ EXTENSION_OPERATORS = {
     #     "outputs": [
     #         ["outputX", "outputY", "outputZ"],
     #     ],
-    #     "is_multi_input": False,
     #     "operation": 3,
     #     "output_is_predetermined": False,
     # }
@@ -98,9 +105,6 @@ To properly integrate your additional operation into the NodeCalculator you
 must return the returned NcNode instance of _create_operation_node! That way
 the newly created node and its outputs can be used in further operations.
 
-
-Check here to see lots of examples for the EXTENSION_OPERATORS-dictionary:
-_operator_lookup_table_init (in lookup_table.py)
 
 Check here to see lots of examples for the operator functions:
 OperatorMetaClass (in core.py)

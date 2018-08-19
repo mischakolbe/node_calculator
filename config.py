@@ -26,4 +26,4 @@ VALUE_PREFIX = "val"
 # Extension preferences ---
 # No path means the NodeCalculator will only check for the extension locally.
 EXTENSION_PATH = ""
-EXTENSION_NAME = "noca_extension"
+EXTENSION_NAME = ""  # "noca_extension" or "noca_extension_maya_math_nodes"

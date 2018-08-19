@@ -120,7 +120,7 @@ def _test_regular_op(operator):
         if operator in ["add", "sub"]:
             new_node_inputs = []
             for i in range(2):
-                input_item = [x.format(multi_input=i) for x in node_inputs[0]]
+                input_item = [x.format(array=i) for x in node_inputs[0]]
                 new_node_inputs.append(input_item)
 
             node_inputs = new_node_inputs
@@ -167,7 +167,7 @@ def _test_regular_op(operator):
             if isinstance(node_input, (tuple, list)):
                 node_input = node_input[0]
             input_plug = "{}.{}".format(
-                result_node_name, node_input.format(multi_input="0")
+                result_node_name, node_input.format(array="0")
             )
 
             # Check the input plug actually exists

@@ -214,6 +214,8 @@ def _operator_lookup_table_init():
         - outputs: output attributes (list)
         - operation: set operation-attr for different modes of a node
         - output_is_predetermined: should always ALL output attrs be added?
+
+        Use "{array}" in inputs or outputs to denote an array-attribute!
     """
     global BASIC_OPERATORS
 
@@ -233,9 +235,9 @@ def _operator_lookup_table_init():
             "node": "plusMinusAverage",
             "inputs": [
                 [
-                    "input3D[{multi_input}].input3Dx",
-                    "input3D[{multi_input}].input3Dy",
-                    "input3D[{multi_input}].input3Dz"
+                    "input3D[{array}].input3Dx",
+                    "input3D[{array}].input3Dy",
+                    "input3D[{array}].input3Dz"
                 ],
             ],
             "outputs": [
@@ -259,9 +261,8 @@ def _operator_lookup_table_init():
         "choice": {
             "node": "choice",
             "inputs": [
-                [
-                    "input[{multi_input}]",
-                ],
+                ["input[{array}]"],
+                ["selector"],
             ],
             "outputs": [
                 ["output"],
@@ -345,7 +346,7 @@ def _operator_lookup_table_init():
             "node": "multMatrix",
             "inputs": [
                 [
-                    "matrixIn[{multi_input}]"
+                    "matrixIn[{array}]"
                 ],
             ],
             "outputs": [
@@ -457,9 +458,9 @@ def _operator_lookup_table_init():
             "node": "plusMinusAverage",
             "inputs": [
                 [
-                    "input3D[{multi_input}].input3Dx",
-                    "input3D[{multi_input}].input3Dy",
-                    "input3D[{multi_input}].input3Dz"
+                    "input3D[{array}].input3Dx",
+                    "input3D[{array}].input3Dy",
+                    "input3D[{array}].input3Dz"
                 ],
             ],
             "outputs": [
