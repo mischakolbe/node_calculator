@@ -685,14 +685,14 @@ def split_node_string(node):
     """Split string referring to a Maya node name into its separate elements.
 
     Note:
-        "namespace:some|dag|path|node" ->
-        (namespace, dag_path, node)
+        "namespace1:namespace2:some|dag|path|node" ->
+        (namespaces, dag_path, node)
 
     Args:
-        node (str): Name of Maya node, potentially with namespace & dagPath.
+        node (str): Name of Maya node, potentially with namespaces & dagPath.
 
     Returns:
-        tuple: Tuple of the form (namespace, dag_path, node)
+        tuple: Tuple of the form (namespaces, dag_path, node)
 
     Raises:
         ValueError: If given string is not in the pattern described in Note.
@@ -700,7 +700,7 @@ def split_node_string(node):
             Maya-nodes; a string that yields multiple regex-matches.
 
     """
-    node_pattern = re.compile(r"(\w+:)?\|?((?:\w+\|)*)?(\w+)")
+    node_pattern = re.compile(r"((?:\w+:)*)?\|?((?:\w+\|)*)?(\w+)")
 
     matches = node_pattern.findall(node)
 
@@ -718,9 +718,10 @@ def split_node_string(node):
         )
         raise RuntimeError(msg)
 
-    namespace, dag_path, node = matches[0]
+    namespaces, dag_path, node = matches[0]
 
-    if namespace:
-        namespace = namespace.split(":")[0]
+    # Split off last colon, if namespaces exist.
+    if namespaces:
+        namespaces = namespaces.rsplit(":", 1)[0]
 
-    return (namespace, dag_path, node)
+    return (namespaces, dag_path, node)
