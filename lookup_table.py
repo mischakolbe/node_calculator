@@ -200,7 +200,7 @@ BASIC_OPERATORS = {}
 
 
 # BASIC_OPERATORS ---
-def _operator_lookup_table_init():
+def _basic_operators_init():
     """Fill BASIC_OPERATORS-dictionary with all available operations.
 
     Note:
@@ -499,7 +499,7 @@ def _operator_lookup_table_init():
         }
 
 
-_operator_lookup_table_init()
+_basic_operators_init()
 
 
 # Little helper to print all available Operators for the core.py-docString.

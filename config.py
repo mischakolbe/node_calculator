@@ -2,28 +2,27 @@
 
 
 # Node preferences ---
-NODE_PREFIX = "nc"
+NODE_PREFIX = "nc"  # Name prefix for all nodes created by the NodeCalculator.
 
 
 # Attribute preferences ---
-DEFAULT_SEPARATOR_NAME = "________"
-DEFAULT_SEPARATOR_VALUE = "________"
-DEFAULT_ATTR_FLAGS = {
+DEFAULT_SEPARATOR_NAME = "________"  # Default NiceName for separator-attributes.
+DEFAULT_SEPARATOR_VALUE = "________"  # Default value for separator-attributes.
+DEFAULT_ATTR_FLAGS = {  # Defaults for add_float(), add_enum(), ... attribute creation.
     "keyable": True,
 }
 
 
 # Connection preferences ---
-GLOBAL_AUTO_CONSOLIDATE = True
-GLOBAL_AUTO_UNRAVEL = True
+GLOBAL_AUTO_CONSOLIDATE = True  # Reduce plugs to parent plug, if possible.
+GLOBAL_AUTO_UNRAVEL = True  # Expand plugs into their child components. I recommend leaving this on!
 
 
 # Tracer preferences ---
-VARIABLE_PREFIX = "var"
-VALUE_PREFIX = "val"
+VARIABLE_PREFIX = "var"  # Prefix for variables in the Tracer-stack (created nodes).
+VALUE_PREFIX = "val"  # Prefix for values in the Tracer-stack (queried values).
 
 
 # Extension preferences ---
-# No path means the NodeCalculator will only check for the extension locally.
-EXTENSION_PATH = ""
-EXTENSION_NAME = ""  # "noca_extension" or "noca_extension_maya_math_nodes"
+EXTENSION_PATH = ""  # Without a path the NodeCalculator will check for the extension locally.
+EXTENSION_NAME = ""  # Name of the extension python file.

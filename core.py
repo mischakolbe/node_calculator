@@ -178,9 +178,17 @@ class Node(object):
         item (bool or int or float or str or list or tuple): Maya node, value,
             list of nodes, etc.
         attrs (str or list or tuple): String or list of strings that are an
-            attribute on this node
-        auto_unravel (bool): Should attrs of NcNode be unravelled
-        auto_consolidate (bool): Should attrs of NcNode be consolidated
+            attribute on this node. Defaults to None.
+        auto_unravel (bool): Should attrs automatically be unravelled into
+            child attrs when operations are performed on this Node?
+            Defaults to None, which means GLOBAL_AUTO_UNRAVEL is used.
+            NodeCalculator works best if this is left unchanged!
+        auto_consolidate (bool): Should attrs automatically be consolidated
+            into parent attrs when operations are performed on this Node, to
+            reduce the amount of connections?
+            Defaults to None, which means GLOBAL_AUTO_UNRAVEL is used.
+            Sometimes parent plugs don't update/evaluate reliably. If that's
+            the case; use this flag or noca.set_global_auto_consolidate(False).
 
     Returns:
         NcNode or NcList or NcValue: Instance with given args.
