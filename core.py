@@ -389,6 +389,34 @@ class OperatorMetaClass(object):
 
         super(OperatorMetaClass, self).__init__()
 
+    def available(self, full=False):
+        """Print all available operators.
+
+        Args:
+            full (bool): If False only the operator-names are printed. If True
+                the docString of all operators is printed. Defaults to False.
+        """
+        excluded = ["available"]
+
+        print("\n############ Available NodeCalculator Operators ############")
+
+        for item in dir(self):
+            # Skip all methods that are (semi-)private.
+            if not item.startswith("_") and item not in excluded:
+                # Print the entire docString.
+                if full:
+                    title_text = "{0}:".format(item)
+                    title_str = "{0}\n{1}\n{2}".format(
+                        "="*60, title_text, "-"*len(title_text)
+                    )
+                    print(title_str)
+                    print(getattr(self, item).__doc__)
+                # Print the operator-name only.
+                else:
+                    print(item)
+
+        print("##############################################################")
+
     @staticmethod
     def angle_between(vector_a, vector_b=(1, 0, 0)):
         """Create angleBetween-node to find the angle between 2 vectors.
