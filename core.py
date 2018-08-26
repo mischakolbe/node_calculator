@@ -111,6 +111,7 @@ import copy
 import itertools
 import numbers
 import os
+import re
 import sys
 
 # Third party imports
@@ -1523,8 +1524,13 @@ class NcBaseNode(NcBaseClass):
         )
         print(message)
 
-    def to_py_node(self):
+    def to_py_node(self, attrs=True):
         """Get a PyNode from a NcNode/NcAttrs instance.
+
+        Args:
+            attrs (bool): Use attrs when creating a PyNode instance. When set
+                to False only the node will be used for PyNode instantiation.
+                Defaults to True.
 
         Returns:
             pm.PyNode: PyNode-instance of this node or plug
@@ -1533,14 +1539,18 @@ class NcBaseNode(NcBaseClass):
             RuntimeError: If the user requested a PyNode of an NcNode/NcAttrs
                 with multiple attrs. PyNodes can only contain one attr max.
         """
-        if not self.attrs_list:
+        # Without attrs or if they should be ignored; return PyNode with node.
+        if not attrs or not self.attrs_list:
             return pm.PyNode(self.node)
+
+        # PyNode only accepts a singular attribute max.
         if len(self.attrs_list) == 1:
             return pm.PyNode(self.plugs[0])
 
         msg = (
             "Tried to create PyNode from NcNode with multiple attributes: {0} "
-            "PyNode only supports node or single attributes!".format(self)
+            "PyNode only supports node or single attributes! Use the flag "
+            "attrs=False to ignore the attrs of this noca-Node.".format(self)
         )
         raise RuntimeError(msg)
 
@@ -1694,6 +1704,22 @@ class NcBaseNode(NcBaseClass):
         kwargs["attributeType"] = "enum"
 
         return self._add_traced_attr(name, **kwargs)
+
+    def add_int(self, *args, **kwargs):
+        """Create an integer-attribute on the node associated with this NcNode.
+
+        Note:
+            This function simply redirects to add_long, but most people will
+            probably expect an "int" data type.
+
+        Args:
+            args (list): Arguments that will be passed on to add_long()
+            kwargs (dict): Key/value pairs that will be passed on to add_long()
+
+        Returns:
+            NcNode: NcNode-instance with the node and new attribute.
+        """
+        return self.add_long(*args, **kwargs)
 
     def add_separator(
             self,
@@ -2272,6 +2298,28 @@ class NcList(NcBaseClass, list):
 
         self.__dict__["_items"] = list_items
 
+    def __str__(self):
+        """Readable format of NcList instance.
+
+        Note:
+            For example invoked by using print(NcList instance) in Maya
+
+        Returns:
+            str: String of all NcList _items.
+        """
+        return "{0}({1})".format(self.__class__.__name__, self._items)
+
+    def __repr__(self):
+        """Unambiguous format of NcList instance.
+
+        Note:
+            For example invoked by running highlighted NcList instance in Maya
+
+        Returns:
+            str: String of concatenated class-type, node and attrs.
+        """
+        return "{0}({1})".format(self.__class__.__name__, self._items)
+
     def __setattr__(self, name, value):
         """Set or connect list items to the given value.
 
@@ -2306,28 +2354,6 @@ class NcList(NcBaseClass, list):
         else:
             for item in self._items:
                 _unravel_and_set_or_connect_a_to_b(NcNode(item, name), value)
-
-    def __str__(self):
-        """Readable format of NcList instance.
-
-        Note:
-            For example invoked by using print(NcList instance) in Maya
-
-        Returns:
-            str: String of all NcList _items.
-        """
-        return "{0}({1})".format(self.__class__.__name__, self._items)
-
-    def __repr__(self):
-        """Unambiguous format of NcList instance.
-
-        Note:
-            For example invoked by running highlighted NcList instance in Maya
-
-        Returns:
-            str: String of concatenated class-type, node and attrs.
-        """
-        return "{0}({1})".format(self.__class__.__name__, self._items)
 
     def __getitem__(self, index):
         """Get stored item at given index.
@@ -3265,6 +3291,9 @@ def _create_node_name(operation, *args):
         else:
             # Unknown arg-type
             involved_args.append("UNK" + str(arg))
+
+    # Remove invalid characters from args, to prevent Maya warning message.
+    involved_args = [re.sub('[^\w_]*', '', arg) for arg in involved_args]
 
     # Combine all name-elements
     name_elements = [
