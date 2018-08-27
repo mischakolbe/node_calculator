@@ -2200,7 +2200,7 @@ class NcAttrs(NcBaseNode):
             The requested attr gets "concatenated" onto the existing attr(s)!
 
             There are certain keywords that will NOT return a new NcAttrs:
-            * attrs: Returns currently stored NcAttrs of this NcNode instance.
+            * attrs: Returns this NcAttrs instance (self).
             * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
             * nodes: Returns name of Maya node in scene in a list ([str]).
@@ -3991,7 +3991,13 @@ if has_extension:
     # the decorators that in turn populate the Op-class with all extension-ops.
     reload(noca_extension)
 
-    for required_plugin in noca_extension.REQUIRED_EXTENSION_PLUGINS:
-        cmds.loadPlugin(required_plugin, quiet=True)
+    try:
+        for required_plugin in noca_extension.REQUIRED_EXTENSION_PLUGINS:
+            cmds.loadPlugin(required_plugin, quiet=True)
+    except AttributeError:
+        LOG.warning("REQUIRED_EXTENSION_PLUGINS list not found in extension!")
 
-    OPERATORS.update(noca_extension.EXTENSION_OPERATORS)
+    try:
+        OPERATORS.update(noca_extension.EXTENSION_OPERATORS)
+    except AttributeError:
+        LOG.warning("EXTENSION_OPERATORS dictionary not found in extension!")

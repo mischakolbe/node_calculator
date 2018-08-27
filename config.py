@@ -25,4 +25,4 @@ VALUE_PREFIX = "val"  # Prefix for values in the Tracer-stack (queried values).
 
 # Extension preferences ---
 EXTENSION_PATH = ""  # Without a path the NodeCalculator will check for the extension locally.
-EXTENSION_NAME = ""  # Name of the extension python file.
+EXTENSION_NAME = ""  # Name of the extension python file (without .py).
