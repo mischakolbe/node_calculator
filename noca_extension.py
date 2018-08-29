@@ -19,15 +19,28 @@ from node_calculator.core import noca_op
 from node_calculator.core import _create_operation_node
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~ PART A FOR ADDITIONAL OPERATORS ~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~ STEP 1: REQUIRED PLUGINS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 '''
 If your operators require certain Maya plugins to be loaded: Add the name(s) of
 those plugin(s) to this list.
+
+You can use this script to find out what plugin a certain node type lives in:
+
+node_type = ""  # Enter node type here!
+for plugin in cmds.pluginInfo(query=True, listPlugins=True):
+    plugin_types = cmds.pluginInfo(plugin, query=True, dependNode=True) or []
+    for plugin_type in plugin_types:
+        if plugin_type == node_type:
+            print "\n>>> {} is part of the plugin {}".format(node_type, plugin)
 '''
 REQUIRED_EXTENSION_PLUGINS = []
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~ PART B FOR ADDITIONAL OPERATORS ~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~ STEP 2: OPERATORS DICTIONARY ~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 '''
 EXTENSION_OPERATORS holds the data for each available operation:
 the necessary node-type, its inputs, outputs, etc.
@@ -52,10 +65,10 @@ EXTENSION_OPERATORS = {
     # "example_operation": {
     #     "node": "mayaNodeForThisOperation",
     #     "inputs": [
-    #         ["input[{array}].inX", "input[{array}].inY", "input[{array}].inZ"],
+    #         ["singleInputParam"],
     #         ["input1X", "input1Y", "input1Z"],
     #         ["input2X", "input2Y", "input2Z"],
-    #         ["singleInputParam"],
+    #         ["input[{array}].inX", "input[{array}].inY", "input[{array}].inZ"],
     #     ],
     #     "outputs": [
     #         ["outputX", "outputY", "outputZ"],
@@ -66,7 +79,9 @@ EXTENSION_OPERATORS = {
 }
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~ PART C FOR ADDITIONAL OPERATORS ~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~ STEP 3: OPERATOR FUNCTION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 '''
 Add a function for every operation that should be accessible via noca.Op!
 
