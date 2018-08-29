@@ -1609,11 +1609,13 @@ class NcBaseNode(NcBaseClass):
         Returns:
             executable: Function that will be added to class methods.
         """
+
+        @_format_docstring(attr_type=attr_type)
         def func(*args, **kwargs):
-            """Create an attribute with given name and kwargs.
+            """Create a {attr_type}-attr on the node, with given name & kwargs.
 
             Note:
-                kwargs are exactly the same as in cmds.addAttr()!
+                Use the same kwargs as in cmds.addAttr()!
 
                 The name is awkwardly gathered through args, because the error
                 when no name was specified was very cryptic!
@@ -1626,7 +1628,7 @@ class NcBaseNode(NcBaseClass):
                 NcNode: NcNode-instance with the node and new attribute.
 
             Example:
-                >>> Node("pCube1").add_bool(value=True)
+                >>> Node("pCube1").add_{attr_type}("my_{attr_type}")
             """
             name = None
             # Multiple args are nonsensical for attribute creation.
@@ -3858,6 +3860,28 @@ def _split_plug_into_node_and_attr(plug):
 
     msg = "Could not split given plug {0} into node & attr parts!".format(plug)
     raise RuntimeError(msg)
+
+
+# Python functions ---
+def _format_docstring(*args, **kwargs):
+    """Format docString of a function: Substitute placeholders with (kw)args.
+
+    Note:
+        Formatting your docString directly won't work! It won't be a string
+        literal anymore and Python won't consider it a docString! Replacing
+        the docString (.__doc__) via this closure circumvents this issue.
+
+    Args:
+        args (list): Arguments for the string formatting: .format()
+        kwargs (list): Keyword arguments for the string formatting: .format()
+
+    Returns:
+        executable: The function with formatted docString.
+    """
+    def func(obj):
+        obj.__doc__ = obj.__doc__.format(*args, **kwargs)
+        return obj
+    return func
 
 
 # Tracer ---
