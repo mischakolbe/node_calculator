@@ -313,8 +313,9 @@ def create_node(node_type, name=None, **kwargs):
             a = noca.create_node("transform", "myTransform")
             a.t = [1, 2, 3]
     """
+    attrs = kwargs.pop("attrs", None)
     node = _traced_create_node(node_type, name=name, **kwargs)
-    noca_node = Node(node)
+    noca_node = Node(node, attrs=attrs)
 
     return noca_node
 
@@ -1699,8 +1700,10 @@ class NcBaseNode(NcBaseClass):
                 enum_name = cases
             if isinstance(enum_name, (list, tuple)):
                 enum_name = ":".join(enum_name)
-
             kwargs["enumName"] = enum_name
+
+        elif isinstance(kwargs["enumName"], (list, tuple)):
+            kwargs["enumName"] = ":".join(kwargs["enumName"])
 
         # Replace user inputs for attributeType. Type is defined implicitly!
         kwargs["attributeType"] = "enum"
@@ -2485,9 +2488,11 @@ class NcList(NcBaseClass, list):
 
         for item in self._items:
             if isinstance(item, (NcBaseNode)):
-                return_list.append(item.node)
-
-        return_list = list(set(return_list))
+                # Append node, if it's not a duplicate.
+                item_node = item.node
+                if item_node not in return_list:
+                    # Not using list(set()) to preserve order.
+                    return_list.append(item_node)
 
         return return_list
 
