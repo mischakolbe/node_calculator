@@ -14,14 +14,15 @@
 #
 import os
 import sys
-# sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('..'))
 # sys.path.insert(0, os.path.abspath('..'))
 
-# Directory that the project lives in, aka ../..
-SITE_ROOT = '/'.join(os.path.dirname(__file__).split('/')[0:-2])
+# # Directory that the project lives in, aka ../..
+# SITE_ROOT = '/'.join(os.path.dirname(__file__).split('/')[0:-2])
 
-sys.path.insert(0, SITE_ROOT)
-print(">>>>>>>>>>>>>>>>>>>>>>>>>>", SITE_ROOT)
+# sys.path.insert(0, SITE_ROOT)
+# print(">>>>>>>>>>>>>>>>>>>>>>>>>>", SITE_ROOT)
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>", os.path.abspath(""))
 
 # -- Project information -----------------------------------------------------
 
@@ -191,7 +192,7 @@ epub_exclude_files = ['search.html']
 
 # -- Extension configuration -------------------------------------------------
 
-autodoc_mock_imports = ["maya", "pymel"]
+autodoc_mock_imports = ["maya", "pymel", "node_calculator"]
 
 
 # -- Options for todo extension ----------------------------------------------
