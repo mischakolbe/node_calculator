@@ -4,6 +4,7 @@
 
 Notes:
     I am using this terminology when talking about plugs:
+
     * Array plug: A plug that allows any number of connections.
         Example: "input3D" is the array plug of the plugs "input3D[i]".
     * Array plug element: A specific plug of an array plug.
@@ -195,7 +196,7 @@ def rename_mobj(mobj, name):
     """Rename the given MObject.
 
     Note:
-        I believe this is NOT undoable!!! Therefore be careful!
+        This is currently NOT undoable!!! Therefore be careful!
 
     Args:
         mobj (MObject): Node to be renamed.
@@ -241,18 +242,20 @@ def select_mobjs(mobjs):
         mobjs (list): List of MObjects to be selected.
 
     Todo:
-        For some reason the version below (utilizing OpenMaya-methods) only
-        selects the nodes, but they don't get selected in the outliner or
-        viewport! Therefore using the cmds-version for now.
+        ::
 
-        m_selection_list = OpenMaya.MSelectionList()
-        for mobj in mobjs:
-            m_selection_list.add(mobj)
-        OpenMaya.MGlobal.setActiveSelectionList(
-            m_selection_list,
-            OpenMaya.MGlobal.kReplaceList
-        )
-        return m_selection_list
+            For some reason the version below (utilizing OpenMaya-methods) only
+            selects the nodes, but they don't get selected in the outliner or
+            viewport! Therefore using the cmds-version for now.
+
+            m_selection_list = OpenMaya.MSelectionList()
+            for mobj in mobjs:
+                m_selection_list.add(mobj)
+            OpenMaya.MGlobal.setActiveSelectionList(
+                m_selection_list,
+                OpenMaya.MGlobal.kReplaceList
+            )
+            return m_selection_list
     """
     if not isinstance(mobjs, (list, tuple)):
         mobjs = [mobjs]
