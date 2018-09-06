@@ -1,5 +1,5 @@
 Auto Generated Documentation
 ============================
 
-.. automodule:: something_that_doesnt_exist
+.. automodule:: sphinx_example
    :members:
