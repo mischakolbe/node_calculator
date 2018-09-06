@@ -1,5 +1,5 @@
 Code Doc
 ========
 
-.. automodule:: om_util
+.. automodule:: node_calculator.om_util
    :members:

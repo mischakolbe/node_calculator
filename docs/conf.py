@@ -14,9 +14,14 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0, os.path.abspath('../..'))
+# sys.path.insert(0, os.path.abspath('..'))
 
+# Directory that the project lives in, aka ../..
+SITE_ROOT = '/'.join(os.path.dirname(__file__).split('/')[0:-2])
+
+sys.path.insert(0, SITE_ROOT)
+print(">>>>>>>>>>>>>>>>>>>>>>>>>>", SITE_ROOT)
 
 # -- Project information -----------------------------------------------------
 
