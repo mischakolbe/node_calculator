@@ -1,5 +1,5 @@
-Auto Generated Documentation
-============================
+Code Doc
+========
 
 .. automodule:: om_util
    :members:
