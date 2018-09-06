@@ -62,21 +62,19 @@ Example:
 
 # IMPORTS ---
 # Python imports
-from __future__ import absolute_import
-
 import copy
 import re
 
 # Third party imports
 
 # Local imports
-from . import logger
-from . import lookup_table
+from node_calculator import logger
+from node_calculator import lookup_table
 
 
 # SETUP LOGGER ---
 logger.clear_handlers()
-logger.setup_stream_handler(level=logger.logging.DEBUG)
+logger.setup_stream_handler(level=logger.logging.WARN)
 LOG = logger.log
 
 

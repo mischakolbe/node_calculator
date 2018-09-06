@@ -105,8 +105,6 @@ Example:
 
 # IMPORTS ---
 # Python imports
-from __future__ import absolute_import
-
 import copy
 import itertools
 import numbers
@@ -120,12 +118,12 @@ from maya.api import OpenMaya
 import pymel.core as pm
 
 # Local imports
-from . import config
-from . import logger
-from . import lookup_table
-from . import nc_value
-from . import om_util
-from . import tracer
+from node_calculator import config
+from node_calculator import logger
+from node_calculator import lookup_table
+from node_calculator import nc_value
+from node_calculator import om_util
+from node_calculator import tracer
 
 
 # PYTHON 2.7 & 3 COMPATIBILITY ---

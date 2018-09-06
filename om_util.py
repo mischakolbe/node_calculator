@@ -18,8 +18,6 @@ Notes:
 
 # IMPORTS ---
 # Python imports
-from __future__ import absolute_import
-
 import re
 
 # Third party imports
@@ -27,12 +25,12 @@ from maya import cmds
 from maya.api import OpenMaya
 
 # Local imports
-from . import logger
+from node_calculator import logger
 
 
 # SETUP LOGGER ---
 logger.clear_handlers()
-logger.setup_stream_handler(level=logger.logging.DEBUG)
+logger.setup_stream_handler(level=logger.logging.WARN)
 LOG = logger.log
 
 
