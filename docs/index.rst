@@ -17,6 +17,7 @@ WHAAAAAAAAAAAAAAAAAAAAT?!
    tutorial
    project
    code
+   code_alt
 
 
 Indices and tables
