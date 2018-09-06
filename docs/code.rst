@@ -1,5 +1,5 @@
 Auto Generated Documentation
 ============================
 
-.. automodule:: sphinx_example
+.. automodule:: node_calculator.om_util
    :members:
