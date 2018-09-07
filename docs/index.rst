@@ -7,8 +7,10 @@ Welcome to NodeCalculator's documentation!
 ==========================================
 
 Wow, this is super sweet, eh?!
-sphinx-build . _build
 WHAAAAAAAAAAAAAAAAAAAAT?!
+
+**Note: Public AND private methods/functions are listed in this documentation.**
+
 
 .. toctree::
    :maxdepth: 2
@@ -16,12 +18,11 @@ WHAAAAAAAAAAAAAAAAAAAAT?!
 
    tutorial
    project
-   code
+   core
+   om_util
 
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

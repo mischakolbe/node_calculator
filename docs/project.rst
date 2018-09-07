@@ -1,4 +1,4 @@
-Some Project Stuff Here
+About
 ==========================================
 
-Project this, project that.
+Some background; why does NoCa exist?
