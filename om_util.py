@@ -177,8 +177,9 @@ def get_all_mobjs_of_type(dependency_node_type):
         list: List of MObjects of matching type.
 
     Example:
+        ::
 
-        >>> get_all_mobjs_of_type(OpenMaya.MFn.kDependencyNode)
+            get_all_mobjs_of_type(OpenMaya.MFn.kDependencyNode)
     """
     dep_node_iterator = OpenMaya.MItDependencyNodes(dependency_node_type)
     return_list = []
@@ -631,8 +632,7 @@ def split_plug_string(plug):
         plug (str): Name of plug; "name.attr"
 
     Returns:
-        tuple: Tuple of elements that make up plug;
-            (namespace, dag_path, node, attrs)
+        tuple: Tuple of elements that make up plug (namespace, dag_path, node, attrs)
     """
     node, attr = plug.split(".", 1)
 

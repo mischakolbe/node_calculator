@@ -195,18 +195,18 @@ class Node(object):
     Example:
         ::
 
+            # NcNode instance with pCube1 as node and tx as attr
             Node("pCube.tx")
-            >>>> NcNode instance with pCube1 as node and tx as attr
+            # NcNode instance with pCube1 as node and tx as attr
             Node("pCube", "tx")
-            >>>> NcNode instance with pCube1 as node and tx as attr
+            # NcNode instance with pCube1 as node and tx as attr
             Node("pCube", ["tx"])
-            >>>> NcNode instance with pCube1 as node and tx as attr
 
+            # NcList instance with value 1 and NcNode with pCube1
             Node([1, "pCube"])
-            >>>> NcList instance with value 1 and NcNode with pCube1
 
+            # NcIntValue instance with value 1
             Node(1)
-            >>>> NcIntValue instance with value 1
     """
 
     def __new__(
@@ -271,6 +271,7 @@ def transform(name=None, **kwargs):
 
     Example:
         ::
+
             a = noca.transform("myTransform")
             a.t = [1, 2, 3]
     """
@@ -289,6 +290,7 @@ def locator(name=None, **kwargs):
 
     Example:
         ::
+
             a = noca.locator("myLoc")
             a.t = [1, 2, 3]
     """
@@ -308,6 +310,7 @@ def create_node(node_type, name=None, **kwargs):
 
     Example:
         ::
+
             a = noca.create_node("transform", "myTransform")
             a.t = [1, 2, 3]
     """
@@ -371,7 +374,7 @@ def noca_op(func):
 
 # OPERATORS ---
 class OperatorMetaClass(object):
-    """MetaClass for NodeCalculator operators that go beyond basic math (+-*/).
+    """MetaClass for NodeCalculator operators that go beyond basic math.
 
     Note:
         A meta-class was used to ensure the "Op"-class to be a singleton class.
@@ -431,14 +434,13 @@ class OperatorMetaClass(object):
             NcNode: Instance with angleBetween-node and output-attribute(s)
 
         Example:
-            Op.angle_between(
-                Op.point_matrix_mult(
-                    [1, 0, 0],
-                    Node("pCube1").worldMatrix,
-                    vector_multiply=True
-                ),
-                [1, 0, 0]
-            )
+            ::
+
+                matrix = Node("pCube1").worldMatrix
+                pt = Op.point_matrix_mult(
+                    [1, 0, 0], matrix, vector_multiply=True
+                )
+                Op.angle_between(pt, [1, 0, 0])
         """
         return _create_operation_node('angle_between', vector_a, vector_b)
 
@@ -453,7 +455,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with plusMinusAverage-node and output-attribute(s)
 
         Example:
-            >>> Op.average(Node("pCube.t"), [1, 2, 3])
+            ::
+
+                Op.average(Node("pCube.t"), [1, 2, 3])
         """
         return _create_operation_node('average', attrs)
 
@@ -473,7 +477,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with blend-node and output-attributes
 
         Example:
-            >>> Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
+            ::
+
+                Op.blend(1, Node("pCube.tx"), Node("pCube.customBlendAttr"))
         """
         return _create_operation_node('blend', attr_a, attr_b, blend_value)
 
@@ -494,11 +500,13 @@ class OperatorMetaClass(object):
             NcNode: Instance with choice-node and output-attribute(s)
 
         Example:
-            option_a = Node("pCube1.tx")
-            option_b = Node("pCube2.tx")
-            switch_attr = Node("pSphere1").add_bool("optionSwitch")
-            choice_node = Op.choice([option_a, option_b], selector=switch_attr)
-            Node("pTorus1").tx = choice_node
+            ::
+
+                option_a = Node("pCube1.tx")
+                option_b = Node("pCube2.tx")
+                switch = Node("pSphere1").add_bool("optionSwitch")
+                choice_node = Op.choice([option_a, option_b], selector=switch)
+                Node("pTorus1").tx = choice_node
         """
         choice_node_obj = _create_operation_node('choice', inputs, selector)
 
@@ -519,7 +527,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with clamp-node and output-attribute(s)
 
         Example:
-            >>> Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
+            ::
+
+                Op.clamp(Node("pCube.t"), [1, 2, 3], 5)
         """
         return _create_operation_node('clamp', attr_a, min_value, max_value)
 
@@ -541,11 +551,13 @@ class OperatorMetaClass(object):
             NcNode: Instance with composeMatrix-node and output-attribute(s)
 
         Example:
-            in_a = Node('pCube1')
-            in_b = Node('pCube2')
-            decomp_a = Op.decompose_matrix(in_a.worldMatrix)
-            decomp_b = Op.decompose_matrix(in_b.worldMatrix)
-            Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
+            ::
+
+                in_a = Node('pCube1')
+                in_b = Node('pCube2')
+                decomp_a = Op.decompose_matrix(in_a.worldMatrix)
+                decomp_b = Op.decompose_matrix(in_b.worldMatrix)
+                Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
         """
         # Using kwargs not to have a lot of flags in the function call
         translate = kwargs.get("translate", kwargs.get("t", 0))
@@ -589,11 +601,12 @@ class OperatorMetaClass(object):
 
         Example:
             ::
+
                 condition_node = Node("pCube1.tx") >= 2
                 pass_on_if_true = Node("pCube2.ty") + 2
                 pass_on_if_false = 5 - Node("pCube2.tz").get()
+                # Op.condition(condition-part, "if true"-part, "if false"-part)
                 Op.condition(condition_node, pass_on_if_true, pass_on_if_false)
-                            |condition-part| "if true"-part | "if false"-part |
         """
         # Make sure condition_node is of expected Node-type!
         if not isinstance(condition_node, NcNode):
@@ -639,7 +652,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.cross(Node("pCube.t"), [1, 2, 3], True)
+            ::
+
+                Op.cross(Node("pCube.t"), [1, 2, 3], True)
         """
         return _create_operation_node('cross', attr_a, attr_b, normalize)
 
@@ -654,12 +669,14 @@ class OperatorMetaClass(object):
             NcNode: Instance with decomposeMatrix-node and output-attribute(s)
 
         Example:
-            driver = Node('pCube1')
-            driven = Node('pSphere1')
-            decomp = Op.decompose_matrix(driver.worldMatrix)
-            driven.t = decomp.outputTranslate
-            driven.r = decomp.outputRotate
-            driven.s = decomp.outputScale
+            ::
+
+                driver = Node('pCube1')
+                driven = Node('pSphere1')
+                decomp = Op.decompose_matrix(driver.worldMatrix)
+                driven.t = decomp.outputTranslate
+                driven.r = decomp.outputRotate
+                driven.s = decomp.outputScale
         """
         return _create_operation_node('decompose_matrix', in_matrix)
 
@@ -677,7 +694,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.dot(Node("pCube.t"), [1, 2, 3], True)
+            ::
+
+                Op.dot(Node("pCube.t"), [1, 2, 3], True)
         """
         return _create_operation_node('dot', attr_a, attr_b, normalize)
 
@@ -692,7 +711,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with inverseMatrix-node and output-attribute(s)
 
         Example:
-            >>> Op.inverse_matrix(Node("pCube.worldMatrix"))
+            ::
+
+                Op.inverse_matrix(Node("pCube.worldMatrix"))
         """
         return _create_operation_node('inverse_matrix', in_matrix)
 
@@ -708,7 +729,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with distanceBetween-node and distance-attribute
 
         Example:
-            >>> Op.len(Node("pCube.t"), [1, 2, 3])
+            ::
+
+                Op.len(Node("pCube.t"), [1, 2, 3])
         """
         return _create_operation_node('length', attr_a, attr_b)
 
@@ -724,7 +747,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with distanceBetween-node and distance-attribute
 
         Example:
-            >>> Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
+            ::
+
+                Op.len(Node("pCube.worldMatrix"), Node("pCube2.worldMatrix"))
         """
         if matrix_b is None:
             return _create_operation_node('matrix_distance', matrix_a)
@@ -741,14 +766,16 @@ class OperatorMetaClass(object):
             NcNode: Instance with multMatrix-node and output-attribute(s)
 
         Example:
-            matrix_mult = Op.mult_matrix(
-                Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
-            )
-            decomp = Op.decompose_matrix(matrix_mult)
-            out = Node('pSphere')
-            out.translate = decomp.outputTranslate
-            out.rotate = decomp.outputRotate
-            out.scale = decomp.outputScale
+            ::
+
+                matrix_mult = Op.mult_matrix(
+                    Node('pCube1.worldMatrix'), Node('pCube2').worldMatrix
+                )
+                decomp = Op.decompose_matrix(matrix_mult)
+                out = Node('pSphere')
+                out.translate = decomp.outputTranslate
+                out.rotate = decomp.outputRotate
+                out.scale = decomp.outputScale
         """
         return _create_operation_node('mult_matrix', attrs)
 
@@ -764,7 +791,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with vectorProduct-node and output-attribute(s)
 
         Example:
-            >>> Op.normalize_vector(Node("pCube.t"))
+            ::
+
+                Op.normalize_vector(Node("pCube.t"))
         """
         # Making normalize a flag allows the user to connect attributes to it
         return_value = _create_operation_node(
@@ -802,10 +831,12 @@ class OperatorMetaClass(object):
             NcNode: Instance with pairBlend-node and output-attribute(s)
 
         Example:
-            a = Node("pCube1")
-            b = Node("pSphere1")
-            blend_attr = a.add_float("blend")
-            Op.pair_blend(a.t, a.r, b.t, b.r, blend_attr)
+            ::
+
+                a = Node("pCube1")
+                b = Node("pSphere1")
+                blend_attr = a.add_float("blend")
+                Op.pair_blend(a.t, a.r, b.t, b.r, blend_attr)
         """
         return_value = _create_operation_node(
             'pair_blend',
@@ -832,11 +863,13 @@ class OperatorMetaClass(object):
             NcNode: Instance with pointMatrixMult-node and output-attribute(s)
 
         Example:
-            Op.point_matrix_mult(
-                Node("pSphere.t"),
-                Node("pCube.worldMatrix"),
-                vector_multiply=True
-            )
+            ::
+
+                Op.point_matrix_mult(
+                    Node("pSphere.t"),
+                    Node("pCube.worldMatrix"),
+                    vector_multiply=True
+                )
         """
         created_node = _create_operation_node(
             'point_matrix_mult',
@@ -940,7 +973,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with setRange-node and output-attribute(s)
 
         Example:
-            >>> Op.set_range(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
+            ::
+
+                Op.set_range(Node("pCube.t"), [1, 2, 3], 4, [-1, 0, -2])
         """
         return_value = _create_operation_node(
             'set_range',
@@ -963,7 +998,9 @@ class OperatorMetaClass(object):
             NcNode: Instance with transposeMatrix-node and output-attribute(s)
 
         Example:
-            >>> Op.transpose_matrix(Node("pCube.worldMatrix"))
+            ::
+
+                Op.transpose_matrix(Node("pCube.worldMatrix"))
         """
         return _create_operation_node('transpose_matrix', in_matrix)
 
@@ -1006,7 +1043,9 @@ class NcBaseClass(object):
         """Leading plus signs are ignored, since they are redundant.
 
         Example:
-            >>> + Node("pCube1.ty")
+            ::
+
+                + Node("pCube1.ty")
         """
         LOG.debug("%s __pos__ (%s)", self.__class__.__name__, self)
 
@@ -1016,7 +1055,9 @@ class NcBaseClass(object):
         """Leading minus sign multiplies by -1.
 
         Example:
-            >>> - Node("pCube1.ty")
+            ::
+
+                - Node("pCube1.ty")
         """
         LOG.debug("%s __neg__ (%s)", self.__class__.__name__, self)
 
@@ -1027,7 +1068,9 @@ class NcBaseClass(object):
         """Regular addition operator for NodeCalculator objects.
 
         Example:
-            >>> Node("pCube1.ty") + 4
+            ::
+
+                Node("pCube1.ty") + 4
         """
         LOG.debug("%s __add__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1040,7 +1083,9 @@ class NcBaseClass(object):
             Fall-back method if regular addition is not defined/fails.
 
         Example:
-            >>> 4 + Node("pCube1.ty")
+            ::
+
+                4 + Node("pCube1.ty")
         """
         LOG.debug("%s __radd__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1050,7 +1095,9 @@ class NcBaseClass(object):
         """Regular subtraction operator for NodeCalculator objects.
 
         Example:
-            >>> Node("pCube1.ty") - 4
+            ::
+
+                Node("pCube1.ty") - 4
         """
         LOG.debug("%s __sub__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1063,7 +1110,9 @@ class NcBaseClass(object):
             Fall-back method if regular subtraction is not defined/fails.
 
         Example:
-            >>> 4 - Node("pCube1.ty")
+            ::
+
+                4 - Node("pCube1.ty")
         """
         LOG.debug("%s __rsub__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1073,7 +1122,9 @@ class NcBaseClass(object):
         """Regular multiplication operator for NodeCalculator objects.
 
         Example:
-            >>> Node("pCube1.ty") * 4
+            ::
+
+                Node("pCube1.ty") * 4
         """
         LOG.debug("%s __mul__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1086,7 +1137,9 @@ class NcBaseClass(object):
             Fall-back method if regular multiplication is not defined/fails.
 
         Example:
-            >>> 4 * Node("pCube1.ty")
+            ::
+
+                4 * Node("pCube1.ty")
         """
         LOG.debug("%s __rmul__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1096,7 +1149,9 @@ class NcBaseClass(object):
         """Regular division operator for NodeCalculator objects.
 
         Example:
-            >>> Node("pCube1.ty") / 4
+            ::
+
+                Node("pCube1.ty") / 4
         """
         LOG.debug("%s __div__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1109,7 +1164,9 @@ class NcBaseClass(object):
             Fall-back method if regular division is not defined/fails.
 
         Example:
-            >>> 4 / Node("pCube1.ty")
+            ::
+
+                4 / Node("pCube1.ty")
         """
         LOG.debug("%s __rdiv__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1119,7 +1176,9 @@ class NcBaseClass(object):
         """Regular power operator for NodeCalculator objects.
 
         Example:
-            >>> Node("pCube1.ty") ** 4
+            ::
+
+                Node("pCube1.ty") ** 4
         """
         LOG.debug("%s __pow__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1132,7 +1191,9 @@ class NcBaseClass(object):
             NcNode: Instance of a newly created Maya condition-node
 
         Example:
-            >>> Node("pCube1.ty") == 4
+            ::
+
+                Node("pCube1.ty") == 4
         """
         LOG.debug("%s __eq__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1145,7 +1206,9 @@ class NcBaseClass(object):
             NcNode: Instance of a newly created Maya condition-node
 
         Example:
-            >>> Node("pCube1.ty") != 4
+            ::
+
+                Node("pCube1.ty") != 4
         """
         LOG.debug("%s __ne__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1158,7 +1221,9 @@ class NcBaseClass(object):
             NcNode: Instance of a newly created Maya condition-node
 
         Example:
-            >>> Node("pCube1.ty") > 4
+            ::
+
+                Node("pCube1.ty") > 4
         """
         LOG.debug("%s __gt__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1171,7 +1236,9 @@ class NcBaseClass(object):
             NcNode: Instance of a newly created Maya condition-node
 
         Example:
-            >>> Node("pCube1.ty") >= 4
+            ::
+
+                Node("pCube1.ty") >= 4
         """
         LOG.debug("%s __ge__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1184,7 +1251,9 @@ class NcBaseClass(object):
             NcNode: Instance of a newly created Maya condition-node
 
         Example:
-            >>> Node("pCube1.ty") < 4
+            ::
+
+                Node("pCube1.ty") < 4
         """
         LOG.debug("%s __lt__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1197,7 +1266,9 @@ class NcBaseClass(object):
             NcNode: Instance of a newly created Maya condition-node
 
         Example:
-            >>> Node("pCube1.ty") <= 4
+            ::
+
+                Node("pCube1.ty") <= 4
         """
         LOG.debug("%s __le__ (%s, %s)", self.__class__.__name__, self, other)
 
@@ -1402,6 +1473,64 @@ class NcBaseNode(NcBaseClass):
                 raise StopIteration
             i += 1
 
+    def __setattr__(self, name, value):
+        """Set or connect attribute to the given value.
+
+        Note:
+            Attribute setting works the same way for NcNode and NcAttrs
+            instances. Their difference lies within the __getattr__ method.
+
+            setattr is invoked by equal-sign. Does NOT work without attr:
+
+            a = Node("pCube1.ty")  # Initialize Node-object with attr given
+
+            a.ty = 7  # Works fine if attribute is specifically called
+
+            a = 7  # Does NOT work!
+
+            It looks like the same operation as above, but here Python calls
+            the assignment operation, NOT setattr. The assignment operation
+            can't be overridden.
+
+        Args:
+            name (str): Name of the attribute to be set
+            value (NcNode or NcAttrs or str or int or float or list or tuple):
+                Connect attr to this object or set attr to this value/array
+
+        Example:
+            ::
+
+                a = Node("pCube1") # Create new NcNode-object
+                a.tx = 7  # Set pCube1.tx to the value 7
+                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
+                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
+        """
+        LOG.debug(
+            "%s __setattr__ (%s, %s)", self.__class__.__name__, name, value
+        )
+
+        _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
+
+    def __setitem__(self, index, value):
+        """Set or connect attribute at index to the given value.
+
+        Note:
+            Item setting works the same way for NcNode and NcAttrs instances.
+            Their difference lies within the __getitem__ method.
+
+            This looks at the list of attrs stored inside NcAttrs.
+
+        Args:
+            index (int): Index of item to be set
+            value (NcNode or NcAttrs or str or int or float): Set/connect item
+                at index to this.
+        """
+        LOG.debug(
+            "%s __setitem__ (%s, %s)", self.__class__.__name__, index, value
+        )
+
+        _unravel_and_set_or_connect_a_to_b(self[index], value)
+
     @property
     def plugs(self):
         """Property to allow easy access to the Node-plugs.
@@ -1582,8 +1711,10 @@ class NcBaseNode(NcBaseClass):
             Allows to add attributes, similar to addAttr-command.
 
         Example:
-            Node("pCube1").add_float("my_float_attr", defaultValue=1.1)
-            Node("pCube1").add_short("my_int_attr", keyable=False)
+            ::
+
+                Node("pCube1").add_float("my_float_attr", defaultValue=1.1)
+                Node("pCube1").add_short("my_int_attr", keyable=False)
         """
         for attr_type, attr_data in lookup_table.ATTR_TYPES.iteritems():
             # enum must be handled individually because of enumNames-flag
@@ -1627,7 +1758,9 @@ class NcBaseNode(NcBaseClass):
                 NcNode: NcNode-instance with the node and new attribute.
 
             Example:
-                >>> Node("pCube1").add_{attr_type}("my_{attr_type}")
+                ::
+
+                    Node("pCube1").add_{attr_type}("my_{attr_type}")
             """
             name = None
             # Multiple args are nonsensical for attribute creation.
@@ -1691,7 +1824,9 @@ class NcBaseNode(NcBaseClass):
             NcNode: NcNode-instance with the node and new attribute.
 
         Example:
-            >>> Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
+            ::
+
+                Node("pCube1").add_enum(cases=["A", "B", "C"], value=2)
         """
         if "enumName" not in kwargs.keys():
             if cases is not None:
@@ -1747,7 +1882,9 @@ class NcBaseNode(NcBaseClass):
             NcNode: NcNode-instance with the node and new attribute.
 
         Example:
-            >>> Node("pCube1").add_separator()
+            ::
+
+                Node("pCube1").add_separator()
         """
         # Find the next available longName for the new separator
         node = self.node
@@ -1828,59 +1965,6 @@ class NcBaseNode(NcBaseClass):
 
         return NcNode(plug)
 
-    def __setattr__(self, name, value):
-        """Set or connect attribute to the given value.
-
-        Note:
-            Attribute setting works the same way for NcNode and NcAttrs
-            instances. Their difference lies within the __getattr__ method.
-
-            setattr is invoked by equal-sign. Does NOT work without attr:
-            a = Node("pCube1.ty")  # Initialize Node-object with attr given
-            a.ty = 7  # Works fine if attribute is specifically called
-            a = 7  # Does NOT work! It looks like the same operation as above,
-                     but here Python calls the assignment operation, NOT
-                     setattr. The assignment-operation can't be overridden.
-
-        Args:
-            name (str): Name of the attribute to be set
-            value (NcNode or NcAttrs or str or int or float or list or tuple):
-                Connect attr to this object or set attr to this value/array
-
-        Example:
-            ::
-
-                a = Node("pCube1") # Create new NcNode-object
-                a.tx = 7  # Set pCube1.tx to the value 7
-                a.t = [1, 2, 3]  # Set pCube1.tx|ty|tz to 1|2|3 respectively
-                a.tx = Node("pCube2").ty  # Connect pCube2.ty to pCube1.tx
-        """
-        LOG.debug(
-            "%s __setattr__ (%s, %s)", self.__class__.__name__, name, value
-        )
-
-        _unravel_and_set_or_connect_a_to_b(self.__getattr__(name), value)
-
-    def __setitem__(self, index, value):
-        """Set or connect attribute at index to the given value.
-
-        Note:
-            Item setting works the same way for NcNode and NcAttrs instances.
-            Their difference lies within the __getitem__ method.
-
-            This looks at the list of attrs stored inside NcAttrs.
-
-        Args:
-            index (int): Index of item to be set
-            value (NcNode or NcAttrs or str or int or float): Set/connect item
-                at index to this.
-        """
-        LOG.debug(
-            "%s __setitem__ (%s, %s)", self.__class__.__name__, index, value
-        )
-
-        _unravel_and_set_or_connect_a_to_b(self[index], value)
-
 
 # NcNode ---
 class NcNode(NcBaseNode):
@@ -1925,7 +2009,7 @@ class NcNode(NcBaseNode):
             RuntimeError: If the given string doesn't seem to represent an
                 existing Maya node in the scene.
 
-        Examples:
+        Example:
             ::
 
                 a = Node("pCube1")  # Node invokes NcNode instantiation!
@@ -3010,33 +3094,33 @@ def _get_node_inputs(operation, new_node, args_list):
     Example:
         ::
 
-        These are examples of how the different "levels" of the args_list look
-        like, described in the Note-section. Notice how the args_list is made
-        up of arg_elements, which are made up of arg_items, which in turn are
-        composed of arg_axis.
+            These are examples of how the different "levels" of the args_list look
+            like, described in the Note-section. Notice how the args_list is made
+            up of arg_elements, which are made up of arg_items, which in turn are
+            composed of arg_axis.
 
 
-        args_list = [
-            [
+            args_list = [
+                [
+                    [<OpenMaya.MPlug X>, <OpenMaya.MPlug Y>, <OpenMaya.MPlug Z>],
+                    <OpenMaya.MPlug A>,
+                    2
+                ]
+            ]
+
+
+            # Note: This example would be for an array-input attribute of a node!
+            arg_elements = [
                 [<OpenMaya.MPlug X>, <OpenMaya.MPlug Y>, <OpenMaya.MPlug Z>],
                 <OpenMaya.MPlug A>,
                 2
             ]
-        ]
 
 
-        # Note: This example would be for an array-input attribute of a node!
-        arg_elements = [
-            [<OpenMaya.MPlug X>, <OpenMaya.MPlug Y>, <OpenMaya.MPlug Z>],
-            <OpenMaya.MPlug A>,
-            2
-        ]
+            arg_item = [<OpenMaya.MPlug X>, <OpenMaya.MPlug Y>, <OpenMaya.MPlug Z>]
 
 
-        arg_item = [<OpenMaya.MPlug X>, <OpenMaya.MPlug Y>, <OpenMaya.MPlug Z>]
-
-
-        arg_axis = <OpenMaya.MPlug X>
+            arg_axis = <OpenMaya.MPlug X>
     """
     inputs_list = OPERATORS[operation]["inputs"]
     LOG.debug(

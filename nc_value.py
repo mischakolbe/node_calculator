@@ -216,10 +216,12 @@ def _create_metadata_val_class(class_type):
             instance.
 
         Example:
-            (pseudo-code)
-            int_nc_value_class = NcValueClass(int)
-            my_int = int_nc_value_class(7)
-            my_int.is_odd = True  # This would be impossible with regular int.
+            ::
+
+                (pseudo-code)
+                int_nc_value_class = NcValueClass(int)
+                my_int = int_nc_value_class(7)
+                my_int.is_odd = True  # This would be impossible with regular int.
         """
 
         def __init__(self, *args, **kwargs):
