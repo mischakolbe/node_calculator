@@ -1,8 +1,8 @@
-Core
+NcValue
 ==============================================================================
 
 
-.. automodule:: core
+.. automodule:: nc_value
    :members:
    :special-members:
    :private-members:

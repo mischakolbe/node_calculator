@@ -1,8 +1,8 @@
-Core
+Tracer
 ==============================================================================
 
 
-.. automodule:: core
+.. automodule:: tracer
    :members:
    :special-members:
    :private-members:

@@ -1,28 +1,23 @@
-.. NodeCalculator documentation master file, created by
-   sphinx-quickstart on Thu Sep  6 01:07:10 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Welcome to the NodeCalculator documentation!
+==============================================================================
 
-Welcome to NodeCalculator's documentation!
-==========================================
+The NodeCalculator is an OpenSource Python module that allows you to create node networks in Autodesk Maya by writing math formulas.
 
-Wow, this is super sweet, eh?!
-WHAAAAAAAAAAAAAAAAAAAAT?!
 
-**Note: Public AND private methods/functions are listed in this documentation.**
+.. image:: images/MayaVsNoca.jpg
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
+   about
+   download
    tutorial
-   project
-   core
-   om_util
+   code
 
 
-Indices and tables
-==================
+Overview
+------------------------------------------------------------------------------
 
 * :ref:`genindex`

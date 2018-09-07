@@ -1,8 +1,8 @@
-Core
+Extension
 ==============================================================================
 
 
-.. automodule:: core
+.. automodule:: noca_extension
    :members:
    :special-members:
    :private-members:

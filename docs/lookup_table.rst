@@ -1,8 +1,8 @@
-Core
+Lookup Table
 ==============================================================================
 
 
-.. automodule:: core
+.. automodule:: lookup_table
    :members:
    :special-members:
    :private-members:

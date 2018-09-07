@@ -1,8 +1,8 @@
-Core
+Config
 ==============================================================================
 
 
-.. automodule:: core
+.. automodule:: config
    :members:
    :special-members:
    :private-members:

@@ -1,8 +1,8 @@
-Core
+Logging
 ==============================================================================
 
 
-.. automodule:: core
+.. automodule:: logger
    :members:
    :special-members:
    :private-members:
