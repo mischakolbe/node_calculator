@@ -15,7 +15,7 @@ from __future__ import absolute_import
 # Third party imports
 
 # Local imports
-from . import om_util
+from node_calculator import om_util
 
 
 class TracerMObject(object):

@@ -1,8 +1,8 @@
-"""Maya utility functions. Using OpenMaya commands wherever possible.
+"""Maya utility functions. Using almost exclusively OpenMaya commands.
 
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 
-Notes:
+Note:
     I am using this terminology when talking about plugs:
 
     * Array plug: A plug that allows any number of connections.
@@ -127,7 +127,7 @@ def get_dag_path_of_mobj(mobj, full=False):
 
     Args:
         mobj (MObject or MDagPath or str): Node whose long name is requested.
-        full (bool): Return either the entire or partial DAG path. See Notes.
+        full (bool): Return either the entire or partial DAG path. See Note.
 
     Returns:
         str: DAG path to the given MObject.

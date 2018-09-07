@@ -1,6 +1,5 @@
-"""Create a node-network by entering a math-formula.
+"""The NodeCalculator: Create a node-network by entering a math-formula.
 
-:created: 03/04/2018
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 :credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly,
           Adam Vanner, Niels Kleinheinz
@@ -9,21 +8,25 @@
 
 Note:
     In any comment/docString of the NodeCalculator I use this convention:
+
     * node: Name of a Maya node in the scene (dagPath if name isn't unique)
     * attr/attribute: Attribute on a Maya node in the scene
     * plug: Combination of node and attribute; node.attr
 
     NcNode and NcAttrs instances provide these keywords:
+
     * attrs: Returns currently stored NcAttrs of this NcNode instance.
     * attrs_list: Returns list of stored attrs: [attr, ...] (list of strings).
     * node: Returns name of Maya node in scene (str).
     * plugs: Returns list of stored plugs: [node.attr, ...] (list of strings).
 
     NcList instances provide these keywords:
+
     * nodes: Returns Maya nodes inside NcList: [node, ...] (list of strings)
 
 
-Supported operations::
+Supported operations:
+    ::
 
         # basic math
         +, -, *, /, **
@@ -2090,6 +2093,7 @@ class NcNode(NcBaseNode):
 
         Note:
             There are certain keywords that will NOT return a new NcAttrs:
+
             * attrs: Returns currently stored NcAttrs of this NcNode instance.
             * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
@@ -2287,6 +2291,7 @@ class NcAttrs(NcBaseNode):
             The requested attr gets "concatenated" onto the existing attr(s)!
 
             There are certain keywords that will NOT return a new NcAttrs:
+
             * attrs: Returns this NcAttrs instance (self).
             * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
             * node: Returns name of Maya node in scene (str).
@@ -2358,6 +2363,7 @@ class NcList(NcBaseClass, list):
 
     Note:
         NcList has the following keywords:
+
         * nodes: Returns Maya nodes in NcList: [node, ...] (list of strings)
 
         NcList inherits from list, for things like isinstance(NcList, list).
@@ -2821,6 +2827,7 @@ def _consolidate_plugs_to_min_dimension(*plugs):
     Note:
         A full set of child attributes can be reduced to their parent attr:
         ["tx", "ty", "tz"] becomes ["t"]
+
         A 3D to 3D connection can be 1 connection if both plugs have a parent
         attr! However, a 1D attr can not connect to a 3D attr and must NOT be
         consolidated!
@@ -3041,6 +3048,7 @@ def _get_node_inputs(operation, new_node, args_list):
         explanation will make it easier to understand what is happening.
 
         Within this function we deal a lot with different levels of arguments:
+
         args_list (list)
           > arg_element (list)
               > arg_item (list or MPlug/value/...)
@@ -3057,22 +3065,26 @@ def _get_node_inputs(operation, new_node, args_list):
 
         The ARGS_LIST is made up of the various arguments that will connect
         into the node.
-        > [array-values, translation-values, rotation-values, ...]
+
+          > [array-values, translation-values, rotation-values, ...]
 
         The ARG_ELEMENT is what will set/connect into an attribute "section"
         of a node. For array-inputs THIS is what matters(!), because one
         attribute section (input[{array}]) will actually be made up of
         many inputs.
-        > [array-values]
+
+          > [array-values]
 
         The ARG_ITEM is one particular arg_element. For arg_elements that are
         array-input the arg_item is a specific input of a array-input. For
         non-array-inputs the arg_elements & the arg_item are equivalent!
-        > [array-input-value[0]]
+
+          > [array-input-value[0]]
 
         The ARG_AXIS is the most granular item, referring to a particular Maya
         node attribute.
-        > [array-value[0].valueX]
+
+          > [array-value[0].valueX]
 
     Args:
         operation (str): Operation the new node has to perform.
@@ -3420,7 +3432,7 @@ def _traced_create_node(node_type, **kwargs):
     """Create a Maya node and add it to the _traced_nodes if Tracer is active.
 
     Note:
-        This is simply an overloaded cmds.createNode(node_type, **kwargs). It
+        This is simply an overloaded cmds.createNode(node_type, \**kwargs). It
         includes the cmds.parent-command if parenting flags are given.
 
         If Tracer is active: Created nodes are associated with a variable.
@@ -3528,7 +3540,7 @@ def _traced_add_attr(node, **kwargs):
     """Add attr to Maya node & add cmds to _command_stack if Tracer is active.
 
     Note:
-        This is simply an overloaded cmds.addAttr(node, **kwargs).
+        This is simply an overloaded cmds.addAttr(node, \**kwargs).
 
     Args:
         node (str): Maya node the attribute should be added to.
@@ -3555,7 +3567,7 @@ def _traced_set_attr(plug, value=None, **kwargs):
     """Set attr on Maya node & add cmds to _command_stack if Tracer is active.
 
     Note:
-        This is simply an overloaded cmds.setAttr(plug, value, **kwargs).
+        This is simply an overloaded cmds.setAttr(plug, value, \**kwargs).
 
     Args:
         plug (MPlug or str): Plug of a Maya node that should be set.

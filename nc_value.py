@@ -8,17 +8,20 @@ Note:
 
     When a value is queried in a NodeCalculator formula it returns an NcValue
     instance, which has the value-variable attached to it. For example:
+    ::
 
         a = noca.Node("pCube1")
 
         with noca.Tracer(pprint_trace=True):
             a.tx.get()
 
-        # >>> val1 = cmds.getAttr('pCube1.tx')
+        # Printout:
+        # val1 = cmds.getAttr('pCube1.tx')
 
     "val1" is the stored variable name of this queried value. When it is used
     in a calculation later in the formula the variable name is used instaed of
     the value itself. For example:
+    ::
 
         a = noca.Node("pCube1")
         b = noca.Node("pSphere1")
@@ -27,13 +30,16 @@ Note:
             curr_tx = a.tx.get()
             b.ty = curr_tx
 
-        # >>> val1 = cmds.getAttr('pCube1.tx')
-        # >>> cmds.setAttr('pSphere1.translateY', val1)
+        # Printout:
+        # val1 = cmds.getAttr('pCube1.tx')
+        # cmds.setAttr('pSphere1.translateY', val1)
+
         # Rather than plugging in the queried value (making it very unclear
         # where that value came from), value-variable "val1" is used instead.
 
     Furthermore: Basic math operations performed on NcValues are stored, too!
     This allows to keep track of where values came from as much as possible:
+    ::
 
         a = noca.Node("pCube1")
         b = noca.Node("pSphere1")
@@ -42,8 +48,10 @@ Note:
             curr_tx = a.tx.get()
             b.ty = curr_tx + 2  # Adding 2 doesn't break the origin of curr_tx!
 
-        # >>> val1 = cmds.getAttr('pCube1.tx')
-        # >>> cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
+        # Printout:
+        # val1 = cmds.getAttr('pCube1.tx')
+        # cmds.setAttr('pSphere1.translateY', val1 + 2)  # <-- !!!
+
         # Note that the printed trace contains the correct calculation
         # including the value-variable "val1".
 
@@ -114,7 +122,7 @@ def value(in_val, metadata=None, created_by_user=True):
 
     Returns:
         class-instance: New instance of appropriate NcValue-class
-            Read Notes for details.
+            Read Note for details.
 
     Examples:
         ::
