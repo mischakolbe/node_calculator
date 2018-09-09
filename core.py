@@ -1,4 +1,4 @@
-"""The NodeCalculator: Create a node-network by entering a math-formula.
+"""Create a node-network by entering a math-formula.
 
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 :credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly,

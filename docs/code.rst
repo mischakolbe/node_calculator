@@ -16,8 +16,8 @@ These pages are auto-created from the docStrings of the NodeCalculator files.
    :caption: Contents:
 
    config
-   noca_extension
    core
+   noca_extension
    nc_value
    tracer
    lookup_table

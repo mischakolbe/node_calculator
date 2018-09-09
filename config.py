@@ -15,7 +15,7 @@ DEFAULT_ATTR_FLAGS = {  # Defaults for add_float(), add_enum(), ... attribute cr
 
 # Connection preferences ---
 GLOBAL_AUTO_CONSOLIDATE = True  # Reduce plugs to parent plug, if possible.
-GLOBAL_AUTO_UNRAVEL = True  # Expand plugs into their child components. I recommend leaving this on!
+GLOBAL_AUTO_UNRAVEL = True  # Expand plugs into their child components. I recommend using True!
 
 
 # Tracer preferences ---

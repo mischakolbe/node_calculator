@@ -1,8 +1,7 @@
 Config
 ==============================================================================
 
+The config.py file allows you to globally change the default behaviour of the NodeCalculator.
 
-.. automodule:: config
-   :members:
-   :special-members:
-   :private-members:
+.. include::  ../config.py
+   :code: python
