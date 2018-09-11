@@ -8,8 +8,10 @@ Turn those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr into r
 [Documentation on ReadTheDocs](https://node-calculator.readthedocs.io/en/latest/)
 
 ### Install & Import:
-Simply save the node_calculator folder to your \Documents\maya\scripts folder. Make sure it's called node_calculator (not node_calculator-master or so).
-Import the Python module in Maya via
+Simply save the node_calculator folder to your \Documents\maya\scripts folder.
+
+Make sure the folder is called node_calculator (not node_calculator-master or so) and import it in Maya via
+
 **import node_calculator.core as noca**
 
 ### Tested with:
@@ -18,4 +20,4 @@ Import the Python module in Maya via
 * Maya 2017
 
 ### Think this is useful? Share the love and buy me a hot chocolate :)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
+[![HotChocolateDonation](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
