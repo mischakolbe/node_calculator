@@ -1655,13 +1655,13 @@ class NcBaseNode(NcBaseClass):
         )
         print(message)
 
-    def to_py_node(self, attrs=True):
+    def to_py_node(self, ignore_attrs=False):
         """Get a PyNode from a NcNode/NcAttrs instance.
 
         Args:
-            attrs (bool): Use attrs when creating a PyNode instance. When set
-                to False only the node will be used for PyNode instantiation.
-                Defaults to True.
+            ignore_attrs (bool): Don't use attrs when creating PyNode instance.
+                When set to True only the node will be used for PyNode
+                instantiation. Defaults to False.
 
         Returns:
             pm.PyNode: PyNode-instance of this node or plug
@@ -1671,7 +1671,7 @@ class NcBaseNode(NcBaseClass):
                 with multiple attrs. PyNodes can only contain one attr max.
         """
         # Without attrs or if they should be ignored; return PyNode with node.
-        if not attrs or not self.attrs_list:
+        if ignore_attrs or not self.attrs_list:
             return pm.PyNode(self.node)
 
         # PyNode only accepts a singular attribute max.
@@ -1681,7 +1681,7 @@ class NcBaseNode(NcBaseClass):
         msg = (
             "Tried to create PyNode from NcNode with multiple attributes: {0} "
             "PyNode only supports node or single attributes! Use the flag "
-            "attrs=False to ignore the attrs of this noca-Node.".format(self)
+            "ignore_attrs=True to omit the attrs of this noca-Node.".format(self)
         )
         raise RuntimeError(msg)
 
