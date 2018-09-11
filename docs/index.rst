@@ -15,6 +15,7 @@ The NodeCalculator is an OpenSource Python module that allows you to create node
    download
    tutorial
    code
+   changes
 
 
 Overview

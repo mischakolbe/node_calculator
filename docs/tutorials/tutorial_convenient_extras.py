@@ -71,13 +71,9 @@ import node_calculator.core as noca
 my_locator = noca.locator("myLocator", attrs=["tx", "ty", "tz"])
 pm_my_locator = my_locator.to_py_node()
 
-pm_my_locator = my_locator.to_py_node(attrs=False)
+pm_my_locator = my_locator.to_py_node(ignore_attrs=True)
 pm_my_locator = my_locator[1].to_py_node()
 print(type(pm_my_locator), pm_my_locator)
-
-for attr in my_locator:
-    pm_my_locator = attr.to_py_node()
-    print(type(pm_my_locator), pm_my_locator)
 
 
 # Tab5
