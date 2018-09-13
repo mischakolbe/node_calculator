@@ -73,7 +73,6 @@ pm_my_locator = my_locator.to_py_node()
 
 pm_my_locator = my_locator.to_py_node(ignore_attrs=True)
 pm_my_locator = my_locator[1].to_py_node()
-print(type(pm_my_locator), pm_my_locator)
 
 
 # Tab5

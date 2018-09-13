@@ -1,10 +1,10 @@
-Welcome to the NodeCalculator documentation!
-==============================================================================
-
-The NodeCalculator is an OpenSource Python module that allows you to create node networks in Autodesk Maya by writing math formulas.
+.. image:: images/NoCa_titleImage_documentation_LQ.png
 
 
-.. image:: images/MayaVsNoca.jpg
+`The NodeCalculator is an OpenSource Python module that allows you to create node networks in Autodesk Maya by writing math formulas.`
+
+
+
 
 
 .. toctree::
