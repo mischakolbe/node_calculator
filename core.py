@@ -366,8 +366,11 @@ def noca_op(func):
     """Add given function to the Op-class.
 
     Note:
-        This is a decorator used in noca_extension.py! It makes it easy for the
-        user to add additional operators to the Op-class.
+        This is a decorator used in NodeCalculator extensions! It makes it easy
+        for the user to add additional operators to the Op-class.
+
+        Check the tutorials and example extension files to see how you can
+        create your own extensions.
 
     Args:
         func (executable): Function to be added to Op as a method.
@@ -4065,62 +4068,88 @@ class Tracer(object):
 
 
 # NodeCalculator Extensions ---
-# The following code block takes care of importing the potential NodeCalculator
-# extension. Until I find a better solution, this code MUST remain at the end
-# of this module, due to its cyclical imports. If the extension Operators are
-# loaded at the beginning, they will be overridden by the Op-class init!
-has_extension = True
-# Optionally specify the folder where the noca_extension.py file is located, if
-# it is moved outside of the node_calculator module.
-if config.EXTENSION_PATH and config.EXTENSION_PATH not in sys.path:
-    sys.path.insert(0, config.EXTENSION_PATH)
+def __load_extensions():
+    """Import the potential NodeCalculator extensions."""
 
-try:
-    # Without a given EXTENSION_PATH a relative import is required!
-    if not config.EXTENSION_PATH or not config.EXTENSION_NAME:
-        raise ImportError
-    # Try to load it via specific path first...
-    noca_extension = __import__(config.EXTENSION_NAME)
-    LOG.info(
-        "NodeCalculator loaded with extension %s from path %s!",
-        config.EXTENSION_NAME, config.EXTENSION_PATH
-    )
+    # Make sure extensions that aren't local can be imported.
+    if config.EXTENSION_PATH and config.EXTENSION_PATH not in sys.path:
+        sys.path.insert(0, config.EXTENSION_PATH)
 
-except ImportError:
     try:
-        if not config.EXTENSION_NAME:
+        # Without a given EXTENSION_PATH a relative import is required!
+        if not config.EXTENSION_PATH or not config.EXTENSION_NAMES:
             raise ImportError
-        # ...otherwise: Look for it in the NodeCalculator module itself.
-        noca_extension = __import__(
-            config.EXTENSION_NAME,
-            globals(),
-            locals(),
-            [],
-            level=1
-        )
+        # Try to load extensions via specific path first...
+        for extension_name in config.EXTENSION_NAMES:
+            noca_extension = __import__(extension_name)
+
+            __load_extension(noca_extension)
+
         LOG.info(
-            "NodeCalculator loaded with local extension %s!",
-            config.EXTENSION_NAME
+            "NodeCalculator loaded with extension(s) %s from path %s!",
+            config.EXTENSION_NAMES, config.EXTENSION_PATH
         )
 
     except ImportError:
-        has_extension = False
-        LOG.info("NodeCalculator loaded without extension!")
+        try:
+            if not config.EXTENSION_NAMES:
+                raise ImportError
+            # ...otherwise: Look for them in the NodeCalculator module itself.
+
+            for extension_name in config.EXTENSION_NAMES:
+                noca_extension = __import__(
+                    extension_name,
+                    globals(),
+                    locals(),
+                    [],
+                    level=1
+                )
+
+                __load_extension(noca_extension)
+
+            LOG.info(
+                "NodeCalculator loaded with local extension(s) %s!",
+                config.EXTENSION_NAMES
+            )
+
+        except ImportError:
+            LOG.info("NodeCalculator loaded without extensions!")
 
 
-# Load necessary plugins and add extension operators to dictionary
-if has_extension:
-    # It is very important to reload the noca_extension(!). This runs through
-    # the decorators that in turn populate the Op-class with all extension-ops.
+def __load_extension(noca_extension):
+    """Load the given extension in the correct way for the NodeCalculator.
+
+    Note:
+        Check the tutorials and example extension files to see how you can
+        create your own extensions.
+
+    Args:
+        noca_extension (module): Extension Python module to be loaded.
+    """
+    # Reloading makes sure the Operators are added to the Op class.
     reload(noca_extension)
 
+    # Load the required plugins
     try:
         for required_plugin in noca_extension.REQUIRED_EXTENSION_PLUGINS:
             cmds.loadPlugin(required_plugin, quiet=True)
     except AttributeError:
-        LOG.warning("REQUIRED_EXTENSION_PLUGINS list not found in extension!")
+        LOG.warning(
+            "REQUIRED_EXTENSION_PLUGINS list not found in extension %s!",
+            noca_extension.__name__.split(".")[-1]
+        )
 
+    # Fill the OPERATORS dictionary with the extension-data.
     try:
         OPERATORS.update(noca_extension.EXTENSION_OPERATORS)
     except AttributeError:
-        LOG.warning("EXTENSION_OPERATORS dictionary not found in extension!")
+        LOG.warning(
+            "EXTENSION_OPERATORS dictionary not found in extension! %s!",
+            noca_extension.__name__.split(".")[-1]
+        )
+
+
+# Until I find a better solution, this function call MUST remain at the end
+# of this module, due to its cyclical imports. If the extension Operators are
+# loaded at the beginning, they will be overridden by the Op-class init!
+__load_extensions()

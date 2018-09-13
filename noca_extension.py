@@ -124,5 +124,5 @@ the newly created node and its outputs can be used in further operations.
 Check here to see lots of examples for the operator functions:
 OperatorMetaClass (in core.py)
 (Again: the @noca_op decorator takes care of integrating your functions into
-this class. No need to add the argument "self" or so.
+this class. No need to add the argument "self".
 '''
