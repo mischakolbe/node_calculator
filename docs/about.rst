@@ -8,4 +8,4 @@ The NodeCalculator tries to speed up and ease that process.
 
 **I hope this tool brings the fun & beauty of math back to all the Maya TDs out there :)**
 
-Cheers, Mischa.
+Cheers, `Mischa <https://www.mischakolbe.com/>`_.

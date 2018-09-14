@@ -100,3 +100,28 @@ Example: Simple cogs
 .. raw:: html
 
     <iframe src="https://player.vimeo.com/video/242716237" width="640" height="360" frameborder="0" allowfullscreen></iframe>
+
+.. literalinclude:: tutorials/example_cogs_simple.py
+   :caption: Code used in video:
+
+|
+
+Example: Stepping cogs
+-------------------------------------------------------------------------------
+
+.. image:: images/cogB_loop.gif
+
+.. literalinclude:: tutorials/example_cogs_stepping.py
+   :caption: Code used in video:
+
+|
+
+Example: Dynamic colors
+-------------------------------------------------------------------------------
+
+.. note::
+
+    No video (yet)!
+
+.. literalinclude:: tutorials/example_dynamic_colors.py
+   :caption: Code used in video:
