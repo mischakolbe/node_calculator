@@ -3,19 +3,19 @@
 import node_calculator.core as noca
 
 """Task:
-Approach a given value slowly.
+Approach a target value slowly, once the input value is getting close to it.
 """
 
 """
 # Sudo-Code based on Harry Houghton's video: youtube.com/watch?v=xS1LpHE14Uk
-in_value = <someInputValue>
-transition_range = <transitionRange>
-target_value = <someStartValue>
+in_value = <inputValue>
+fade_in_range = <fadeInRange>
+target_value = <targetValue>
 
-if (in_value > (target_value - transition_range)):
-    if (transition_range > 0):
-        exponent = -(in_value - (target_value - transition_range)) / transition_range
-        soft_value = target_value - transition_range * exp(exponent)
+if (in_value > (target_value - fade_in_range)):
+    if (fade_in_range > 0):
+        exponent = -(in_value - (target_value - fade_in_range)) / fade_in_range
+        soft_value = target_value - fade_in_range * exp(exponent)
     else:
         soft_value = target_value
 else:
@@ -29,25 +29,25 @@ import math
 driver = noca.Node("driver")
 in_value = driver.tx
 driven = noca.Node("driven.tx")
-transition_range = driver.add_float("transitionRange", value=1)
-target_value = driver.add_float("someStartValue", value=5)
+fade_in_range = driver.add_float("transitionRange", value=1)
+target_value = driver.add_float("targetValue", value=5)
 
-exponent = -(in_value - (target_value - transition_range)) / transition_range
-soft_approach_value = target_value - transition_range * math.e ** exponent
+# Note: Factoring the leading minus sign into the parenthesis requires one node
+# less. I didn't do so to maintain the similarity to Harry's example.
+# However; I'm using the optimized version in noca.Op.soft_approach()
+exponent = -(in_value - (target_value - fade_in_range)) / fade_in_range
+soft_approach_value = target_value - fade_in_range * math.e ** exponent
 
-approaching_condition = noca.Op.condition(
-    transition_range > 0,
+is_range_valid_condition = noca.Op.condition(
+    fade_in_range > 0,
     soft_approach_value,
     target_value
 )
 
-overall_condition = noca.Op.condition(
-    in_value > (target_value - transition_range),
-    approaching_condition,
+is_in_range_condition = noca.Op.condition(
+    in_value > (target_value - fade_in_range),
+    is_range_valid_condition,
     in_value
 )
 
-driven.attrs = overall_condition
-
-
-# Will be in the NodeCalculator Operators by default soon. Maybe it's already in there...
+driven.attrs = is_in_range_condition

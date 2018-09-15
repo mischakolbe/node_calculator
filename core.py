@@ -110,6 +110,7 @@ Example:
 # Python imports
 import copy
 import itertools
+import math
 import numbers
 import os
 import re
@@ -707,6 +708,23 @@ class OperatorMetaClass(object):
         return _create_operation_node('dot', attr_a, attr_b, normalize)
 
     @staticmethod
+    def exp(attr_a):
+        """Raise attr_a to the base of natural logarithms.
+
+        Args:
+            attr_a (NcNode or NcAttrs or str or int or float): Value or attr
+
+        Returns:
+            NcNode: Instance with multiplyDivide-node and output-attr(s)
+
+        Example:
+            ::
+
+                Op.exp(Node("pCube.t"))
+        """
+        return math.e ** attr_a
+
+    @staticmethod
     def inverse_matrix(in_matrix):
         """Create inverseMatrix-node to invert the given matrix.
 
@@ -887,6 +905,24 @@ class OperatorMetaClass(object):
         return created_node
 
     @staticmethod
+    def pow(attr_a, attr_b):
+        """Raise attr_a to the power of attr_b.
+
+        Args:
+            attr_a (NcNode or NcAttrs or str or int or float): Value or attr
+            attr_b (NcNode or NcAttrs or str or int or float): Value or attr
+
+        Returns:
+            NcNode: Instance with multiplyDivide-node and output-attr(s)
+
+        Example:
+            ::
+
+                Op.pow(Node("pCube.t"), 2.5)
+        """
+        return attr_a ** attr_b
+
+    @staticmethod
     def remap_value(
             attr_a,
             output_min=0,
@@ -992,6 +1028,67 @@ class OperatorMetaClass(object):
             old_max_value
         )
         return return_value
+
+    @staticmethod
+    def soft_approach(in_value, fade_in_range=0.5, target_value=1):
+        """Follow in_value, but approach the target_value slowly.
+
+        Note:
+            Only works for 1D inputs!
+
+        Args:
+            in_value (NcNode or NcAttrs or str or int or float): Value or attr
+            fade_in_range (NcNode or NcAttrs or str or int or float): Value or
+                attr. This defines a range over which the target_value will be
+                approached. Before the in_value is within this range the output
+                of this and the in_value will be equal.
+            target_value (NcNode or NcAttrs or str or int or float): Value or
+                attr. This is the value that will be approached slowly.
+
+        Returns:
+            NcNode: Instance with node and output-attr.
+
+        Example:
+            ::
+
+                in_attr = Node("pCube.tx")
+                Op.soft_approach(in_attr, fade_in_range=2, target_value=5)
+                # Starting at the value 3 (because 5-2=3), the output of this
+                # will slowly approach the target_value 5.
+        """
+        exponent = ((target_value - fade_in_range) - in_value) / fade_in_range
+        soft_approach_value = target_value - fade_in_range * Op.exp(exponent)
+
+        is_range_valid_condition = Op.condition(
+            fade_in_range > 0,
+            soft_approach_value,
+            target_value
+        )
+
+        is_in_range_condition = Op.condition(
+            in_value > (target_value - fade_in_range),
+            is_range_valid_condition,
+            in_value
+        )
+
+        return is_in_range_condition
+
+    @staticmethod
+    def sqrt(attr_a):
+        """Get the square root of attr_a.
+
+        Args:
+            attr_a (NcNode or NcAttrs or str or int or float): Value or attr
+
+        Returns:
+            NcNode: Instance with multiplyDivide-node and output-attr(s)
+
+        Example:
+            ::
+
+                Op.sqrt(Node("pCube.tx"))
+        """
+        return attr_a ** 0.5
 
     @staticmethod
     def transpose_matrix(in_matrix):
