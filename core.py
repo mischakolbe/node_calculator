@@ -1190,6 +1190,18 @@ class NcBaseClass(object):
 
         return _create_operation_node("pow", self, other)
 
+    def __rpow__(self, other):
+        """Reflected power operator for NodeCalculator objects.
+
+        Example:
+            ::
+
+                4 ** Node("pCube1.ty")
+        """
+        LOG.debug("%s __rpow__ (%s, %s)", self.__class__.__name__, self, other)
+
+        return _create_operation_node("pow", other, self)
+
     def __eq__(self, other):
         """Equality operator for NodeCalculator objects.
 

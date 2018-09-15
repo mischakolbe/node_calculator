@@ -94,6 +94,18 @@ Under the hood
 
 |
 
+Example: Soft Approach Value
+-------------------------------------------------------------------------------
+
+.. raw:: html
+
+    <iframe src="https://player.vimeo.com/video/242716237" width="640" height="360" frameborder="0" allowfullscreen></iframe>
+
+.. literalinclude:: tutorials/example_soft_approach_value.py
+   :caption: Code used in video:
+
+|
+
 Example: Simple cogs
 -------------------------------------------------------------------------------
 
