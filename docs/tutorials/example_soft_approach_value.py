@@ -51,3 +51,5 @@ is_in_range_condition = noca.Op.condition(
 )
 
 driven.attrs = is_in_range_condition
+
+# NOTE: This setup is now a standard operator: noca.Op.soft_approach()

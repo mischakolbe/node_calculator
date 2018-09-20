@@ -1056,7 +1056,9 @@ class OperatorMetaClass(object):
                 # Starting at the value 3 (because 5-2=3), the output of this
                 # will slowly approach the target_value 5.
         """
-        exponent = ((target_value - fade_in_range) - in_value) / fade_in_range
+        start_val = target_value - fade_in_range
+
+        exponent = ((start_val) - in_value) / fade_in_range
         soft_approach_value = target_value - fade_in_range * Op.exp(exponent)
 
         is_range_valid_condition = Op.condition(
@@ -1066,7 +1068,7 @@ class OperatorMetaClass(object):
         )
 
         is_in_range_condition = Op.condition(
-            in_value > (target_value - fade_in_range),
+            in_value > start_val,
             is_range_valid_condition,
             in_value
         )
