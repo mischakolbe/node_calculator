@@ -15,13 +15,13 @@ target_value = <targetValue>
 if (in_value > (target_value - fade_in_range)):
     if (fade_in_range > 0):
         exponent = -(in_value - (target_value - fade_in_range)) / fade_in_range
-        soft_value = target_value - fade_in_range * exp(exponent)
+        result = target_value - fade_in_range * exp(exponent)
     else:
-        soft_value = target_value
+        result = target_value
 else:
-    soft_value = in_value
+    result = in_value
 
-driven.attr = soft_value
+driven.attr = result
 """
 
 import math
