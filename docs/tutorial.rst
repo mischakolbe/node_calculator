@@ -15,7 +15,7 @@ Introduction
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253429" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253429" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_introduction.py
    :caption: Code used in video:
@@ -27,7 +27,7 @@ Basics
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253403" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253403" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_basics.py
    :caption: Code used in video:
@@ -39,7 +39,7 @@ Math and Operators
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253437" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253437" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_math_and_operators.py
    :caption: Code used in video:
@@ -51,7 +51,7 @@ Convenient Extras
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253407" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253407" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_convenient_extras.py
    :caption: Code used in video:
@@ -63,19 +63,19 @@ Tracer
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253441" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253441" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_tracer.py
    :caption: Code used in video:
 
 |
 
-Customize it
+Customize It
 -------------------------------------------------------------------------------
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253414" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253414" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_customize_it.py
    :caption: Code used in video:
@@ -83,12 +83,12 @@ Customize it
 |
 
 
-Customize it: Appendix
+Customize It: Appendix
 -------------------------------------------------------------------------------
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253409" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253409" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_customize_it.py
    :caption: Code used in video:
@@ -100,7 +100,7 @@ Under the hood
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253449" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253449" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/tutorial_under_the_hood.py
    :caption: Code used in video:
@@ -114,7 +114,7 @@ Example: Soft Approach Value
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292448897" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292448897" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/example_soft_approach_value.py
    :caption: Code used in video:
@@ -126,7 +126,7 @@ Example: Simple cogs
 
 .. raw:: html
 
-    <iframe width="640" height="564" src="https://player.vimeo.com/video/292253422" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
+    <iframe width="640" height="360" src="https://player.vimeo.com/video/292253422" frameborder="0" allowFullScreen mozallowfullscreen webkitAllowFullScreen></iframe>
 
 .. literalinclude:: tutorials/example_cogs_simple.py
    :caption: Code used in video:
