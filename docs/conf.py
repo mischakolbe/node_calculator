@@ -93,7 +93,7 @@ html_theme_options = {
     'analytics_id': '',
     'logo_only': False,
     'display_version': True,
-    'prev_next_buttons_location': None,  # 'bottom',
+    'prev_next_buttons_location': 'bottom',  # 'bottom',
     'style_external_links': False,
     # Toc options
     'collapse_navigation': False,
@@ -116,7 +116,7 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-html_sidebars = { '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'] }
+html_sidebars = {'**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html']}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------

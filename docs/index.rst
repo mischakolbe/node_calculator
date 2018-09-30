@@ -9,7 +9,7 @@ NodeCalculator
 
    about
    download
-   tutorial
+   tutorials
    code
    changes
 
