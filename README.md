@@ -17,9 +17,10 @@ import node_calculator.core as noca
 ```
 
 ### Tested with
-* Maya 2016
-* Maya 2016, Ext. 2
+* Maya 2018
 * Maya 2017
+* Maya 2016
+
 
 ### Think this is useful? Share the love and buy me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
