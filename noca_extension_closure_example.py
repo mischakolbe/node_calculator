@@ -10,7 +10,7 @@ Note:
 # DON'T import node_calculator.core as noca! It's a cyclical import that fails!
 # Most likely the only two things needed from the node_calculator:
 from node_calculator.core import noca_op
-from node_calculator.core import _create_and_connect_node
+from node_calculator.core import _create_operation_node
 from node_calculator.core import _format_docstring
 
 
@@ -69,7 +69,7 @@ def _define_math_operator(operator_type):
         Example:
             Op.{operation}(Node("pCube1.tx"))
         """
-        return _create_and_connect_node(operator_type, attr_a)
+        return _create_operation_node(operator_type, attr_a)
 
     func.__name__ = operator_type
     return func
