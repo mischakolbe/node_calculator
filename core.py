@@ -28,67 +28,13 @@ Note:
 Supported operations:
     ::
 
-        # basic math
+        # Basic math
         +, -, *, /, **
 
-        # angle_between
-        Op.angle_between(vector_a, vector_b=[1, 0, 0])
-
-        # average
-        Op.average(*attrs)  # Any number of inputs possible
-
-        # blend
-        Op.blend(attr_a, attr_b, blend_value=0.5)
-
-        # choice
-        Op.choice(*attrs, selector=1)  # Any number of inputs possible
-
-        # clamp
-        Op.clamp(attr_a, min_value=0, max_value=1)
-
-        # compose_matrix
-        Op.compose_matrix(t=0, r=0, s=1, sh=0, ro=0)
-
-        # condition
-        Op.condition(condition, if_part=False, else_part=True)
-
-        # cross
-        Op.cross(attr_a, attr_b=0, normalize=False)
-
-        # decompose_matrix
-        Op.decompose_matrix(in_matrix)
-
-        # dot product
-        Op.dot(attr_a, attr_b=0, normalize=False)
-
-        # inverse_matrix
-        Op.inverse_matrix(in_matrix)
-
-        # length
-        Op.length(attr_a, attr_b=0)
-
-        # matrix_distance
-        Op.matrix_distance(matrix_a, matrix_b)
-
-        # mult_matrix
-        Op.mult_matrix(*attrs)  # Any number of inputs possible
-
-        # normalize_vector
-        Op.normalize_vector(in_vector, normalize=True)
-
-        # point_matrix_mult
-        Op.point_matrix_mult(in_vector, in_matrix, vector_multiply=False)
-
-        # remap_value
-        Op.remap_value(attr_a, output_min=0, output_max=1, input_min=0,
-            input_max=1, values=None)
-
-        # set_range
-        Op.set_range(attr_a, min_value=0, max_value=1, old_min_value=0,
-            old_max_value=1)
-
-        # transpose_matrix
-        Op.transpose_matrix(in_matrix)
+        # To see the available Operators, use:
+        Op.available()
+        # Or to see all Operators and their full docString:
+        Op.available(full=True)
 
 
 Example:
