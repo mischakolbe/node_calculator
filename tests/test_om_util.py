@@ -74,6 +74,9 @@ class TestTracerClass(TestCase):
         self.group_name = "testGrp"
         self.instance_name = "testInstance"
         self.operator_name = "testPlusMinusAverage"
+        self.long_name_attr = "longName"
+        self.aliased_attr_orig = "willBeAliased"
+        self.aliased_attr = "aliased"
 
         # Create regular polyCube transform & shape node
         self.test_node = cmds.polyCube(name=self.node_name, constructionHistory=False)[0]
@@ -106,6 +109,11 @@ class TestTracerClass(TestCase):
             "{}.s".format(self.node_name),
             "{}.input3D[3]".format(self.operator_name)
         )
+
+        # Add a normal attribute and an aliased attribute to the testNode
+        cmds.addAttr(self.node_name, longName=self.long_name_attr, keyable=True)
+        cmds.addAttr(self.node_name, longName=self.aliased_attr_orig, keyable=True)
+        cmds.aliasAttr(self.aliased_attr, self.node_name + "." + self.aliased_attr_orig)
 
     def test_split_plug_string(self):
         """ Test plug strings are correctly split into their components """
@@ -188,6 +196,29 @@ class TestTracerClass(TestCase):
         self.assertEqual(om_util.get_parent(self.test_shapes[0]), self.test_node)
         _expected_parents = [self.test_node, self.test_group]
         self.assertEqual(om_util.get_parents(self.test_shapes[0]), _expected_parents)
+
+    def test_aliased_attrs(self):
+        """ """
+        test_node_mobj = om_util.get_mobj(self.test_node)
+
+        # Make sure regular (custom) attributes are accessible
+        normal_plug = om_util.get_mplug_of_mobj(test_node_mobj, self.long_name_attr)
+        self.assertEqual(type(normal_plug), OpenMaya.MPlug)
+        self.assertEqual(str(normal_plug), "{}.{}".format(self.test_node, self.long_name_attr))
+
+        # Check whether an aliased attribute is accessible
+        aliased_plug = om_util.get_mplug_of_mobj(test_node_mobj, self.aliased_attr)
+        self.assertEqual(type(aliased_plug), OpenMaya.MPlug)
+        self.assertEqual(str(aliased_plug), "{}.{}".format(self.test_node, self.aliased_attr))
+
+        # Check whether an aliased attribute can still be found via its actual name as well.
+        aliased_orig_plug = om_util.get_mplug_of_mobj(test_node_mobj, self.aliased_attr_orig)
+        self.assertEqual(type(aliased_orig_plug), OpenMaya.MPlug)
+        self.assertEqual(str(aliased_orig_plug), "{}.{}".format(self.test_node, self.aliased_attr))
+
+        # Check whether an attribute that doesn't exist returns None.
+        bogus_plug = om_util.get_mplug_of_mobj(test_node_mobj, "someBogusName")
+        self.assertIsNone(bogus_plug)
 
     def test_plug(self):
         """ """
