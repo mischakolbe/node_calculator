@@ -3075,7 +3075,7 @@ def _create_operation_node(operation, *args):
 
     # Set operation attr if specified in OPERATORS for this node-type
     node_operation = OPERATORS[operation].get("operation", None)
-    if node_operation:
+    if node_operation is not None:
         _unravel_and_set_or_connect_a_to_b(
             "{0}.operation".format(new_node), node_operation
         )
