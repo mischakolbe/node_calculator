@@ -600,6 +600,13 @@ def get_mplug_of_mobj(mobj, attr):
         # findPlug-flags: (attr, wantNetworkedPlug)
         mplug = node_mfn_dep_node.findPlug(attr, False)
 
+    # Check for aliased plugs, if none was found yet.
+    if not mplug:
+        alias_list = node_mfn_dep_node.getAliasList()
+        for alias, attr_name in alias_list:
+            if attr == alias:
+                mplug = get_mplug_of_mobj(mobj, attr_name)
+
     return mplug
 
 
