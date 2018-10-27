@@ -1,6 +1,15 @@
 Changes
 ==============================================================================
 
+Release 2.0.1
+*************
+
+Bugs fixed
+----------
+* Aliased attributes can now be accessed (om_util.get_mplug_of_mobj couldn't find them before)
+* Operation values of zero are now set correctly (they were ignored)
+
+
 Release 2.0.0
 *************
 
@@ -46,6 +55,7 @@ Testing
 
 Features removed
 ----------------
+
 
 Release 1.0.0
 *************
