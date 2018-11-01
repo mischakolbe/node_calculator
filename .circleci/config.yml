@@ -14,12 +14,12 @@ default-run: &default-run
             keys:
                 - a1-dependencies-{{ checksum "requirements.txt" }}
                 - a1-dependencies-
-        - run: &d-set-up-mayapy
-            name: set up mayapy and install deps
-            command: make install-deps
         - run:
             name: install git
             command: apt-get -qq update; apt-get -y install git
+        - run: &d-set-up-mayapy
+            name: set up mayapy and install deps
+            command: make install-deps
         - save-cache: &d2-save-cache
             paths:
               - ~/venv/
