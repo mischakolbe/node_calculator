@@ -16,7 +16,7 @@ default-run: &default-run
                 - a1-dependencies-
         - run:
             name: install git
-            command: yum install git
+            command: yum -y install git
         - run: &d-set-up-mayapy
             name: set up mayapy and install deps
             command: make install-deps
