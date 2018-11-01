@@ -13,7 +13,7 @@ make-venv:
 install-deps: make-venv
 	~/nvenv/bin/pip install -Ur requirements.txt
 	~/nvenv/bin/pip install nose
-	git clone https://github.com/chadmv/cmt.git ~/cmt
+	git clone git@github.com:chadmv/cmt.git ~/cmt
 
 test-unit:
 	. ~/nvenv/bin/activate

@@ -17,6 +17,9 @@ default-run: &default-run
         - run: &d-set-up-mayapy
             name: set up mayapy and install deps
             command: make install-deps
+        - run:
+            name: install git
+            command: apt-get -qq update; apt-get -y install git
         - save-cache: &d2-save-cache
             paths:
               - ~/venv/
