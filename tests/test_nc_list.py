@@ -13,7 +13,7 @@ import copy
 from maya import cmds
 
 # Local imports
-from cmt.test import TestCase
+from unittest import TestCase
 import node_calculator.core as noca
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,7 +47,6 @@ class TestNcListClass(TestCase):
         self.nc_list = noca.NcList(self.desired_list)
 
     def test_list_functionality(self):
-
         # Check whether list elements were initialized correctly
         self.assertListEqual(list(self.nc_list), list(self.desired_list))
 
@@ -106,14 +105,13 @@ class TestNcListClass(TestCase):
         # Test extend method
         nc_list_copy = copy.copy(self.nc_list)
         nc_list_copy.extend(self.nc_list)
-        self.assertEqual(len(nc_list_copy), len(self.desired_list)*2)
+        self.assertEqual(len(nc_list_copy), len(self.desired_list) * 2)
         self.assertListEqual(
             list(nc_list_copy),
-            list(self.desired_list*2)
+            list(self.desired_list * 2)
         )
 
     def test_noca_methods(self):
-
         # Test nodes property
         self.assertEqual(self.nc_list.node, None)
         self.assertListEqual(self.nc_list.nodes, TEST_NODES[:2])

@@ -12,10 +12,9 @@ import unittest
 from maya import cmds
 
 # Local imports
-from cmt.test import TestCase
+from unittest import TestCase
 import node_calculator.core as noca
 from node_calculator import lookup_table
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS

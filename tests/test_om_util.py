@@ -14,9 +14,8 @@ from maya import cmds
 from maya.api import OpenMaya
 
 # Local imports
-from cmt.test import TestCase
+from unittest import TestCase
 from node_calculator import om_util
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -24,8 +23,8 @@ from node_calculator import om_util
 test_plug_strings = {
     # string of the made-up maya-plug
     "node.parent_attr":
-        # The tuple that should be returned, consisting of:
-        # namespace, dag_path, node, parent_attr, array_index, child_attr
+    # The tuple that should be returned, consisting of:
+    # namespace, dag_path, node, parent_attr, array_index, child_attr
         (
             '', '', 'node',
             [('parent_attr', None)]
@@ -312,6 +311,7 @@ class TestTracerClass(TestCase):
 
         def noca_get_parent():
             return om_util.get_parent(mobj)
+
         self.assertEqual(maya_get_parent(), noca_get_parent())
         maya_time = timeit.timeit(maya_get_parent, number=num_iterations)
         noca_time = timeit.timeit(noca_get_parent, number=num_iterations)
@@ -323,6 +323,7 @@ class TestTracerClass(TestCase):
 
         def noca_get_parents():
             return om_util.get_parents(mobj)
+
         self.assertEqual(maya_get_parents(), noca_get_parents())
         maya_time = timeit.timeit(maya_get_parents, number=num_iterations)
         noca_time = timeit.timeit(noca_get_parents, number=num_iterations)
@@ -334,6 +335,7 @@ class TestTracerClass(TestCase):
 
         def noca_get_dag_path():
             return om_util.get_dag_path_of_mobj(mobj, full=True)
+
         self.assertEqual(maya_get_dag_path()[0], noca_get_dag_path())
         maya_time = timeit.timeit(maya_get_dag_path, number=num_iterations)
         noca_time = timeit.timeit(noca_get_dag_path, number=num_iterations)
@@ -345,6 +347,7 @@ class TestTracerClass(TestCase):
 
         def noca_get_node_type():
             return om_util.get_node_type(mobj, api_type=False)
+
         self.assertEqual(maya_get_node_type(), noca_get_node_type())
         maya_time = timeit.timeit(maya_get_node_type, number=num_iterations)
         noca_time = timeit.timeit(noca_get_node_type, number=num_iterations)
