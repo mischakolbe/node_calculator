@@ -14,7 +14,7 @@ from maya import cmds
 from maya.api import OpenMaya
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 from node_calculator import om_util
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,7 +65,7 @@ test_plug_strings = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestTracerClass(TestCase):
+class TestTracerClass(BaseTestCase):
 
     def setUp(self):
         self.node_name = "testNode"

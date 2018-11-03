@@ -13,7 +13,7 @@ from maya import cmds
 import pymel.core as pm
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,7 +36,7 @@ TEST_POSITION_B = [8.0, 9.0, 10.2]
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNcBaseNodeClass(TestCase):
+class TestNcBaseNodeClass(BaseTestCase):
 
     def setUp(self):
         # Create regular polyCube transform & shape node

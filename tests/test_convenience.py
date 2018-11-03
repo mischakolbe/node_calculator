@@ -11,14 +11,14 @@ Unit tests for noca convenience functions
 from maya import cmds
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNode(TestCase):
+class TestNode(BaseTestCase):
 
     def test_node_without_attrs_creation(self):
         """ Test node creation via noca-convenience function """
@@ -84,7 +84,7 @@ class TestNode(TestCase):
         self.assertIsInstance(node[3], int)
 
 
-class TestLocator(TestCase):
+class TestLocator(BaseTestCase):
 
     def test_creation(self):
         """ Test locator creation via noca-convenience function """
@@ -108,7 +108,7 @@ class TestLocator(TestCase):
         self.assertEqual(transform_child_type, "locator")
 
 
-class TestTransform(TestCase):
+class TestTransform(BaseTestCase):
 
     def test_creation(self):
         """ Test transform creation via noca-convenience function """
@@ -129,7 +129,7 @@ class TestTransform(TestCase):
         self.assertIsNone(transform_children)
 
 
-class TestCreateNode(TestCase):
+class TestCreateNode(BaseTestCase):
 
     def test_transform_creation(self):
         """ Test node creation via noca-convenience function """

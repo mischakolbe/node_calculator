@@ -13,7 +13,7 @@ import copy
 from maya import cmds
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,7 +33,7 @@ TEST_VALUE = 7.3
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNcListClass(TestCase):
+class TestNcListClass(BaseTestCase):
 
     def setUp(self):
         self.a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]), TEST_ATTR)

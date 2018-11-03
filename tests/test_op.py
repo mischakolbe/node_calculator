@@ -12,7 +12,7 @@ import unittest
 from maya import cmds
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 from node_calculator import lookup_table
 
@@ -232,7 +232,7 @@ class TestOperatorsMeta(type):
         return type.__new__(_mcs, _name, _bases, _dict)
 
 
-class TestOperators(TestCase):
+class TestOperators(BaseTestCase):
     """ Metaclass helps to instantiate the TestMetadataValueMeta with all tests """
     __metaclass__ = TestOperatorsMeta
 

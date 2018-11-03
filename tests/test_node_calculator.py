@@ -12,7 +12,7 @@ import unittest
 from maya import cmds
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,7 +36,7 @@ TEST_VALUES = [
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNodeCalculatorCore(TestCase):
+class TestNodeCalculatorCore(BaseTestCase):
 
     def setUp(self):
         self.node_a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]))

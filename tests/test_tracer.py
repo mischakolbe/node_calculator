@@ -12,7 +12,7 @@ import unittest
 from maya import cmds
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +30,7 @@ TEST_NODES = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class TestTracerClass(TestCase):
+class TestTracerClass(BaseTestCase):
 
     def setUp(self):
         for node, node_type in TEST_NODES.iteritems():

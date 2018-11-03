@@ -11,7 +11,7 @@ import numbers
 # Third party imports
 
 # Local imports
-from unittest import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,7 +92,7 @@ class TestNcValueMeta(type):
         return type.__new__(_mcs, _name, _bases, _dict)
 
 
-class TestNcValue(TestCase):
+class TestNcValue(BaseTestCase):
     """ Metaclass helps to instantiate the TestNcValueMeta with all tests """
     __metaclass__ = TestNcValueMeta
 
