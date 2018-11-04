@@ -1,11 +1,11 @@
-import maya.cmds as mc
+import maya.cmds as cmds
 from unittest import TestCase
 
 
 class BaseTestCase(TestCase):
     @classmethod
     def setUpClass(self):
-        mc.file(new=True, force=True)
+        cmds.file(new=True, force=True)
 
     def tearDown(self):
-        mc.file(new=True, force=True)
+        cmds.file(new=True, force=True)

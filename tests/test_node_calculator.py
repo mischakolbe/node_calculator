@@ -62,6 +62,7 @@ class TestNodeCalculatorCore(BaseTestCase):
         # Make sure the global auto unravel/consolidate is turned on again!
         noca.set_global_auto_unravel(True)
         noca.set_global_auto_consolidate(True)
+        super(TestNodeCalculatorCore, self).tearDown()
 
     def test_auto_unravel(self):
         """ Test automatic attribute unravelling: .t -> .tx, .ty, .tz """
