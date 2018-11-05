@@ -58,9 +58,3 @@ workflows:
       - maya2017:
           requires:
               - build
-      - maya2016:
-          requires:
-              - build
-      - maya2015:
-          requires:
-              - build
