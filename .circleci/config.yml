@@ -49,18 +49,6 @@ jobs:
     <<: *defaults
     <<: *default-run
 
-  maya2016:
-    docker:
-      - image: daemonecles/anvil:maya2016
-    <<: *defaults
-    <<: *default-run
-
-  maya2015:
-    docker:
-      - image: daemonecles/anvil:maya2015
-    <<: *defaults
-    <<: *default-run
-
 
 workflows:
   version: 2
