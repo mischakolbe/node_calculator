@@ -6,7 +6,6 @@ Unit tests for noca.NcList
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 import copy
 
 # Third party imports
@@ -36,6 +35,8 @@ TEST_VALUE = 7.3
 class TestNcListClass(BaseTestCase):
 
     def setUp(self):
+        super(TestNcListClass, self).setUp()
+
         self.a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]), TEST_ATTR)
         self.b = noca.Node(cmds.createNode("transform", name=TEST_NODES[1]), TEST_ATTR)
         self.c = noca.Node(cmds.createNode("transform", name=TEST_NODES[2]), TEST_ATTR)

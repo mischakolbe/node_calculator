@@ -6,7 +6,6 @@ Unit tests for noca.Op
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
@@ -237,13 +236,12 @@ class TestOperators(BaseTestCase):
     __metaclass__ = TestOperatorsMeta
 
     def setUp(self):
+        super(TestOperators, self).setUp()
+
         self.a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]))
         self.b = noca.Node(cmds.createNode("transform", name=TEST_NODES[1]))
         self.c = noca.Node(cmds.createNode("transform", name=TEST_NODES[2]))
         self.m = noca.Node(cmds.createNode("holdMatrix", name=TEST_NODES[3]))
-
-    def tearDown(self):
-        cmds.delete(TEST_NODES)
 
     def test_matrix_distance(self):
 

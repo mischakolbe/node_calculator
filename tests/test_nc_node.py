@@ -6,7 +6,6 @@ Unit tests for noca.NcNode
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
@@ -29,11 +28,9 @@ TEST_VALUE = 5.5
 class TestNodeClass(BaseTestCase):
 
     def setUp(self):
-        self.test_transform = cmds.createNode("transform", name=TEST_TRANSFORM)
+        super(TestNodeClass, self).setUp()
 
-    def tearDown(self):
-        # Remove test nodes
-        cmds.delete(TEST_TRANSFORM)
+        self.test_transform = cmds.createNode("transform", name=TEST_TRANSFORM)
 
     def test_initialization(self):
         """Test the instantiation of the NcNode class"""

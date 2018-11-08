@@ -6,7 +6,6 @@ Unit tests for noca.om_util
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 import timeit
 
 # Third party imports
@@ -68,6 +67,8 @@ test_plug_strings = {
 class TestTracerClass(BaseTestCase):
 
     def setUp(self):
+        super(TestTracerClass, self).setUp()
+
         self.node_name = "testNode"
         self.node_alt_name = "testAltName"
         self.group_name = "testGrp"
