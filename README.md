@@ -8,7 +8,7 @@ Turn those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr into r
 [Documentation on ReadTheDocs](https://node-calculator.readthedocs.io/en/latest/)
 
 ### Install & Import
-Download/clone this git-repo. Save the inner `node_calculator` folder to your `\Documents\maya\scripts` folder (Make sure the folder is called **node_calculator**, not node_calculator-master or so).
+Download or clone this git-repo. Save the inner `node_calculator` folder to your `\Documents\maya\scripts` folder (Make sure the folder is called **node_calculator**, not node_calculator-master or so).
 
 Also you can git clone the repo to a location of your choice then while in the top folder run `mayapy -m pip install .`
 This will make sure it is installed in maya's site-packages directory.  Optionally you can install it in your userScripts:
