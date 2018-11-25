@@ -4021,28 +4021,6 @@ def _split_plug_into_node_and_attr(plug):
     raise RuntimeError(msg)
 
 
-# Python functions ---
-def _format_docstring(*args, **kwargs):
-    """Format docString of a function: Substitute placeholders with (kw)args.
-
-    Note:
-        Formatting your docString directly won't work! It won't be a string
-        literal anymore and Python won't consider it a docString! Replacing
-        the docString (.__doc__) via this closure circumvents this issue.
-
-    Args:
-        args (list): Arguments for the string formatting: .format()
-        kwargs (list): Keyword arguments for the string formatting: .format()
-
-    Returns:
-        executable: The function with formatted docString.
-    """
-    def func(obj):
-        obj.__doc__ = obj.__doc__.format(*args, **kwargs)
-        return obj
-    return func
-
-
 # Tracer ---
 class Tracer(object):
     """Class that returns all Maya commands executed by NodeCalculator formula.
@@ -4122,6 +4100,28 @@ class Tracer(object):
             print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
         NcBaseClass._is_tracing = False
+
+
+# Python functions ---
+def _format_docstring(*args, **kwargs):
+    """Format docString of a function: Substitute placeholders with (kw)args.
+
+    Note:
+        Formatting your docString directly won't work! It won't be a string
+        literal anymore and Python won't consider it a docString! Replacing
+        the docString (.__doc__) via this closure circumvents this issue.
+
+    Args:
+        args (list): Arguments for the string formatting: .format()
+        kwargs (list): Keyword arguments for the string formatting: .format()
+
+    Returns:
+        executable: The function with formatted docString.
+    """
+    def func(obj):
+        obj.__doc__ = obj.__doc__.format(*args, **kwargs)
+        return obj
+    return func
 
 
 # NodeCalculator Extensions ---
