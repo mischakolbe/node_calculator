@@ -28,6 +28,13 @@ from maya.api import OpenMaya
 from node_calculator import logger
 
 
+# PYTHON 2.7 & 3 COMPATIBILITY ---
+try:
+    basestring
+except NameError:
+    basestring = str
+
+
 # SETUP LOGGER ---
 logger.clear_handlers()
 logger.setup_stream_handler(level=logger.logging.WARN)
@@ -66,6 +73,9 @@ def get_name_of_mobj(mobj):
     Returns:
         str: Name of given MObject.
     """
+    if isinstance(mobj, basestring):
+        return mobj
+
     node_fn = OpenMaya.MFnDependencyNode(mobj)
     node_name = node_fn.name()
 
@@ -542,12 +552,22 @@ def get_array_mplug_by_index(mplug, index, physical=True):
     return return_mplug
 
 
-def get_mplug_of_node_and_attr(node, attr_str):
+def get_mplug_of_node_and_attr(
+        node,
+        attr_str,
+        expand_to_shape=True,
+        __shape_lookup=False):
     """Get an MPlug to the given node & attr combination.
 
     Args:
         node (MObject or MDagPath or str): Node whose attr should be queried.
         attr_str (str): Name of attribute.
+        expand_to_shape (boolean): If the given node is a transform with shape
+            nodes underneath it; check for the attribute on the shape node, if
+            it can't be found on the transform. Defaults to True.
+        __shape_lookup (boolean): Flag to specify that an automatic lookup due
+            to expand_to_shape is taking place. This must never be set by the
+            user! Defaults to False.
 
     Returns:
         MPlug or None: MPlug of given node.attr or None if that doesn't exist.
@@ -558,17 +578,40 @@ def get_mplug_of_node_and_attr(node, attr_str):
     mobj = get_mobj(node)
 
     attrs = split_attr_string(attr_str)
-
     mplug = None
-
     for attr, index in attrs:
+        # In the first loop the first mplug must be found.
         if mplug is None:
             mplug = get_mplug_of_mobj(mobj, attr)
+
+        # In any subsequent loop the child mplug must be found.
         else:
             mplug = get_child_mplug(mplug, attr)
 
+        # In case no mplug was found: Check for it on potential shape nodes.
         if not mplug:
-            msg = "mplug {0}.{1} doesn't seem to exist!".format(node, attr_str)
+            # Get the shape...
+            if mobj.hasFn(OpenMaya.MFn.kTransform) and expand_to_shape:
+                shape_mobj = get_shape_mobjs(mobj)
+
+                # ...and check for the attribute on the shape.
+                if shape_mobj:
+                    mplug = get_mplug_of_node_and_attr(
+                        shape_mobj[0],
+                        attr_str,
+                        __shape_lookup=True
+                    )
+
+        # If there is still no MPlug found at this point: It doesn't exist.
+        if not mplug:
+            # If this was a lookup for the shape of a transform; simply return.
+            if __shape_lookup:
+                return None
+            # In any other case: Raise an error!
+            msg = "mplug {0}.{1} doesn't seem to exist!".format(
+                get_name_of_mobj(node),
+                attr_str
+            )
             raise RuntimeError(msg)
 
         if index is not None:
