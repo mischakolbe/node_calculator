@@ -105,10 +105,10 @@ VARIABLE_PREFIX = config.VARIABLE_PREFIX
 VALUE_PREFIX = config.VALUE_PREFIX
 GLOBAL_AUTO_CONSOLIDATE = config.GLOBAL_AUTO_CONSOLIDATE
 GLOBAL_AUTO_UNRAVEL = config.GLOBAL_AUTO_UNRAVEL
-OPERATORS = lookup_table.BASIC_OPERATORS
+OPERATORS = {}
 BASE_OPERATORS = "base_operators"
 BASE_FUNCTIONS = "base_functions"
-
+NODE_BIN = []  # Stores all created nodes for easy clean up.
 
 # SETUP LOGGER ---
 logger.clear_handlers()
@@ -310,6 +310,52 @@ def set_global_auto_consolidate(state):
     GLOBAL_AUTO_CONSOLIDATE = state
 
 
+def cleanup(keep_selected=False):
+    """Remove all nodes created by the NodeCalculator, based on node names.
+
+    Note:
+        Nodes are stored in NODE_BIN by name, NOT MPlug! Therefore, if a node
+        was renamed it will not be deleted by this function.
+        This is intentional; cleanup is for cases of fast iteration, where a
+        lot of nodes can accumulate fast. It should interfere with anything the
+        user wants to keep as little as possible!
+
+    Args:
+        keep_selected (bool): Prevent selected nodes from being deleted.
+            Defaults to False.
+    """
+    global NODE_BIN
+
+    # If the user wants to keep the selected nodes: Store them.
+    nodes_to_keep = []
+    if keep_selected:
+        nodes_to_keep = cmds.ls(selection=True)
+
+    # To prevent accidentally deleting dependent utility nodes: Lock them!
+    node_lock_states = []
+    for node_to_keep in nodes_to_keep:
+        # Store the current lock state not to unlock nodes the user locked.
+        node_lock_states.append(cmds.lockNode(node_to_keep, query=True)[0])
+        cmds.lockNode(node_to_keep, lock=True, ignoreComponents=True)
+
+    # Delete all nodes that should be deleted & reset NODE_BIN to empty list.
+    try:
+        for node in NODE_BIN:
+            if node in nodes_to_keep:
+                continue
+
+            try:
+                cmds.delete(node)
+            except ValueError:
+                pass
+        NODE_BIN = []
+
+    # Make sure to set the lockState of all nodes back to what they were!
+    finally:
+        for kept_node, lock_state in zip(nodes_to_keep, node_lock_states):
+            cmds.lockNode(kept_node, lock=lock_state, ignoreComponents=True)
+
+
 def noca_op(func):
     """Add given function to the Op-class.
 
@@ -341,9 +387,6 @@ class OperatorMetaClass(object):
         Note:
             name, bases, body are necessary for __metaclass__ to work properly
         """
-        for required_plugin in lookup_table.BASIC_REQUIRED_PLUGINS:
-            cmds.loadPlugin(required_plugin, quiet=True)
-
         super(OperatorMetaClass, self).__init__()
 
     def available(self, full=False):
@@ -2854,6 +2897,9 @@ def _traced_create_node(node_type, **kwargs):
         new_node = cmds.listRelatives(new_node, parent=True)[0]
     new_node = cmds.rename(new_node, name)
 
+    # Add new node to node bin, in case user wants to clean up created nodes
+    _add_to_node_bin(new_node)
+
     # Parent after node creation
     if parent:
         new_node = cmds.parent(new_node, parent, **parent_kwargs)[0]
@@ -2913,6 +2959,20 @@ def _traced_create_node(node_type, **kwargs):
         NcBaseClass._add_to_command_stack(command)
 
     return new_node
+
+
+def _add_to_node_bin(node):
+    """Add a node to NODE_BIN to keep track of created nodes for easy cleanup.
+
+    Note:
+        Nodes are stored in NODE_BIN by name, NOT MPlug! Therefore, if a node
+        was renamed it will not be deleted by cleanup().
+
+    Args:
+        node (str): Name of Maya node to be added to the NODE_BIN.
+    """
+    global NODE_BIN
+    NODE_BIN.append(node)
 
 
 def _traced_add_attr(node, **kwargs):
