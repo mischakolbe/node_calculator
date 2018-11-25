@@ -1,18 +1,14 @@
-"""TODO
+"""Basic NodeCalculator functions.
+
+The main difference to the base_operators is that functions rely on operators!
+They combine existing operators to create more complex setups.
+
+Note:
+    This is an extension that is loaded by default.
 """
 
-import math
-
-from maya import cmds
-
 from node_calculator.core import noca_op
-from node_calculator.core import _create_operation_node
-from node_calculator.core import NcNode
-from node_calculator.core import NcBaseNode
-from node_calculator.core import _unravel_item_as_list
-from node_calculator.core import _unravel_and_set_or_connect_a_to_b
 from node_calculator.core import Op
-from node_calculator.core import LOG
 
 # Any Maya plugin that should be loaded for the NodeCalculator
 REQUIRED_EXTENSION_PLUGINS = []

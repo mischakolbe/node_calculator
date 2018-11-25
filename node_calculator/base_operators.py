@@ -1,4 +1,10 @@
-"""TODO
+"""Basic NodeCalculator operators.
+
+The main difference to the base_functions is that operators are stand-alone
+functions that create a Maya node.
+
+Note:
+    This is an extension that is loaded by default.
 """
 
 import math
