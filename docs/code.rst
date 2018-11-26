@@ -17,6 +17,7 @@ These pages are auto-created from the docStrings of the NodeCalculator files.
 
    config
    core
+   operators
    noca_extension
    nc_value
    tracer

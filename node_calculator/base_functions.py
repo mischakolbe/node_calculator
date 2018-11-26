@@ -1,11 +1,8 @@
-"""Basic NodeCalculator functions.
+"""Basic NodeCalculator functions."""
+# This is an extension that is loaded by default.
 
-The main difference to the base_operators is that functions rely on operators!
-They combine existing operators to create more complex setups.
-
-Note:
-    This is an extension that is loaded by default.
-"""
+# The main difference to the base_operators is that functions rely on operators!
+# They combine existing operators to create more complex setups.
 
 from node_calculator.core import noca_op
 from node_calculator.core import Op

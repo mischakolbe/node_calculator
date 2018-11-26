@@ -28,9 +28,11 @@ import node_calculator.core as noca
 * Maya 2016
 
 ### Run Tests
-After installing node_calculator if you want to run the test suite just run:
-`mayapy -m unittest discover path/to/node_calculator/tests`
-Just make sure the path is the 'path/to/node_calculator/tests' is the tests directory inside the top level directory.
+If you are developing the NodeCalculator further, you can run the test suite to check whether the basic functionality is still intact.
+To do so, navigate to your Maya directory. For example:
+`C:\Program Files\Autodesk\Maya2018`
+And run this command in a terminal:
+`.\bin\mayapy.exe -m unittest discover >path\to\node_calculator\tests<`
 
 ### Think this is useful? Share the love and buy me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
