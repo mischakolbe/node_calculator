@@ -86,7 +86,6 @@ except NameError:
     # Python 3
     from imp import reload
 
-
 # Reload modules when in DEV mode
 if os.environ.get("MAYA_DEV", False):
     reload(config)
@@ -3503,20 +3502,23 @@ def _format_docstring(*args, **kwargs):
     return func
 
 
+# These imports must be at the end, to prevent import errors from extensions.
+from node_calculator import base_functions
+from node_calculator import base_operators
+
+
 # NodeCalculator Extensions ---
 def __load_extensions():
     """Import the potential NodeCalculator extensions."""
 
-    # Load the default extensions first
-    for base_extension in [BASE_OPERATORS, BASE_FUNCTIONS]:
-        noca_base_extension = __import__(
-            base_extension,
-            globals(),
-            locals(),
-            [],
-            level=1
-        )
-        __load_extension(noca_base_extension)
+    # Load default extensions first. Must be inside try/except for Sphinx doc!
+    try:
+        reload(base_operators)
+        __load_extension(base_operators)
+        reload(base_functions)
+        __load_extension(base_functions)
+    except TypeError:
+        pass
 
     # Make sure extensions that aren't local can be imported.
     if config.EXTENSION_PATH and config.EXTENSION_PATH not in sys.path:
