@@ -29,10 +29,10 @@ import node_calculator.core as noca
 
 ### Run Tests
 If you are developing the NodeCalculator further, you can run the test suite to check whether the basic functionality is still intact.
-To do so, navigate to your Maya directory. For example:
-`C:\Program Files\Autodesk\Maya2018`
+To do so, navigate to the bin-folder in your Maya directory. For example:
+`C:\Program Files\Autodesk\Maya2018\bin`
 And run this command in a terminal:
-`.\bin\mayapy.exe -m unittest discover -s >path\to\node_calculator\tests< -v`
+`.\mayapy.exe -m unittest discover -s >path\to\node_calculator\tests< -v`
 
 ### Think this is useful? Share the love and buy me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
