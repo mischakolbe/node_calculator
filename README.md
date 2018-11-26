@@ -32,7 +32,7 @@ If you are developing the NodeCalculator further, you can run the test suite to 
 To do so, navigate to your Maya directory. For example:
 `C:\Program Files\Autodesk\Maya2018`
 And run this command in a terminal:
-`.\bin\mayapy.exe -m unittest discover >path\to\node_calculator\tests<`
+`.\bin\mayapy.exe -m unittest discover -s >path\to\node_calculator\tests< -v`
 
 ### Think this is useful? Share the love and buy me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)

@@ -12,7 +12,6 @@ from maya import cmds
 
 # Local imports
 from base import BaseTestCase
-print "HAHAHA"
 import node_calculator.core as noca
 
 
