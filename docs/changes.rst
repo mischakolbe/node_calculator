@@ -1,6 +1,21 @@
 Changes
 ==============================================================================
 
+Release 2.1.0
+*************
+
+Incompatible changes
+--------------------
+* Careful: The actual NodeCalculator now lives in the node_calculator INSIDE the main repo! It's not at the top level anymore.
+
+Features added
+--------------
+* Tests are now standalone (not dependent on CMT anymore) and can be run from a console! Major kudos to Andres Weber!
+* CircleCi integration to auto-run checks whenever repo is updated. Again: Major kudos to Andres Weber!
+* The default Operators are now factored out into their own files: base_functions.py & base_operators.py
+* It's now possible to set attributes on the shape from the transform (mimicking Maya behaviour). Sudo example: pCube1.outMesh (instead of requiring pCube1Shape.outMesh)
+
+
 Release 2.0.1
 *************
 
