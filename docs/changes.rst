@@ -1,6 +1,16 @@
 Changes
 ==============================================================================
 
+
+Release 2.1.1
+*************
+
+Bugs fixed
+----------
+* Now supports non-unique names > node_calculator/issues/74
+* Catch error when user sets a non-existent attribute on an NcList item (now only throws a warning) > node_calculator/issues/73
+
+
 Release 2.1.0
 *************
 
@@ -20,6 +30,7 @@ Features added
 Bugs fixed
 ----------
 * The dot-Operator now correctly returns a 1D result (returned a 3D result before) > node_calculator/issues/68
+
 
 Release 2.0.1
 *************

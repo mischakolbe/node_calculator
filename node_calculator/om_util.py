@@ -671,6 +671,43 @@ def get_mplug_of_plug(plug):
     return mplug
 
 
+def get_unique_mplug_path(mplug):
+    """Get a unique path to the given MPlug.
+
+    Note:
+        MPlug instances don't return unique paths by default. Therefore they
+        don't support non unique items. This is a work-around for that issue.
+
+    Args:
+        mplug (str or MPlug): Name or MPlug of attribute.
+
+    Returns:
+        str: Unique path to attribute: node.attribute
+
+    Raises:
+        ValueError: If given object is neither a string or an MPlug instance.
+    """
+    if isinstance(mplug, basestring):
+        return mplug
+
+    if not isinstance(mplug, OpenMaya.MPlug):
+        raise ValueError
+
+    node = get_dag_path_of_mobj(mplug.node())
+    plug = mplug.partialName(
+        includeNodeName=False,
+        includeNonMandatoryIndices=False,
+        includeInstancedIndices=False,
+        useAlias=False,
+        useFullAttributePath=False,
+        useLongNames=True
+    )
+
+    plug_as_str = "{0}.{1}".format(node, plug)
+
+    return plug_as_str
+
+
 def split_plug_string(plug):
     """Split string referring to a plug into its separate elements.
 

@@ -328,7 +328,7 @@ def cleanup(keep_selected=False):
     # If the user wants to keep the selected nodes: Store them.
     nodes_to_keep = []
     if keep_selected:
-        nodes_to_keep = cmds.ls(selection=True)
+        nodes_to_keep = cmds.ls(selection=True, long=True)
 
     # To prevent accidentally deleting dependent utility nodes: Lock them!
     node_lock_states = []
@@ -1867,7 +1867,13 @@ class NcList(NcBaseClass, list):
 
         else:
             for item in self._items:
-                _unravel_and_set_or_connect_a_to_b(NcNode(item, name), value)
+                current_node = NcNode(item, name)
+                try:
+                    _unravel_and_set_or_connect_a_to_b(current_node, value)
+                except RuntimeError:
+                    LOG.warn(
+                        "Could not set %s to value %s. Maybe this attribute "
+                        "doesn't exist on the node!", current_node, value)
 
     def __getitem__(self, index):
         """Get stored item at given index.
@@ -2391,6 +2397,8 @@ def _is_valid_maya_attr(plug):
         bool: Whether the given plug is an existing plug in the scene.
     """
     LOG.debug("_is_valid_maya_attr (%s)", plug)
+
+    plug = om_util.get_unique_mplug_path(plug)
 
     split_plug = _split_plug_into_node_and_attr(plug)
     if split_plug:
@@ -3012,6 +3020,8 @@ def _traced_set_attr(plug, value=None, **kwargs):
         value (list or numbers or bool): Value the given plug should be set to.
         kwargs (dict): cmds.setAttr-flags
     """
+    plug = om_util.get_unique_mplug_path(plug)
+
     # Set plug to value
     if value is None:
         cmds.setAttr(plug, edit=True, **kwargs)
@@ -3085,6 +3095,8 @@ def _traced_get_attr(plug):
     Returns:
         list or numbers or bool or str: Queried value of Maya node plug.
     """
+    plug = om_util.get_unique_mplug_path(plug)
+
     # Variable to keep track of whether return value had to be unpacked or not
     list_of_tuples_returned = False
 
@@ -3163,6 +3175,9 @@ def _traced_connect_attr(plug_a, plug_b):
         plug_a (MPlug or str): Source plug
         plug_b (MPlug or str): Destination plug
     """
+    plug_a = om_util.get_unique_mplug_path(plug_a)
+    plug_b = om_util.get_unique_mplug_path(plug_b)
+
     # Connect plug_a to plug_b
     cmds.connectAttr(plug_a, plug_b, force=True)
 
