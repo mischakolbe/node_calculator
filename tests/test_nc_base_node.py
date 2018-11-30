@@ -6,16 +6,14 @@ Unit tests that must apply for NcNode AND NcAttrs class!
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
 import pymel.core as pm
 
 # Local imports
-from cmt.test import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -37,9 +35,11 @@ TEST_POSITION_B = [8.0, 9.0, 10.2]
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNcBaseNodeClass(TestCase):
+class TestNcBaseNodeClass(BaseTestCase):
 
     def setUp(self):
+        super(TestNcBaseNodeClass, self).setUp()
+
         # Create regular polyCube transform & shape node
         self.test_mesh = cmds.polyCube(name=TEST_MESH, constructionHistory=False)[0]
 
@@ -98,10 +98,6 @@ class TestNcBaseNodeClass(TestCase):
             TEST_POSITION_B,
             TEST_POSITION_B,
         ]
-
-    def tearDown(self):
-        # Remove test nodes
-        cmds.delete(TEST_MESH, TEST_TRANSFORM)
 
     def test_basic_methods(self):
         for i, noca_instance in enumerate(self.test_items):

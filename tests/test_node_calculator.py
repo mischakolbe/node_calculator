@@ -6,15 +6,13 @@ Unit tests for overall NodeCalculator functionality.
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
 
 # Local imports
-from cmt.test import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -37,9 +35,11 @@ TEST_VALUES = [
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNodeCalculatorCore(TestCase):
+class TestNodeCalculatorCore(BaseTestCase):
 
     def setUp(self):
+        super(TestNodeCalculatorCore, self).setUp()
+
         self.node_a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]))
         self.node_b = noca.Node(cmds.createNode("transform", name=TEST_NODES[1]))
         self.node_c = noca.Node(cmds.createNode("transform", name=TEST_NODES[2]))
@@ -60,6 +60,8 @@ class TestNodeCalculatorCore(TestCase):
         self.value_list = noca.NcList(self.desired_value_list)
 
     def tearDown(self):
+        super(TestNodeCalculatorCore, self).tearDown()
+
         # Make sure the global auto unravel/consolidate is turned on again!
         noca.set_global_auto_unravel(True)
         noca.set_global_auto_consolidate(True)

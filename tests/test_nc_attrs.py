@@ -6,15 +6,13 @@ Unit tests for noca.NcAttrs
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
 
 # Local imports
-from cmt.test import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -29,15 +27,13 @@ TEST_VALUE = 5.5
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestAttrsClass(TestCase):
+class TestAttrsClass(BaseTestCase):
 
     def setUp(self):
+        super(TestAttrsClass, self).setUp()
+
         self.test_transform = cmds.createNode("transform", name=TEST_TRANSFORM)
         self.node_instance = noca.NcNode(TEST_TRANSFORM)
-
-    def tearDown(self):
-        # Remove test nodes
-        cmds.delete(TEST_TRANSFORM)
 
     def test_initialization(self):
         """Test the instantiation of the NcAttrs class"""

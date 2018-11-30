@@ -8,8 +8,14 @@ Turn those long lists of cmds.createNode, cmds.setAttr & cmds.connectAttr into r
 [Documentation on ReadTheDocs](https://node-calculator.readthedocs.io/en/latest/)
 
 ### Install & Import
-Download/clone this git-repo. Save the `node_calculator` folder to your `\Documents\maya\scripts` folder (Make sure the folder is called **node_calculator**, not node_calculator-master or so).
+Download or clone this git-repo. Save the **inner** `node_calculator` folder (the one that contains core.py, etc.) to your `\Documents\maya\scripts` folder.
 
+Also you can git clone the repo to a location of your choice then while in the top folder run `mayapy -m pip install .`
+This will make sure it is installed in maya's site-packages directory.  Optionally you can install it in your userScripts:
+`mayapy -m pip install . -t /path/to/your/userScriptsDirectory/`
+Note: Make sure to run in a terminal/console that has administrator privileges if Maya is installed in a write-protected folder.
+
+### Usage
 Import it in Maya via
 
 ```python
@@ -21,6 +27,12 @@ import node_calculator.core as noca
 * Maya 2017
 * Maya 2016
 
+### Run Tests
+If you are developing the NodeCalculator further, you can run the test suite to check whether the basic functionality is still intact.
+To do so, navigate to the bin-folder in your Maya directory. For example:
+`C:\Program Files\Autodesk\Maya2018\bin`
+And run this command in a terminal:
+`.\mayapy.exe -m unittest discover -s >path\to\node_calculator\tests< -v`
 
 ### Think this is useful? Share the love and buy me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)

@@ -6,16 +6,13 @@ Unit tests for noca.Op
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
 
 # Local imports
-from cmt.test import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
-from node_calculator import lookup_table
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -57,7 +54,7 @@ def _test_condition_op(operator):
     """
 
     def test(self):
-        node_data = lookup_table.BASIC_OPERATORS[operator]
+        node_data = noca.OPERATORS[operator]
         condition_value = 1.1
         false_value = 2
 
@@ -108,7 +105,7 @@ def _test_regular_op(operator):
         matrix_operator = True
 
     def test(self):
-        node_data = lookup_table.BASIC_OPERATORS[operator]
+        node_data = noca.OPERATORS[operator]
 
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
@@ -217,7 +214,7 @@ class TestOperatorsMeta(type):
         """
 
         # Add tests for each operator
-        for operator, data in lookup_table.BASIC_OPERATORS.iteritems():
+        for operator, data in noca.OPERATORS.iteritems():
 
             # Skip operators that need an individual test
             if operator in IRREGULAR_OPERATORS:
@@ -233,22 +230,21 @@ class TestOperatorsMeta(type):
         return type.__new__(_mcs, _name, _bases, _dict)
 
 
-class TestOperators(TestCase):
+class TestOperators(BaseTestCase):
     """ Metaclass helps to instantiate the TestMetadataValueMeta with all tests """
     __metaclass__ = TestOperatorsMeta
 
     def setUp(self):
+        super(TestOperators, self).setUp()
+
         self.a = noca.Node(cmds.createNode("transform", name=TEST_NODES[0]))
         self.b = noca.Node(cmds.createNode("transform", name=TEST_NODES[1]))
         self.c = noca.Node(cmds.createNode("transform", name=TEST_NODES[2]))
         self.m = noca.Node(cmds.createNode("holdMatrix", name=TEST_NODES[3]))
 
-    def tearDown(self):
-        cmds.delete(TEST_NODES)
-
     def test_matrix_distance(self):
 
-        node_data = lookup_table.BASIC_OPERATORS["matrix_distance"]
+        node_data = noca.OPERATORS["matrix_distance"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -278,7 +274,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_compose_matrix(self):
-        node_data = lookup_table.BASIC_OPERATORS["compose_matrix"]
+        node_data = noca.OPERATORS["compose_matrix"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -315,7 +311,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.inMatrix".format(TEST_NODES[3]))
 
     def test_decompose_matrix(self):
-        node_data = lookup_table.BASIC_OPERATORS["decompose_matrix"]
+        node_data = noca.OPERATORS["decompose_matrix"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -324,8 +320,8 @@ class TestOperators(TestCase):
         result = noca.Op.decompose_matrix(input_plugs[0])
         self.c.translateX = result[0][0]
 
-        # Check that result is an NcList
-        self.assertTrue(isinstance(result, noca.NcList))
+        # Check that result is an NcNode
+        self.assertTrue(isinstance(result, noca.NcNode))
 
         # Test that the created node is of the correct type
         self.assertEqual(cmds.nodeType(result[0].node), node_type)
@@ -345,7 +341,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_point_matrix_mult(self):
-        node_data = lookup_table.BASIC_OPERATORS["point_matrix_mult"]
+        node_data = noca.OPERATORS["point_matrix_mult"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -375,7 +371,7 @@ class TestOperators(TestCase):
         self.assertEqual(plug_connected_to_output, "{}.translateX".format(TEST_NODES[2]))
 
     def test_pair_blend(self):
-        node_data = lookup_table.BASIC_OPERATORS["pair_blend"]
+        node_data = noca.OPERATORS["pair_blend"]
         node_type = node_data.get("node", None)
         node_inputs = node_data.get("inputs", None)
 
@@ -387,43 +383,43 @@ class TestOperators(TestCase):
         ]
 
         result = noca.Op.pair_blend(*input_plugs)
-        self.c.t = result[0]
-        self.c.r = result[1]
+        self.c.t = result
+        self.c.r = result.outRotate
 
-        # Check that result is an NcList
-        self.assertTrue(isinstance(result, noca.NcList))
+        # Check that result is an NcNode
+        self.assertTrue(isinstance(result, noca.NcNode))
 
         # Test that the created node is of the correct type
-        self.assertEqual(cmds.nodeType(result.nodes[0]), node_type)
+        self.assertEqual(cmds.nodeType(result.node), node_type)
 
         # Check the correct plug is connected into the input-plug
         input_translate1 = cmds.listConnections(
-            "{}.inTranslate1".format(result[0].node), plugs=True
+            "{}.inTranslate1".format(result.node), plugs=True
         )
         self.assertEqual(input_translate1, ["A.translate"])
 
         input_translate2 = cmds.listConnections(
-            "{}.inTranslate2".format(result[0].node), plugs=True
+            "{}.inTranslate2".format(result.node), plugs=True
         )
         self.assertEqual(input_translate2, ["B.translate"])
 
         input_rotate1 = cmds.listConnections(
-            "{}.inRotate1".format(result[0].node), plugs=True
+            "{}.inRotate1".format(result.node), plugs=True
         )
         self.assertEqual(input_rotate1, ["A.rotate"])
 
         input_rotate2 = cmds.listConnections(
-            "{}.inRotate2".format(result[0].node), plugs=True
+            "{}.inRotate2".format(result.node), plugs=True
         )
         self.assertEqual(input_rotate2, ["B.rotate"])
 
         # Test that the outputs are correct
         plug_connected_to_output = cmds.listConnections(
-            "{}.outTranslate".format(result[0].node), plugs=True
+            "{}.outTranslate".format(result.node), plugs=True
         )[0]
         self.assertEqual(plug_connected_to_output, "{}.translate".format(TEST_NODES[2]))
         plug_connected_to_output = cmds.listConnections(
-            "{}.outRotate".format(result[0].node), plugs=True
+            "{}.outRotate".format(result.node), plugs=True
         )[0]
         self.assertEqual(plug_connected_to_output, "{}.rotate".format(TEST_NODES[2]))
 
@@ -442,5 +438,5 @@ class TestOperators(TestCase):
                 operator_tests.append(tested_operator)
 
         # Compare operators with implemented tests to all available operators
-        all_operators = lookup_table.BASIC_OPERATORS.keys()[:]
+        all_operators = noca.OPERATORS.keys()[:]
         self.assertEqual(sorted(all_operators), sorted(operator_tests))

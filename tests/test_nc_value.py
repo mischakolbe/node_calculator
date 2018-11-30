@@ -11,9 +11,8 @@ import numbers
 # Third party imports
 
 # Local imports
-from cmt.test import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -34,6 +33,7 @@ METADATAS = [
     "metadata_a",
     "metadata_b",
 ]
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
@@ -69,6 +69,7 @@ def _test_type(value):
 
         self.assertEqual(meta_val.basetype, bool_proof_type)
         self.assertEqual(meta_val.__class__.__bases__[0], bool_proof_type)
+
     return test
 
 
@@ -91,7 +92,7 @@ class TestNcValueMeta(type):
         return type.__new__(_mcs, _name, _bases, _dict)
 
 
-class TestNcValue(TestCase):
+class TestNcValue(BaseTestCase):
     """ Metaclass helps to instantiate the TestNcValueMeta with all tests """
     __metaclass__ = TestNcValueMeta
 

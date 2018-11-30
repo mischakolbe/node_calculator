@@ -6,15 +6,13 @@ Unit tests for noca.Tracer
 # IMPORTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Python imports
-import unittest
 
 # Third party imports
 from maya import cmds
 
 # Local imports
-from cmt.test import TestCase
+from base import BaseTestCase
 import node_calculator.core as noca
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # GLOBALS
@@ -31,14 +29,13 @@ TEST_NODES = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class TestTracerClass(TestCase):
+class TestTracerClass(BaseTestCase):
 
     def setUp(self):
+        super(TestTracerClass, self).setUp()
+
         for node, node_type in TEST_NODES.iteritems():
             cmds.createNode(node_type, name=node)
-
-    def tearDown(self):
-        cmds.delete(TEST_NODES.keys())
 
     def test_standard_trace(self):
         """ Test regular tracing """
