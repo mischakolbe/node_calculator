@@ -1867,7 +1867,13 @@ class NcList(NcBaseClass, list):
 
         else:
             for item in self._items:
-                _unravel_and_set_or_connect_a_to_b(NcNode(item, name), value)
+                current_node = NcNode(item, name)
+                try:
+                    _unravel_and_set_or_connect_a_to_b(current_node, value)
+                except RuntimeError:
+                    LOG.warn(
+                        "Could not set %s to value %s. Maybe this attribute "
+                        "doesn't exist on the node!", current_node, value)
 
     def __getitem__(self, index):
         """Get stored item at given index.
