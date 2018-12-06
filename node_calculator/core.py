@@ -3,7 +3,7 @@
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 :credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly,
           Adam Vanner, Niels Kleinheinz, Andres Weber
-:version: 2.0.0
+:version: 2.1.1
 
 
 Note:

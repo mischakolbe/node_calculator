@@ -47,14 +47,11 @@ def soft_approach(in_value, fade_in_range=0.5, target_value=1):
     exponent = ((start_val) - in_value) / fade_in_range
     soft_approach_value = target_value - fade_in_range * Op.exp(exponent)
 
-    # if isinstance(fade_in_range, NcBaseNode):
     is_range_valid_condition = Op.condition(
         fade_in_range > 0,
         soft_approach_value,
         target_value
     )
-    # else:
-    #     is_range_valid_condition = soft_approach_value
 
     is_in_range_condition = Op.condition(
         in_value > start_val,
