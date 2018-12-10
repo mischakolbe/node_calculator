@@ -6,6 +6,7 @@ version: 2
 
 defaults: &defaults
   working_directory: ~/node_calculator
+  parallelism: 3
 
 default-run: &default-run
     steps:
@@ -38,7 +39,6 @@ default-run: &default-run
 
 jobs:
   build:
-    parallelism: 3
     docker:
       - image: daemonecles/anvil:maya2018
     <<: *defaults
