@@ -22,10 +22,9 @@ Import it in Maya via
 import node_calculator.core as noca
 ```
 
-### Tested with
+### CI tested with:
 * Maya 2018
 * Maya 2017
-* Maya 2016
 
 ### Run Tests
 If you are developing the NodeCalculator further, you can run the test suite to check whether the basic functionality is still intact.
