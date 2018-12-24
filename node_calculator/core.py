@@ -3,7 +3,7 @@
 :author: Mischa Kolbe <mischakolbe@gmail.com>
 :credits: Mischa Kolbe, Steven Bills, Marco D'Ambros, Benoit Gielly,
           Adam Vanner, Niels Kleinheinz, Andres Weber
-:version: 2.1.1
+:version: 2.1.2
 
 
 Note:
@@ -2189,12 +2189,12 @@ def _unravel_and_set_or_connect_a_to_b(obj_a, obj_b, **kwargs):
 
     # Dimensionality above 3 is most likely not going to be handled reliable!
     if obj_a_dim > 3:
-        LOG.warn(
+        LOG.info(
             "obj_a %s is %dD; greater than 3D! Many operations only work "
             "stable up to 3D!", obj_a_unravelled_list, obj_a_dim
         )
     if obj_b_dim > 3:
-        LOG.warn(
+        LOG.info(
             "obj_b %s is %dD; greater than 3D! Many operations only work "
             "stable up to 3D!", obj_b_unravelled_list, obj_b_dim
         )
