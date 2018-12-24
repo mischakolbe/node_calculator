@@ -28,6 +28,8 @@ MATRIX_OPERATORS = [
     "inverse_matrix",
     "mult_matrix",
     "transpose_matrix",
+    "weighted_add_matrix",
+    "hold_matrix",
 ]
 
 IRREGULAR_OPERATORS = [
@@ -36,6 +38,25 @@ IRREGULAR_OPERATORS = [
     "compose_matrix",
     "point_matrix_mult",
     "pair_blend",
+]
+
+UNTESTED_OPERATORS = [
+    "pass_matrix",
+    "closest_point_on_mesh",
+    "closest_point_on_surface",
+    "euler_to_quat",
+    "four_by_four_matrix",
+    "nearest_point_on_curve",
+    "point_on_curve_info",
+    "point_on_surface_info",
+    "quat_add",
+    "quat_conjugate",
+    "quat_invert",
+    "quat_mul",
+    "quat_negate",
+    "quat_normalize",
+    "quat_sub",
+    "quat_to_euler",
 ]
 
 
