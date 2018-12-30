@@ -175,3 +175,50 @@ class TestNodeCalculatorCore(BaseTestCase):
             "{}.{}".format(TEST_NODES[0], TEST_ATTR),
         ]
         self.assertEqual(blendshape_connections, desired_connections)
+
+    def test_non_unique_node_names(self):
+        """This test requires a specific set of nodes, different from the generic setUp."""
+
+        node_x = cmds.createNode("transform", name="X")
+        group = cmds.createNode("transform", name="grp")
+        node_x_grouped = cmds.createNode("transform")
+        cmds.parent(node_x_grouped, group)
+        cmds.rename(node_x_grouped, "X")
+
+        node_x = "|X"
+        node_x_grouped = "grp|X"
+
+        nc_x = noca.Node(node_x)
+        nc_x_grouped = noca.Node(node_x_grouped)
+
+        nc_x.tx = self.node_a.tx
+        nc_x.ty = 1
+
+        nc_x_grouped.tx = self.node_a.ty
+        nc_x_grouped.ty = 2
+
+        node_x_connection = cmds.listConnections(node_x + ".tx", plugs=True)
+        self.assertEqual(node_x_connection, [self.node_a.node + '.translateX'])
+        self.assertEqual(cmds.getAttr(node_x + ".ty"), 1)
+
+        node_x_grouped_connection = cmds.listConnections(node_x_grouped + ".tx", plugs=True)
+        self.assertEqual(node_x_grouped_connection, [self.node_a.node + '.translateY'])
+        self.assertEqual(cmds.getAttr(node_x_grouped + ".ty"), 2)
+
+    def test_shape_attribute_access(self):
+        """Test whether attrs of a transforms shape are directly accessible"""
+
+        mesh_a = cmds.polyCube(name="testMeshA", constructionHistory=False)[0]
+        mesh_b = cmds.polyCube(name="testMeshB", constructionHistory=False)[0]
+
+        nc_mesh_a = noca.Node(mesh_a)
+        nc_mesh_b = noca.Node(mesh_b)
+
+        # Make sure the NodeCalculator nodes directly refer to the transforms, not the shapes!
+        self.assertEqual(cmds.objectType(nc_mesh_a.node), "transform")
+        self.assertEqual(cmds.objectType(nc_mesh_b.node), "transform")
+
+        # Check whether the shapes get connected correctly, without accessing them explicitly.
+        nc_mesh_a.inMesh = nc_mesh_b.outMesh
+        mesh_a_connections = cmds.listConnections(mesh_a + ".inMesh", plugs=True)
+        self.assertEqual(mesh_a_connections, [mesh_b + 'Shape.outMesh'])
