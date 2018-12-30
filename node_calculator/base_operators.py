@@ -671,7 +671,8 @@ def average(*attrs):
     """Create plusMinusAverage-node for averaging input attrs.
 
     Args:
-        attrs (NcNode or NcAttrs or string or list): Inputs to be averaged
+        attrs (NcNode or NcAttrs or NcList or string or list or tuple):
+            Inputs to be averaged.
 
     Returns:
         NcNode: Instance with plusMinusAverage-node and output-attribute(s)
@@ -681,6 +682,9 @@ def average(*attrs):
 
             Op.average(Node("pCube.t"), [1, 2, 3])
     """
+    if len(attrs) == 1:
+        attrs = attrs[0]
+
     return _create_operation_node("average", attrs)
 
 
@@ -1277,7 +1281,8 @@ def mult_matrix(*attrs):
     """Create multMatrix-node for multiplying matrices.
 
     Args:
-        attrs (NcNode or NcAttrs or string or list): Matrices to multiply
+        attrs (NcNode or NcAttrs or NcList or string or list or tuple):
+            Matrices to multiply together.
 
     Returns:
         NcNode: Instance with multMatrix-node and output-attribute(s)
@@ -1294,6 +1299,9 @@ def mult_matrix(*attrs):
             out.rotate = decomp.outputRotate
             out.scale = decomp.outputScale
     """
+    if len(attrs) == 1:
+        attrs = attrs[0]
+
     return _create_operation_node("mult_matrix", attrs)
 
 
@@ -2104,7 +2112,8 @@ def sum(*attrs):
     """Create plusMinusAverage-node for averaging input attrs.
 
     Args:
-        attrs (NcNode or NcAttrs or string or list): Inputs to be averaged
+        attrs (NcNode or NcAttrs or NcList or string or list or tuple):
+            Inputs to be added up.
 
     Returns:
         NcNode: Instance with plusMinusAverage-node and output-attribute(s)
@@ -2114,6 +2123,9 @@ def sum(*attrs):
 
             Op.average(Node("pCube.t"), [1, 2, 3])
     """
+    if len(attrs) == 1:
+        attrs = attrs[0]
+
     return _create_operation_node("sum", attrs)
 
 
