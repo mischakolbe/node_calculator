@@ -436,7 +436,7 @@ EXTENSION_OPERATORS = {
     "quat_to_euler": {
         "node": "quatToEuler",
         "inputs": [
-            ["input1QuatX", "input1QuatY", "input1QuatZ", "input1QuatW"],
+            ["inputQuatX", "inputQuatY", "inputQuatZ", "inputQuatW"],
             ["inputRotateOrder"],
         ],
         "outputs": [
@@ -724,6 +724,9 @@ def choice(inputs, selector=0):
             choice_node = Op.choice([option_a, option_b], selector=switch)
             Node("pTorus1").tx = choice_node
     """
+    if not isinstance(inputs, (list, tuple)):
+        inputs = [inputs]
+
     choice_node_obj = _create_operation_node("choice", inputs, selector)
 
     return choice_node_obj
@@ -823,18 +826,30 @@ def closest_point_on_surface(
 
 
 @noca_op
-def compose_matrix(**kwargs):
+def compose_matrix(
+        translate=None,
+        rotate=None,
+        scale=None,
+        shear=None,
+        rotate_order=None,
+        euler_rotation=None,
+        **kwargs):
     """Create composeMatrix-node to assemble matrix from transforms.
-
     Args:
-        kwargs (dict): Possible kwargs below. longName flags take
-            precedence over the short names in [brackets]!
-        translate (NcNode or NcAttrs or str or int or float): [t] translate
-        rotate (NcNode or NcAttrs or str or int or float): [r] rotate
-        scale (NcNode or NcAttrs or str or int or float): [s] scale
-        shear (NcNode or NcAttrs or str or int or float): [sh] shear
-        rotate_order (NcNode or NcAttrs or str or int): [ro] rot-order
-        euler_rotation (NcNode or NcAttrs or bool): Euler rot or quaternion
+        translate (NcNode or NcAttrs or str or int or float): translate [t]
+            Defaults to None, which corresponds to value 0.
+        rotate (NcNode or NcAttrs or str or int or float): rotate [r]
+            Defaults to None, which corresponds to value 0.
+        scale (NcNode or NcAttrs or str or int or float): scale [s]
+            Defaults to None, which corresponds to value 1.
+        shear (NcNode or NcAttrs or str or int or float): shear [sh]
+            Defaults to None, which corresponds to value 0.
+        rotate_order (NcNode or NcAttrs or str or int): rot-order [ro]
+            Defaults to None, which corresponds to value 0.
+        euler_rotation (NcNode or NcAttrs or bool): Euler or quaternion [uer]
+            Defaults to None, which corresponds to True.
+        kwargs (dict): Short flags, see in [brackets] for each arg above.
+            Long names take precedence!
 
     Returns:
         NcNode: Instance with composeMatrix-node and output-attribute(s)
@@ -848,13 +863,18 @@ def compose_matrix(**kwargs):
             decomp_b = Op.decompose_matrix(in_b.worldMatrix)
             Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
     """
-    # Using kwargs not to have a lot of flags in the function call
-    translate = kwargs.get("translate", kwargs.get("t", 0))
-    rotate = kwargs.get("rotate", kwargs.get("r", 0))
-    scale = kwargs.get("scale", kwargs.get("s", 1))
-    shear = kwargs.get("shear", kwargs.get("sh", 0))
-    rotate_order = kwargs.get("rotate_order", kwargs.get("ro", 0))
-    euler_rotation = kwargs.get("euler_rotation", True)
+    if translate is None:
+        translate = kwargs.get("t", 0)
+    if rotate is None:
+        rotate = kwargs.get("r", 0)
+    if scale is None:
+        scale = kwargs.get("s", 1)
+    if shear is None:
+        shear = kwargs.get("sh", 0)
+    if rotate_order is None:
+        rotate_order = kwargs.get("ro", 0)
+    if euler_rotation is None:
+        euler_rotation = kwargs.get("uer", True)
 
     compose_matrix_node = _create_operation_node(
         "compose_matrix",
@@ -1391,7 +1411,7 @@ def pass_matrix(matrix, scale=1):
 
             Op.pass_matrix(Node("pCube1.worldMatrix"))
     """
-    return _create_operation_node("pass_matrix", matrix)
+    return _create_operation_node("pass_matrix", matrix, scale)
 
 
 @noca_op
