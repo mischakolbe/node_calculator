@@ -37,7 +37,7 @@ default-run: &default-run
 
 
 jobs:
-  maya2018:
+  build:
     docker:
       - image: daemonecles/anvil:maya2018
     <<: *defaults
