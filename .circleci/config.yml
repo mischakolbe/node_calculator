@@ -23,7 +23,7 @@ default-run: &default-run
             command: make install-deps
         - save-cache: &d2-save-cache
             paths:
-              - ~/venv/
+                - ~/venv/
             key: a1-dependencies-{{ checksum "requirements.txt" }}
         - run: &run-tests
             name: run tests

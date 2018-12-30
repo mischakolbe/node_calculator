@@ -27,10 +27,10 @@ TEST_VALUE = 5.5
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestAttrsClass(BaseTestCase):
+class TestNcAttrsClass(BaseTestCase):
 
     def setUp(self):
-        super(TestAttrsClass, self).setUp()
+        super(TestNcAttrsClass, self).setUp()
 
         self.test_transform = cmds.createNode("transform", name=TEST_TRANSFORM)
         self.node_instance = noca.NcNode(TEST_TRANSFORM)

@@ -64,10 +64,10 @@ test_plug_strings = {
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestTracerClass(BaseTestCase):
+class TestOmUtilClass(BaseTestCase):
 
     def setUp(self):
-        super(TestTracerClass, self).setUp()
+        super(TestOmUtilClass, self).setUp()
 
         self.node_name = "testNode"
         self.node_alt_name = "testAltName"

@@ -25,10 +25,10 @@ TEST_VALUE = 5.5
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TESTS
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class TestNodeClass(BaseTestCase):
+class TestNcNodeClass(BaseTestCase):
 
     def setUp(self):
-        super(TestNodeClass, self).setUp()
+        super(TestNcNodeClass, self).setUp()
 
         self.test_transform = cmds.createNode("transform", name=TEST_TRANSFORM)
 
