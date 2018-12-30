@@ -8,32 +8,32 @@ defaults: &defaults
   working_directory: ~/node_calculator
 
 default-run: &default-run
-  steps:
-    - checkout
-    - restore-cache: &d2-restore-cache
-      keys:
-        - a1-dependencies-{{ checksum "requirements.txt" }}
-        - a1-dependencies-
-    - run:
-      name: install git
-      command: yum -y install git
-    - run: &d-set-up-mayapy
-      name: set up mayapy and install deps
-      command: make install-deps
-    - save-cache: &d2-save-cache
-      paths:
-        - ~/venv/
-      key: a1-dependencies-{{ checksum "requirements.txt" }}
-    - run: &run-tests
-      name: run tests
-      command:  |
-        echo 'export MAYA_MODULE_PATH =~/cmt:$MAYA_MODULE_PATH' >> $BASH_ENV
-        make test-unit
-    - store_test_results: &store-results
-      path: ~/test-results
-    - store_artifacts: &store-artifacts
-      path: ~/.node_calculator
-      destination: ~/test-results
+    steps:
+        - checkout
+        - restore-cache: &d2-restore-cache
+          keys:
+              - a1-dependencies-{{ checksum "requirements.txt" }}
+              - a1-dependencies-
+        - run:
+          name: install git
+          command: yum -y install git
+        - run: &d-set-up-mayapy
+          name: set up mayapy and install deps
+          command: make install-deps
+        - save-cache: &d2-save-cache
+          paths:
+              - ~/venv/
+          key: a1-dependencies-{{ checksum "requirements.txt" }}
+        - run: &run-tests
+          name: run tests
+          command:  |
+            echo 'export MAYA_MODULE_PATH =~/cmt:$MAYA_MODULE_PATH' >> $BASH_ENV
+            make test-unit
+        - store_test_results: &store-results
+          path: ~/test-results
+        - store_artifacts: &store-artifacts
+          path: ~/.node_calculator
+          destination: ~/test-results
 
 
 jobs:
