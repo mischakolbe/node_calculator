@@ -27,9 +27,10 @@ def soft_approach(in_value, fade_in_range=0.5, target_value=1):
         fade_in_range (NcNode or NcAttrs or str or int or float): Value or
             attr. This defines a range over which the target_value will be
             approached. Before the in_value is within this range the output
-            of this and the in_value will be equal.
+            of this and the in_value will be equal. Defaults to 0.5.
         target_value (NcNode or NcAttrs or str or int or float): Value or
             attr. This is the value that will be approached slowly.
+            Defaults to 1.
 
     Returns:
         NcNode: Instance with node and output-attr.

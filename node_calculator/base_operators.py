@@ -346,9 +346,17 @@ EXTENSION_OPERATORS = {
             ["normalX", "normalY", "normalZ"],
             ["normalizedNormalX", "normalizedNormalY", "normalizedNormalZ"],
             ["tangentUx", "tangentUy", "tangentUz"],
-            ["normalizedTangentUX", "normalizedTangentUY", "normalizedTangentUZ"],
+            [
+                "normalizedTangentUX",
+                "normalizedTangentUY",
+                "normalizedTangentUZ",
+            ],
             ["tangentVx", "tangentVy", "tangentVz"],
-            ["normalizedTangentVX", "normalizedTangentVY", "normalizedTangentVZ"],
+            [
+                "normalizedTangentVX",
+                "normalizedTangentVY",
+                "normalizedTangentVZ",
+            ],
         ],
         "output_is_predetermined": True,
     },
@@ -639,9 +647,9 @@ def angle_between(vector_a, vector_b=(1, 0, 0)):
 
     Args:
         vector_a (NcNode or NcAttrs or int or float or list): Vector to
-            consider for angle between
-        vector_b (NcNode or NcAttrs or int or float or list): Vector to
-            consider for angle between
+            consider for angle between.
+        vector_b (NcNode or NcAttrs or int or float or list or tuple): Vector
+            to consider for angle between. Defaults to (1, 0, 0).
 
     Returns:
         NcNode: Instance with angleBetween-node and output-attribute(s)
@@ -686,7 +694,7 @@ def blend(attr_a, attr_b, blend_value=0.5):
         attr_b (NcNode or NcAttrs or str or int or float): Plug or value to
             blend to
         blend_value (NcNode or str or int or float): Plug or value defining
-            blend-amount
+            blend-amount. Defaults to 0.5.
 
     Returns:
         NcNode: Instance with blend-node and output-attributes
@@ -708,9 +716,9 @@ def choice(inputs, selector=0):
         So we package a copy of the same selector for each input.
 
     Args:
-        inputs (list): Any number of input values or plugs
+        inputs (NcList, NcAttrs, list): Any number of input values or plugs.
         selector (NcNode or NcAttrs or int): Selector-attr on choice node
-            to select one of the inputs based on their index.
+            to select one of the inputs based on their index. Defaults to 0.
 
     Returns:
         NcNode: Instance with choice-node and output-attribute(s)
@@ -739,9 +747,9 @@ def clamp(attr_a, min_value=0, max_value=1):
     Args:
         attr_a (NcNode or NcAttrs or str or int or float): Input value
         min_value (NcNode or NcAttrs or int or float or list): min-value
-            for clamp-operation
+            for clamp-operation. Defaults to 0.
         max_value (NcNode or NcAttrs or int or float or list): max-value
-            for clamp-operation
+            for clamp-operation. Defaults to 1.
 
     Returns:
         NcNode: Instance with clamp-node and output-attribute(s)
@@ -964,10 +972,11 @@ def cross(attr_a, attr_b=0, normalize=False):
     """Create vectorProduct-node for vector cross-multiplication.
 
     Args:
-        attr_a (NcNode or NcAttrs or str or int or float or list): Vector A
-        attr_b (NcNode or NcAttrs or str or int or float or list): Vector B
+        attr_a (NcNode or NcAttrs or str or int or float or list): Vector A.
+        attr_b (NcNode or NcAttrs or str or int or float or list): Vector B.
+            Defaults to 0.
         normalize (NcNode or NcAttrs or boolean): Whether resulting vector
-            should be normalized
+            should be normalized. Defaults to False.
 
     Returns:
         NcNode: Instance with vectorProduct-node and output-attribute(s)
@@ -1017,10 +1026,11 @@ def dot(attr_a, attr_b=0, normalize=False):
     """Create vectorProduct-node for vector dot-multiplication.
 
     Args:
-        attr_a (NcNode or NcAttrs or str or int or float or list): Vector A
-        attr_b (NcNode or NcAttrs or str or int or float or list): Vector B
+        attr_a (NcNode or NcAttrs or str or int or float or list): Vector A.
+        attr_b (NcNode or NcAttrs or str or int or float or list): Vector B.
+            Defaults to 0.
         normalize (NcNode or NcAttrs or boolean): Whether resulting vector
-            should be normalized
+            should be normalized. Defaults to False.
 
     Returns:
         NcNode: Instance with vectorProduct-node and output-attribute(s)
@@ -1075,7 +1085,11 @@ def exp(attr_a):
 
 
 @noca_op
-def four_by_four_matrix(vector_a=None, vector_b=None, vector_c=None, translate=None):
+def four_by_four_matrix(
+        vector_a=None,
+        vector_b=None,
+        vector_c=None,
+        translate=None):
     """Create a four by four matrix out of its components.
 
     Args:
@@ -1119,7 +1133,10 @@ def four_by_four_matrix(vector_a=None, vector_b=None, vector_c=None, translate=N
             )
 
             out = Op.four_by_four_matrix(
-                vector_a=vec_a, vector_b=vec_b, vector_c=vec_c, translate=[cube.tx, cube.ty, cube.tz]
+                vector_a=vec_a,
+                vector_b=vec_b,
+                vector_c=vec_c,
+                translate=[cube.tx, cube.ty, cube.tz]
             )
     """
     # If any vector is not None: The operator won't return the identity matrix.
@@ -1216,8 +1233,9 @@ def length(attr_a, attr_b=0):
     """Create distanceBetween-node to measure length between given points.
 
     Args:
-        attr_a (NcNode or NcAttrs or str or int or float): Start point
-        attr_b (NcNode or NcAttrs or str or int or float): End point
+        attr_a (NcNode or NcAttrs or str or int or float): Start point.
+        attr_b (NcNode or NcAttrs or str or int or float): End point.
+            Defaults to 0.
 
     Returns:
         NcNode: Instance with distanceBetween-node and distance-attribute
@@ -1237,6 +1255,8 @@ def matrix_distance(matrix_a, matrix_b=None):
     Args:
         matrix_a (NcNode or NcAttrs or str): Matrix defining start point.
         matrix_b (NcNode or NcAttrs or str): Matrix defining end point.
+            Defaults to None, which gives the length between the origin and
+            the point described by matrix_a.
 
     Returns:
         NcNode: Instance with distanceBetween-node and distance-attribute
@@ -1319,7 +1339,8 @@ def normalize_vector(in_vector, normalize=True):
 
     Args:
         in_vector (NcNode or NcAttrs or str or int or float or list): Vect.
-        normalize (NcNode or NcAttrs or boolean): Turn normalize on/off
+        normalize (NcNode or NcAttrs or boolean): Turn normalize on/off.
+            Defaults to True.
 
     Returns:
         NcNode: Instance with vectorProduct-node and output-attribute(s)
@@ -1352,16 +1373,22 @@ def pair_blend(
     Args:
         translate_a (NcNode or NcAttrs or str or int or float or list):
             Translate value of first transform.
+            Defaults to 0.
         rotate_a (NcNode or NcAttrs or str or int or float or list):
             Rotate value of first transform.
+            Defaults to 0.
         translate_b (NcNode or NcAttrs or str or int or float or list):
             Translate value of second transform.
+            Defaults to 0.
         rotate_b (NcNode or NcAttrs or str or int or float or list):
             Rotate value of second transform.
+            Defaults to 0.
         weight (NcNode or NcAttrs or str or int or float or list):
             Bias towards first or second transform.
+            Defaults to 1.
         quat_interpolation (NcNode or NcAttrs or boolean):
             Use euler (False) or quaternions (True) to interpolate rotation
+            Defaults to False.
         return_all_outputs (boolean): Return all outputs, as an NcList.
             Defaults to False.
 
@@ -1422,7 +1449,7 @@ def point_matrix_mult(in_vector, in_matrix, vector_multiply=False):
         in_vector (NcNode or NcAttrs or str or int or float or list): Vect.
         in_matrix (NcNode or NcAttrs or str): Matrix
         vector_multiply (NcNode or NcAttrs or str or int or bool): Whether
-            vector multiplication should be performed.
+            vector multiplication should be performed. Defaults to False.
 
     Returns:
         NcNode: Instance with pointMatrixMult-node and output-attribute(s)
@@ -1635,7 +1662,7 @@ def quat_to_euler(quat_a, rotate_order=0):
 @noca_op
 def point_on_curve_info(
         curve,
-        parameter=0.0,
+        parameter=0,
         as_percentage=False,
         return_all_outputs=False):
     """Get curve data from a particular point on a curve.
@@ -1644,6 +1671,7 @@ def point_on_curve_info(
         curve (NcNode or NcAttrs or str): Curve node.
         parameter (NcNode or NcAttrs or int or float or list): Get curve data
             at the position on the curve specified by this parameter.
+            Defaults to 0.
         as_percentage (NcNode or NcAttrs or int or float or boolean): Use
             0-1 values for parameter. Defaults to False.
         return_all_outputs (boolean): Return all outputs as an NcList.
@@ -1715,12 +1743,13 @@ def point_on_surface_info(
 
 
 @noca_op
-def pow(attr_a, attr_b):
+def pow(attr_a, attr_b=2):
     """Raise attr_a to the power of attr_b.
 
     Args:
-        attr_a (NcNode or NcAttrs or str or int or float): Value or attr
-        attr_b (NcNode or NcAttrs or str or int or float): Value or attr
+        attr_a (NcNode or NcAttrs or str or int or float): Value or attr.
+        attr_b (NcNode or NcAttrs or str or int or float): Value or attr.
+            Defaults to 2.
 
     Returns:
         NcNode: Instance with multiplyDivide-node and output-attr(s)
@@ -1788,8 +1817,8 @@ def remap_color(
         "remap_color", attr_a, output_min, output_max, input_min, input_max
     )
 
-    all_value_lists = [values_red, values_green, values_blue]
-    for values, color in zip(all_value_lists, ["red", "green", "blue"]):
+    value_lists = [values_red, values_green, values_blue]
+    for values, color in zip(value_lists, ["red", "green", "blue"]):
         for index, value_data in enumerate(values or []):
             # value_Position, value_FloatValue, value_Interp
             # "x-axis", "y-axis", interpolation
@@ -1879,8 +1908,8 @@ def remap_hsv(
         "remap_hsv", attr_a, output_min, output_max, input_min, input_max
     )
 
-    all_value_lists = [values_hue, values_saturation, values_value]
-    for values, setting in zip(all_value_lists, ["hue", "saturation", "value"]):
+    value_lists = [values_hue, values_saturation, values_value]
+    for values, setting in zip(value_lists, ["hue", "saturation", "value"]):
         for index, value_data in enumerate(values or []):
             # value_Position, value_FloatValue, value_Interp
             # "x-axis", "y-axis", interpolation
@@ -2040,11 +2069,15 @@ def set_range(
     """Create setRange-node to remap the given input attr to a new min/max.
 
     Args:
-        attr_a (NcNode or NcAttrs or str or int or float): Input value
-        min_value (NcNode or NcAttrs or int or float or list): new min
-        max_value (NcNode or NcAttrs or int or float or list): new max
-        old_min_value (NcNode or NcAttrs or int or float or list): old min
-        old_max_value (NcNode or NcAttrs or int or float or list): old max
+        attr_a (NcNode or NcAttrs or str or int or float): Input value.
+        min_value (NcNode or NcAttrs or int or float or list): New min.
+            Defaults to 0.
+        max_value (NcNode or NcAttrs or int or float or list): New max.
+            Defaults to 1.
+        old_min_value (NcNode or NcAttrs or int or float or list): Old min.
+            Defaults to 0.
+        old_max_value (NcNode or NcAttrs or int or float or list): Old max.
+            Defaults to 1.
 
     Returns:
         NcNode: Instance with setRange-node and output-attribute(s)
