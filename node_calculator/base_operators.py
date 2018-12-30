@@ -843,6 +843,7 @@ def compose_matrix(
         euler_rotation=None,
         **kwargs):
     """Create composeMatrix-node to assemble matrix from transforms.
+
     Args:
         translate (NcNode or NcAttrs or str or int or float): translate [t]
             Defaults to None, which corresponds to value 0.
@@ -1115,6 +1116,7 @@ def four_by_four_matrix(
 
     Example:
         ::
+
             cube = Node("pCube1")
             vec_a = Op.point_matrix_mult(
                 [1, 0, 0],
@@ -1131,7 +1133,6 @@ def four_by_four_matrix(
                 cube.worldMatrix,
                 vector_multiply=True
             )
-
             out = Op.four_by_four_matrix(
                 vector_a=vec_a,
                 vector_b=vec_b,
