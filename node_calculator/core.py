@@ -355,6 +355,12 @@ def cleanup(keep_selected=False):
             cmds.lockNode(kept_node, lock=lock_state, ignoreComponents=True)
 
 
+def reset_cleanup():
+    """Empty the cleanup queue without deleting the nodes."""
+    global NODE_BIN
+    NODE_BIN = []
+
+
 def noca_op(func):
     """Add given function to the Op-class.
 
