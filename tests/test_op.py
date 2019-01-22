@@ -66,6 +66,10 @@ TEST_DATA_ASSOCIATION = {
         "input_plugs": ['tf_out_a.translate', 'tf_out_b.translate'],
         "output_plugs": ['tf_in_a.translate'],
     },
+    "curve_info": {
+        "input_plugs": ['curve_out_a.local'],
+        "output_plugs": ['tf_in_a.translateX'],
+    },
     "decompose_matrix": {
         "input_plugs": ['mat_out_a.outMatrix'],
         "output_plugs": ['tf_in_a.translate', 'tf_in_a.rotate', 'tf_in_a.scale', 'tf_in_b.translate'],

@@ -142,6 +142,16 @@ EXTENSION_OPERATORS = {
         "operation": 2,
     },
 
+    "curve_info": {
+        "node": "curveInfo",
+        "inputs": [
+            ["inputCurve"],
+        ],
+        "outputs": [
+            ["arcLength"],
+        ],
+    },
+
     "decompose_matrix": {
         "node": "decomposeMatrix",
         "inputs": [
@@ -992,6 +1002,24 @@ def cross(attr_a, attr_b=0, normalize=False):
             Op.cross(Node("pCube.t"), [1, 2, 3], True)
     """
     return _create_operation_node("cross", attr_a, attr_b, normalize)
+
+
+@noca_op
+def curve_info(curve):
+    """Measure the length of a curve.
+
+    Args:
+        curve (NcNode, NcAttrs or string): The curve to be measured.
+
+    Returns:
+        NcNode: Instance with vectorProduct-node and output-attribute(s)
+
+    Example:
+        ::
+
+            Op.curve_info(Node("nurbsCurve.local"))
+    """
+    return _create_operation_node("curve_info", curve)
 
 
 @noca_op
