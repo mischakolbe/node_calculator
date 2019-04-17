@@ -730,7 +730,7 @@ def choice(inputs, selector=0):
         So we package a copy of the same selector for each input.
 
     Args:
-        inputs (NcList, NcAttrs, list): Any number of input values or plugs.
+        inputs (NcList or NcAttrs or list): Any number of input values or plugs
         selector (NcNode or NcAttrs or int): Selector-attr on choice node
             to select one of the inputs based on their index. Defaults to 0.
 
@@ -784,7 +784,7 @@ def closest_point_on_mesh(mesh, position=(0, 0, 0), return_all_outputs=False):
         mesh (NcNode or NcAttrs or str): Mesh node.
         position (NcNode or NcAttrs or int or float or list): Find closest
             point on mesh to this position. Defaults to (0, 0, 0).
-        return_all_outputs (boolean): Return all outputs as an NcList.
+        return_all_outputs (bool): Return all outputs as an NcList.
             Defaults to False.
 
     Returns:
@@ -821,7 +821,7 @@ def closest_point_on_surface(
         surface (NcNode or NcAttrs or str): NURBS surface node.
         position (NcNode or NcAttrs or int or float or list): Find closest
             point on surface to this position. Defaults to (0, 0, 0).
-        return_all_outputs (boolean): Return all outputs as an NcList.
+        return_all_outputs (bool): Return all outputs as an NcList.
             Defaults to False.
 
     Returns:
@@ -886,18 +886,12 @@ def compose_matrix(
             decomp_b = Op.decompose_matrix(in_b.worldMatrix)
             Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
     """
-    if translate is None:
-        translate = kwargs.get("t", 0)
-    if rotate is None:
-        rotate = kwargs.get("r", 0)
-    if scale is None:
-        scale = kwargs.get("s", 1)
-    if shear is None:
-        shear = kwargs.get("sh", 0)
-    if rotate_order is None:
-        rotate_order = kwargs.get("ro", 0)
-    if euler_rotation is None:
-        euler_rotation = kwargs.get("uer", True)
+    translate = translate or kwargs.get("t", 0)
+    rotate = rotate or kwargs.get("r", 0)
+    scale = scale or kwargs.get("s", 1)
+    shear = shear or kwargs.get("sh", 0)
+    rotate_order = rotate_order or kwargs.get("ro", 0)
+    euler_rotation = euler_rotation or kwargs.get("uer", True)
 
     compose_matrix_node = _create_operation_node(
         "compose_matrix",
@@ -944,7 +938,7 @@ def condition(condition_node, if_part=False, else_part=True):
             # Op.condition(condition-part, "if true"-part, "if false"-part)
             Op.condition(condition_node, pass_on_if_true, pass_on_if_false)
     """
-    # Catch case where condition_node is a static boolean/int/... value
+    # Catch case where condition_node is a static bool/int/... value
     if not isinstance(condition_node, NcBaseNode):
         if condition_node:
             return Node(if_part)
@@ -990,7 +984,7 @@ def cross(attr_a, attr_b=0, normalize=False):
         attr_a (NcNode or NcAttrs or str or int or float or list): Vector A.
         attr_b (NcNode or NcAttrs or str or int or float or list): Vector B.
             Defaults to 0.
-        normalize (NcNode or NcAttrs or boolean): Whether resulting vector
+        normalize (NcNode or NcAttrs or bool): Whether resulting vector
             should be normalized. Defaults to False.
 
     Returns:
@@ -1028,7 +1022,7 @@ def decompose_matrix(in_matrix, return_all_outputs=False):
 
     Args:
         in_matrix (NcNode or NcAttrs or string): matrix attr to decompose
-        return_all_outputs (boolean): Return all outputs, as an NcList.
+        return_all_outputs (bool): Return all outputs, as an NcList.
             Defaults to False.
 
     Returns:
@@ -1062,7 +1056,7 @@ def dot(attr_a, attr_b=0, normalize=False):
         attr_a (NcNode or NcAttrs or str or int or float or list): Vector A.
         attr_b (NcNode or NcAttrs or str or int or float or list): Vector B.
             Defaults to 0.
-        normalize (NcNode or NcAttrs or boolean): Whether resulting vector
+        normalize (NcNode or NcAttrs or bool): Whether resulting vector
             should be normalized. Defaults to False.
 
     Returns:
@@ -1344,7 +1338,7 @@ def nearest_point_on_curve(
         curve (NcNode or NcAttrs or str): Curve node.
         position (NcNode or NcAttrs or int or float or list): Find closest
             point on curve to this position. Defaults to (0, 0, 0).
-        return_all_outputs (boolean): Return all outputs as an NcList.
+        return_all_outputs (bool): Return all outputs as an NcList.
             Defaults to False.
 
     Returns:
@@ -1376,7 +1370,7 @@ def normalize_vector(in_vector, normalize=True):
 
     Args:
         in_vector (NcNode or NcAttrs or str or int or float or list): Vect.
-        normalize (NcNode or NcAttrs or boolean): Turn normalize on/off.
+        normalize (NcNode or NcAttrs or bool): Turn normalize on/off.
             Defaults to True.
 
     Returns:
@@ -1423,10 +1417,10 @@ def pair_blend(
         weight (NcNode or NcAttrs or str or int or float or list):
             Bias towards first or second transform.
             Defaults to 1.
-        quat_interpolation (NcNode or NcAttrs or boolean):
+        quat_interpolation (NcNode or NcAttrs or bool):
             Use euler (False) or quaternions (True) to interpolate rotation
             Defaults to False.
-        return_all_outputs (boolean): Return all outputs, as an NcList.
+        return_all_outputs (bool): Return all outputs, as an NcList.
             Defaults to False.
 
     Returns:
@@ -1709,9 +1703,9 @@ def point_on_curve_info(
         parameter (NcNode or NcAttrs or int or float or list): Get curve data
             at the position on the curve specified by this parameter.
             Defaults to 0.
-        as_percentage (NcNode or NcAttrs or int or float or boolean): Use
-            0-1 values for parameter. Defaults to False.
-        return_all_outputs (boolean): Return all outputs as an NcList.
+        as_percentage (NcNode or NcAttrs or int or float or bool): Use 0-1
+            values for parameter. Defaults to False.
+        return_all_outputs (bool): Return all outputs as an NcList.
             Defaults to False.
 
     Returns:
@@ -1750,9 +1744,9 @@ def point_on_surface_info(
         surface (NcNode or NcAttrs or str): NURBS surface node.
         parameter (NcNode or NcAttrs or int or float or list): UV values that
             define point on NURBS surface. Defaults to (0, 0).
-        as_percentage (NcNode or NcAttrs or int or float or boolean): Use
+        as_percentage (NcNode or NcAttrs or int or float or bool): Use
             0-1 values for parameters. Defaults to False.
-        return_all_outputs (boolean): Return all outputs as an NcList.
+        return_all_outputs (bool): Return all outputs as an NcList.
             Defaults to False.
 
     Returns:

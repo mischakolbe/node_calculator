@@ -2,6 +2,21 @@ Changes
 ==============================================================================
 
 
+Release 2.1.3
+********************
+
+Features added
+--------------------
+* added curve_info Operator. > node_calculator/issues/82 & 87
+* added reset_cleanup function to reset the cleanup-stack. > node_calculator/issues/83
+
+Bugs fixed
+--------------------
+* More robust shape node creation and naming. > node_calculator/issues/86
+* More descriptive error message when node doesn't exist or isn't unique. > node_calculator/issues/84
+* PyMel is only loaded when necessary. > node_calculator/issues/85
+
+
 Release 2.1.2
 ********************
 

@@ -64,7 +64,6 @@ import sys
 # Third party imports
 from maya import cmds
 from maya.api import OpenMaya
-import pymel.core as pm
 
 # Local imports
 from node_calculator import config
@@ -1097,6 +1096,8 @@ class NcBaseNode(NcBaseClass):
             RuntimeError: If the user requested a PyNode of an NcNode/NcAttrs
                 with multiple attrs. PyNodes can only contain one attr max.
         """
+        import pymel.core as pm
+
         # Without attrs or if they should be ignored; return PyNode with node.
         if ignore_attrs or not self.attrs_list:
             return pm.PyNode(self.node)
@@ -1436,7 +1437,7 @@ class NcNode(NcBaseNode):
         Raises:
             RuntimeError: If number was given to initialize an NcNode with.
             RuntimeError: If list/tuple was given to initialize an NcNode with.
-            RuntimeError: If the given string doesn't seem to represent an
+            RuntimeError: If the given string doesn't represent a unique,
                 existing Maya node in the scene.
 
         Example:
@@ -1495,8 +1496,8 @@ class NcNode(NcBaseNode):
             node_mobj = om_util.get_mobj(node)
             if node_mobj is None:
                 msg = (
-                    "No Maya node was found for '{0}'! The node might not "
-                    "exist or its name might be non-unique.".format(node)
+                    'No Maya node was found for "{0}"! The node might not '
+                    'exist or its name might be non-unique.'.format(node)
                 )
                 raise RuntimeError(msg)
 
@@ -2867,7 +2868,7 @@ def _traced_create_node(node_type, **kwargs):
     """Create a Maya node and add it to the _traced_nodes if Tracer is active.
 
     Note:
-        This is simply an overloaded cmds.createNode(node_type, \**kwargs). It
+        This is simply an overloaded cmds.createNode(node_type, **kwargs). It
         includes the cmds.parent-command if parenting flags are given.
 
         If Tracer is active: Created nodes are associated with a variable.
@@ -2882,7 +2883,7 @@ def _traced_create_node(node_type, **kwargs):
         str: Name of newly created Maya node.
     """
     # Make sure a sensible name is in the kwargs
-    name = kwargs.pop("name", node_type)
+    name = kwargs.pop("name", None) or node_type
 
     # Separate parent command flags from the createNode/spaceLocator kwargs.
     parent = kwargs.pop("parent", None) or kwargs.pop("p", None)
@@ -2907,8 +2908,23 @@ def _traced_create_node(node_type, **kwargs):
     # The NodeCalculator gives easy access to shapes via get_shapes()
     new_node_is_shape = cmds.objectType(new_node, isAType="shape")
     if new_node_is_shape:
-        new_node = cmds.listRelatives(new_node, parent=True)[0]
-    new_node = cmds.rename(new_node, name)
+        # Get the shape and
+        new_node_shape_mobj = om_util.get_mobj(new_node)
+        new_node_mobj = om_util.get_mobj(
+            om_util.get_parent(new_node_shape_mobj)
+        )
+
+        new_node = cmds.rename(
+            om_util.get_dag_path_of_mobj(new_node_mobj),
+            name
+        )
+        cmds.rename(
+            om_util.get_dag_path_of_mobj(new_node_shape_mobj),
+            "{}Shape".format(om_util.get_name_of_mobj(new_node_mobj))
+        )
+
+    else:
+        new_node = cmds.rename(new_node, name)
 
     # Add new node to node bin, in case user wants to clean up created nodes
     _add_to_node_bin(new_node)

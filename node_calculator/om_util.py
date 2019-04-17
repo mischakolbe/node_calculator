@@ -48,6 +48,10 @@ def get_mobj(node):
     Args:
         node (MObject or MDagPath or str): Maya node requested as an MObject.
 
+    Raises:
+        RuntimeError: If the given string doesn't represent a unique, existing
+            Maya node in the scene.
+
     Returns:
         MObject: MObject instance that is a reference to the given node.
     """
@@ -58,7 +62,15 @@ def get_mobj(node):
         return node.node()
 
     selection_list = OpenMaya.MSelectionList()
-    selection_list.add(node)
+    try:
+        selection_list.add(node)
+    except RuntimeError:
+        msg = (
+            'No unique Maya node was found for "{0}"! Does the node exist and '
+            'is it a unique DAG path?'.format(node)
+        )
+        raise RuntimeError(msg)
+
     mobj = selection_list.getDependNode(0)
 
     return mobj
@@ -562,10 +574,10 @@ def get_mplug_of_node_and_attr(
     Args:
         node (MObject or MDagPath or str): Node whose attr should be queried.
         attr_str (str): Name of attribute.
-        expand_to_shape (boolean): If the given node is a transform with shape
+        expand_to_shape (bool): If the given node is a transform with shape
             nodes underneath it; check for the attribute on the shape node, if
             it can't be found on the transform. Defaults to True.
-        __shape_lookup (boolean): Flag to specify that an automatic lookup due
+        __shape_lookup (bool): Flag to specify that an automatic lookup due
             to expand_to_shape is taking place. This must never be set by the
             user! Defaults to False.
 
