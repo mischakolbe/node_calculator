@@ -64,7 +64,6 @@ import sys
 # Third party imports
 from maya import cmds
 from maya.api import OpenMaya
-import pymel.core as pm
 
 # Local imports
 from node_calculator import config
@@ -1097,6 +1096,8 @@ class NcBaseNode(NcBaseClass):
             RuntimeError: If the user requested a PyNode of an NcNode/NcAttrs
                 with multiple attrs. PyNodes can only contain one attr max.
         """
+        import pymel.core as pm
+
         # Without attrs or if they should be ignored; return PyNode with node.
         if ignore_attrs or not self.attrs_list:
             return pm.PyNode(self.node)
