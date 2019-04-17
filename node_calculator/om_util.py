@@ -48,6 +48,10 @@ def get_mobj(node):
     Args:
         node (MObject or MDagPath or str): Maya node requested as an MObject.
 
+    Raises:
+        RuntimeError: If the given string doesn't represent a unique, existing
+            Maya node in the scene.
+
     Returns:
         MObject: MObject instance that is a reference to the given node.
     """
@@ -58,7 +62,15 @@ def get_mobj(node):
         return node.node()
 
     selection_list = OpenMaya.MSelectionList()
-    selection_list.add(node)
+    try:
+        selection_list.add(node)
+    except RuntimeError:
+        msg = (
+            'No unique Maya node was found for "{0}"! Does the node exist and '
+            'is it a unique DAG path?'.format(node)
+        )
+        raise RuntimeError(msg)
+
     mobj = selection_list.getDependNode(0)
 
     return mobj
