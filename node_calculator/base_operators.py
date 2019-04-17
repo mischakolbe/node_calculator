@@ -886,18 +886,12 @@ def compose_matrix(
             decomp_b = Op.decompose_matrix(in_b.worldMatrix)
             Op.compose_matrix(r=decomp_a.outputRotate, s=decomp_b.outputScale)
     """
-    if translate is None:
-        translate = kwargs.get("t", 0)
-    if rotate is None:
-        rotate = kwargs.get("r", 0)
-    if scale is None:
-        scale = kwargs.get("s", 1)
-    if shear is None:
-        shear = kwargs.get("sh", 0)
-    if rotate_order is None:
-        rotate_order = kwargs.get("ro", 0)
-    if euler_rotation is None:
-        euler_rotation = kwargs.get("uer", True)
+    translate = translate or kwargs.get("t", 0)
+    rotate = rotate or kwargs.get("r", 0)
+    scale = scale or kwargs.get("s", 1)
+    shear = shear or kwargs.get("sh", 0)
+    rotate_order = rotate_order or kwargs.get("ro", 0)
+    euler_rotation = euler_rotation or kwargs.get("uer", True)
 
     compose_matrix_node = _create_operation_node(
         "compose_matrix",
