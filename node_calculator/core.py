@@ -2883,7 +2883,7 @@ def _traced_create_node(node_type, **kwargs):
         str: Name of newly created Maya node.
     """
     # Make sure a sensible name is in the kwargs
-    name = kwargs.pop("name", node_type)
+    name = kwargs.pop("name", None) or node_type
 
     # Separate parent command flags from the createNode/spaceLocator kwargs.
     parent = kwargs.pop("parent", None) or kwargs.pop("p", None)
@@ -2908,8 +2908,23 @@ def _traced_create_node(node_type, **kwargs):
     # The NodeCalculator gives easy access to shapes via get_shapes()
     new_node_is_shape = cmds.objectType(new_node, isAType="shape")
     if new_node_is_shape:
-        new_node = cmds.listRelatives(new_node, parent=True)[0]
-    new_node = cmds.rename(new_node, name)
+        # Get the shape and
+        new_node_shape_mobj = om_util.get_mobj(new_node)
+        new_node_mobj = om_util.get_mobj(
+            om_util.get_parent(new_node_shape_mobj)
+        )
+
+        new_node = cmds.rename(
+            om_util.get_dag_path_of_mobj(new_node_mobj),
+            name
+        )
+        cmds.rename(
+            om_util.get_dag_path_of_mobj(new_node_shape_mobj),
+            "{}Shape".format(om_util.get_name_of_mobj(new_node_mobj))
+        )
+
+    else:
+        new_node = cmds.rename(new_node, name)
 
     # Add new node to node bin, in case user wants to clean up created nodes
     _add_to_node_bin(new_node)
