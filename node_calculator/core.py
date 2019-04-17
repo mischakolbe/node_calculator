@@ -1436,7 +1436,7 @@ class NcNode(NcBaseNode):
         Raises:
             RuntimeError: If number was given to initialize an NcNode with.
             RuntimeError: If list/tuple was given to initialize an NcNode with.
-            RuntimeError: If the given string doesn't seem to represent an
+            RuntimeError: If the given string doesn't represent a unique,
                 existing Maya node in the scene.
 
         Example:
@@ -1495,8 +1495,8 @@ class NcNode(NcBaseNode):
             node_mobj = om_util.get_mobj(node)
             if node_mobj is None:
                 msg = (
-                    "No Maya node was found for '{0}'! The node might not "
-                    "exist or its name might be non-unique.".format(node)
+                    'No Maya node was found for "{0}"! The node might not '
+                    'exist or its name might be non-unique.'.format(node)
                 )
                 raise RuntimeError(msg)
 
@@ -2867,7 +2867,7 @@ def _traced_create_node(node_type, **kwargs):
     """Create a Maya node and add it to the _traced_nodes if Tracer is active.
 
     Note:
-        This is simply an overloaded cmds.createNode(node_type, \**kwargs). It
+        This is simply an overloaded cmds.createNode(node_type, **kwargs). It
         includes the cmds.parent-command if parenting flags are given.
 
         If Tracer is active: Created nodes are associated with a variable.

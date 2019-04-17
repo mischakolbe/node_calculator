@@ -574,10 +574,10 @@ def get_mplug_of_node_and_attr(
     Args:
         node (MObject or MDagPath or str): Node whose attr should be queried.
         attr_str (str): Name of attribute.
-        expand_to_shape (boolean): If the given node is a transform with shape
+        expand_to_shape (bool): If the given node is a transform with shape
             nodes underneath it; check for the attribute on the shape node, if
             it can't be found on the transform. Defaults to True.
-        __shape_lookup (boolean): Flag to specify that an automatic lookup due
+        __shape_lookup (bool): Flag to specify that an automatic lookup due
             to expand_to_shape is taking place. This must never be set by the
             user! Defaults to False.
 
