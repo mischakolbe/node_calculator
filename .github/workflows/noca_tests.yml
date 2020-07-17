@@ -15,8 +15,7 @@ jobs:
       uses: docker://mottosso/maya:2018
       with:
         args: |
-          ls .
-          ls ./node_calculator
+          /bin/sh -c "cd /usr/autodesk/maya && ls -la"    # access folder and list the files
           
       
     - name: Run a multi-line script
