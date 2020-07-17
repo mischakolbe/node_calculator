@@ -18,7 +18,7 @@ jobs:
           python -V
           ls .
           ls ./node_calculator
-          python -m unittest discover -s ./node_calculator/tests -v
+          
       
     - name: Run a multi-line script
       run: |
