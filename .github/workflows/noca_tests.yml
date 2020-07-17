@@ -6,10 +6,7 @@ on: [push, pull_request]
 jobs:
   maya:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        maya-version: [2016, 2018]
-    container: docker://mottosso/maya:${{ matrix.version }}
+    container: docker://mottosso/maya:2018
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
