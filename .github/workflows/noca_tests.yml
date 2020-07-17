@@ -12,9 +12,8 @@ jobs:
     - uses: actions/checkout@v2
       
     - name: Load Docker Image
-      uses: docker://mottosso/maya:2018
-      with:
-        path: usr/autodesk/maya
+      run: |
+        docker run -ti -v $(pwd):/root/workdir --rm mottosso/maya:2016
       
     - name: Test dir 1
       run: ls ./
