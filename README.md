@@ -28,6 +28,8 @@ import node_calculator.core as noca
 * Maya 2018
 * Maya 2017
 
+(Thank you [Marcus Ottosson](https://github.com/mottosso) for your crazy helpful [Docker images](https://github.com/mottosso/docker-maya))
+
 ### Run Tests
 If you are developing the NodeCalculator further, you can run the test suite to check whether the basic functionality is still intact.
 To do so, navigate to the bin-folder in your Maya directory. For example:
