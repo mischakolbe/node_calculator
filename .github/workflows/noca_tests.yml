@@ -13,12 +13,20 @@ jobs:
       
     - name: Load Docker Image
       uses: docker://mottosso/maya:2018
+      with:
+        path: usr/autodesk/maya
       
-    - name: Test dir
+    - name: Test dir 1
       run: ls ./
       
     - name: Test dir 2
-      run: ls ~
+      run: ls ~     
+       
+    - name: Test dir 3
+      run: ls ~/work
+      
+    - name: Test dir 4
+      run: ls ~/usr
       
     - name: Run a multi-line script
       run: |
