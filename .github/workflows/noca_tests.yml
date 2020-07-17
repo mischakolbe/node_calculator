@@ -13,7 +13,7 @@ jobs:
       
     - name: Load Docker Image
       run: |
-        docker run -ti -v $(pwd):/root/workdir --rm mottosso/maya:2016
+        docker run -ti -v /home/runner --rm mottosso/maya:2016
       
     - name: Test dir 1
       run: ls ./
