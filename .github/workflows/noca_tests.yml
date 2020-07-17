@@ -5,6 +5,9 @@ on: [push, pull_request]
 
 jobs:
   test_maya:
+    defaults:
+      run:
+        working-directory: ~/node_calculator
     runs-on: ubuntu-latest
 
     steps:
@@ -14,22 +17,10 @@ jobs:
     - name: Load Docker Image
       uses: docker://mottosso/maya:2018
 
-    - name: PIP Install
+    - name: Maya folder test
       run: |
-        wget https://bootstrap.pypa.io/get-pip.py
-        mayapy get-pip.py --user
-        mayapy -m pip install --user \
-          nose \
-          nose-exclude \
-          coverage \
-          flaky \
-          sphinx \
-          sphinxcontrib-napoleon
+        ls /usr/autodesk/maya/bin/mayapy
       shell: bash
-
-    - name: Run NoCa Tests
-      run: |
-        mayapy --version
 
     - name: Run a multi-line script
       run: |
