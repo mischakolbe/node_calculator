@@ -19,8 +19,15 @@ jobs:
 
     - name: Maya folder test
       run: |
-        ls /usr/autodesk/maya/bin/mayapy
-      shell: bash
+        ls /usr/autodesk/maya/
+      
+    - name: Maya folder test 2
+      run: |
+        ls ~/usr/autodesk/maya/  
+            
+    - name: Folder test
+      run: |
+        ls ~
 
     - name: Run a multi-line script
       run: |
