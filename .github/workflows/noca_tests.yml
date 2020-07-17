@@ -11,6 +11,9 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
       
+    - name: Load Docker Image
+      uses: docker://mottosso/maya:2018
+      
     - name: Test dir
       run: ls ./
       
