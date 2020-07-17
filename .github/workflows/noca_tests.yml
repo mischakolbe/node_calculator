@@ -4,16 +4,17 @@ name: NoCa CI
 on: [push, pull_request]
 
 jobs:
-  test_maya:
+  maya:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        maya-version: [2016, 2018]
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
       
     - name: Load Docker Image
-      uses: docker://mottosso/maya:2018
-      
-    - name: Run tests
-      run: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
+      uses: docker://mottosso/maya:${{ matrix.maya-version }}
+      with:
+        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
          
