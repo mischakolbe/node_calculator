@@ -4,16 +4,6 @@ name: NoCa CI
 on: [push, pull_request]
 
 jobs:
-  maya2016:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v2
-    - name: Load Docker Image
-      uses: docker://mottosso/maya:2016sp1
-      with:
-        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
-         
   maya2017:
     runs-on: ubuntu-latest
     
