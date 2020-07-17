@@ -14,7 +14,8 @@ jobs:
     - uses: actions/checkout@v2
       
     - name: Load Docker Image
-      uses: docker://mottosso/maya:${{ matrix.maya-version }}
+      uses: docker://mottosso/maya
       with:
+        node-version: ${{ matrix.maya-version }}
         args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
          
