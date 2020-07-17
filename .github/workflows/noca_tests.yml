@@ -4,11 +4,52 @@ name: NoCa CI
 on: [push, pull_request]
 
 jobs:
-  maya:
+  maya2016:
     runs-on: ubuntu-latest
-    container: docker://mottosso/maya:2018
+    
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    - name: Run Tests
-      run: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v     
+    - name: Load Docker Image
+      uses: docker://mottosso/maya:2016sp1
+      with:
+        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
+         
+  maya2017:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Load Docker Image
+      uses: docker://mottosso/maya:2017
+      with:
+        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
+         
+  maya2018:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Load Docker Image
+      uses: docker://mottosso/maya:2018
+      with:
+        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
+         
+  maya2019:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Load Docker Image
+      uses: docker://mottosso/maya:2019
+      with:
+        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
+         
+  maya2020:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Load Docker Image
+      uses: docker://mottosso/maya:2020
+      with:
+        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
