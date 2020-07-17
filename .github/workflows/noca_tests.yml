@@ -16,8 +16,7 @@ jobs:
 
     - name: Display the path
       run: ls ./
-      shell: bash
-
+      
     - name: Run a multi-line script
       run: |
         echo Add other actions to build,
