@@ -15,5 +15,5 @@ jobs:
       uses: docker://mottosso/maya:2018
       with:
         args: |
-          /usr/autodesk/maya/bin/mayapy -V
+          /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
          
