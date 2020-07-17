@@ -13,6 +13,7 @@ jobs:
       
     - name: Load Docker Image
       uses: docker://mottosso/maya:2018
-      with:
-        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
+      
+    - name: Run tests
+      run: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
          
