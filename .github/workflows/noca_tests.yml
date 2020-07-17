@@ -9,13 +9,9 @@ jobs:
     strategy:
       matrix:
         maya-version: [2016, 2018]
+    container: docker://mottosso/maya:${{ matrix.version }}
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-      
-    - name: Load Docker Image
-      uses: docker://mottosso/maya
-      with:
-        node-version: ${{ matrix.maya-version }}
-        args: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v
-         
+    - name: Run Tests
+      run: /usr/autodesk/maya/bin/mayapy -m unittest discover -s ./tests -v     
