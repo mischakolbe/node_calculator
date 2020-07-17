@@ -17,18 +17,18 @@ jobs:
     - name: Load Docker Image
       uses: docker://mottosso/maya:2018
 
-    - name: Maya folder test
-      run: |
-        ls /usr/autodesk/maya/
-      
-    - name: Maya folder test 2
-      run: |
-        ls ~/usr/autodesk/maya/  
-            
     - name: Folder test
       run: |
         ls ~
 
+    - name: Maya folder test
+      run: |
+        ls ~/usr/autodesk/maya/
+      
+    - name: Maya folder test 2
+      run: |
+        ls /usr/autodesk/maya/
+            
     - name: Run a multi-line script
       run: |
         echo Add other actions to build,
