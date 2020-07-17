@@ -23,8 +23,12 @@ import node_calculator.core as noca
 ```
 
 ### CI tested with:
+* Maya 2020
+* Maya 2019
 * Maya 2018
 * Maya 2017
+
+(Thank you [Marcus Ottosson](https://github.com/mottosso) for your crazy helpful [Docker images](https://github.com/mottosso/docker-maya))
 
 ### Run Tests
 If you are developing the NodeCalculator further, you can run the test suite to check whether the basic functionality is still intact.
@@ -33,5 +37,5 @@ To do so, navigate to the bin-folder in your Maya directory. For example:
 And run this command in a terminal:
 `.\mayapy.exe -m unittest discover -s >path\to\node_calculator\tests< -v`
 
-### Think this is useful? Share the love and buy me a hot chocolate ;P
+### Think this is useful? I won't say no, if you insist on buying me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
