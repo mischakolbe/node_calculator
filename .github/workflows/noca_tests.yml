@@ -26,7 +26,7 @@ jobs:
       run: ls ~/work
       
     - name: Test dir 4
-      run: ls ~/usr
+      run: ls usr/autodesk/maya
       
     - name: Run a multi-line script
       run: |
