@@ -14,6 +14,18 @@ jobs:
     - name: Load Docker Image
       uses: docker://mottosso/maya:2018
 
+    - name: PIP Install
+      run: |
+        wget https://bootstrap.pypa.io/get-pip.py
+        mayapy get-pip.py --user
+        mayapy -m pip install --user \
+          nose \
+          nose-exclude \
+          coverage \
+          flaky \
+          sphinx \
+          sphinxcontrib-napoleon
+
     - name: Run NoCa Tests
       run: |
         mayapy --version
