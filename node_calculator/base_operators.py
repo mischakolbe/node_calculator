@@ -15,7 +15,6 @@ from node_calculator.core import Node
 from node_calculator.core import NcBaseNode
 from node_calculator.core import _unravel_item_as_list
 from node_calculator.core import _unravel_and_set_or_connect_a_to_b
-from node_calculator.core import _traced_set_attr
 from node_calculator.core import LOG
 
 # Any Maya plugin that should be loaded for the NodeCalculator
@@ -1875,8 +1874,7 @@ def remap_color(
                 )
                 raise RuntimeError(msg)
 
-            # Set these attributes directly to avoid unnecessary unravelling.
-            _traced_set_attr(
+            _unravel_and_set_or_connect_a_to_b(
                 "{0}.{1}[{2}]".format(created_node.node, color, index),
                 (pos, val, interp)
             )
@@ -1966,8 +1964,7 @@ def remap_hsv(
                 )
                 raise RuntimeError(msg)
 
-            # Set these attributes directly to avoid unnecessary unravelling.
-            _traced_set_attr(
+            _unravel_and_set_or_connect_a_to_b(
                 "{0}.{1}[{2}]".format(created_node.node, setting, index),
                 (pos, val, interp)
             )
@@ -2045,8 +2042,7 @@ def remap_value(
             )
             raise RuntimeError(msg)
 
-        # Set these attributes directly to avoid unnecessary unravelling.
-        _traced_set_attr(
+        _unravel_and_set_or_connect_a_to_b(
             "{0}.value[{1}]".format(created_node.node, index),
             (pos, val, interp)
         )
