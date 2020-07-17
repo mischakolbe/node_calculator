@@ -15,10 +15,5 @@ jobs:
       uses: docker://mottosso/maya:2018
       with:
         args: |
-          /bin/sh -c "cd /usr/autodesk/maya && ls -la"    # access folder and list the files
-          
-      
-    - name: Run a multi-line script
-      run: |
-        echo Add other actions to build,
-        echo test, and deploy your project.
+          /usr/autodesk/maya/bin/mayapy -V
+         
