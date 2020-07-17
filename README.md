@@ -37,5 +37,5 @@ To do so, navigate to the bin-folder in your Maya directory. For example:
 And run this command in a terminal:
 `.\mayapy.exe -m unittest discover -s >path\to\node_calculator\tests< -v`
 
-### Think this is useful? Share the love and buy me a hot chocolate ;P
+### Think this is useful? I won't say no, if you insist on buying me a hot chocolate ;P
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/mischakolbe1)
