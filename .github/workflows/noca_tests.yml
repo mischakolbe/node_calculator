@@ -5,14 +5,14 @@ on: [push, pull_request]
 
 jobs:
   test_maya:
-    defaults:
-      run:
-        working-directory: ~/node_calculator
     runs-on: ubuntu-latest
 
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
+      
+    - name: Test dir
+      run: ls ./
       
     - name: Run a multi-line script
       run: |
