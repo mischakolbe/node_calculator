@@ -25,6 +25,7 @@ jobs:
           flaky \
           sphinx \
           sphinxcontrib-napoleon
+      shell: bash
 
     - name: Run NoCa Tests
       run: |
