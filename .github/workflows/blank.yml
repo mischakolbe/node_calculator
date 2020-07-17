@@ -11,11 +11,12 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
-    - name: Load Docker image
+    - name: Load Docker Image
       uses: docker://mottosso/maya:2018
 
-
-
+    - name: Run NoCa Tests
+      run: |
+        mayapy --version
 
     - name: Run a multi-line script
       run: |
