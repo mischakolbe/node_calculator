@@ -23,6 +23,8 @@ import node_calculator.core as noca
 ```
 
 ### CI tested with:
+* Maya 2020
+* Maya 2019
 * Maya 2018
 * Maya 2017
 
