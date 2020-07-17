@@ -15,7 +15,6 @@ jobs:
       uses: docker://mottosso/maya:2018
       with:
         args: |
-          python -V
           ls .
           ls ./node_calculator
           
