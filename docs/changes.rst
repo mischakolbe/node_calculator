@@ -2,6 +2,14 @@ Changes
 ==============================================================================
 
 
+Release 2.1.4
+********************
+
+Bugs fixed
+--------------------
+* remap_value now accepts NoCa nodes for value-arg > node_calculator/issues/95
+
+
 Release 2.1.3
 ********************
 
