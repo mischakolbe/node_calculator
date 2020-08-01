@@ -13,6 +13,10 @@ Note:
         Example: "translate" is the parent plug of ["tx", "ty", "ty"]
     * Child plug: A plug that makes up part of a parent plug.
         Example: "translateX" is a child plug of "translate"
+    * Foster child plug: A plug that is a child of a child plug.
+        Example: "ramp1.colorEntryList[0].colorR" ->
+            colorR is a foster child plug of colorEntryList[0], since color is
+            the child plug of colorEntryList[0] and colorR the child of color.
 """
 
 
@@ -455,9 +459,18 @@ def get_child_mplug(mplug, child):
 
     mplug_child = None
 
-    for child_plug in get_child_mplugs(mplug):
+    # Look for direct child mplugs first.
+    child_mplugs = get_child_mplugs(mplug)
+    for child_plug in child_mplugs:
         if str(child_plug).endswith("." + child):
             mplug_child = child_plug
+
+    # If a direct child mplug can't be found: Look for a foster child mplug
+    if not mplug_child:
+        for child_plug in child_mplugs:
+            for foster_child_plug in get_child_mplugs(child_plug):
+                if str(foster_child_plug).endswith("." + child):
+                    mplug_child = foster_child_plug
 
     return mplug_child
 
