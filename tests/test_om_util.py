@@ -133,8 +133,8 @@ class TestOmUtilClass(BaseTestCase):
 
         # Test MObject creation
         test_node_mobj = om_util.get_mobj(self.test_node)
-        self.assertEqual(type(test_node_mobj), OpenMaya.MObject)
-        self.assertEqual(type(om_util.get_mobj(test_node_mobj)), OpenMaya.MObject)
+        self.assertIsInstance(test_node_mobj, OpenMaya.MObject)
+        self.assertIsInstance(om_util.get_mobj(test_node_mobj), OpenMaya.MObject)
 
         # Test name retrieving of MObjects
         self.assertEqual(om_util.get_name_of_mobj(test_node_mobj), self.node_name)
@@ -164,7 +164,7 @@ class TestOmUtilClass(BaseTestCase):
 
         test_node_mobj = om_util.get_mobj(self.test_node)
         mdag_path = om_util.get_mdag_path(test_node_mobj)
-        self.assertEqual(type(mdag_path), OpenMaya.MDagPath)
+        self.assertIsInstance(mdag_path, OpenMaya.MDagPath)
         self.assertEqual(str(mdag_path), self.node_name)
 
     def test_shape(self):
@@ -192,7 +192,7 @@ class TestOmUtilClass(BaseTestCase):
         self.assertEqual(om_util.get_node_type(self.test_node, api_type=True), "kTransform")
 
         # Test relatives query
-        self.assertEqual(type(om_util.get_mfn_dag_node(self.test_node)), OpenMaya.MFnDagNode)
+        self.assertIsInstance(om_util.get_mfn_dag_node(self.test_node), OpenMaya.MFnDagNode)
         self.assertEqual(om_util.get_parent(self.test_shapes[0]), self.test_node)
         _expected_parents = [self.test_node, self.test_group]
         self.assertEqual(om_util.get_parents(self.test_shapes[0]), _expected_parents)
@@ -203,22 +203,39 @@ class TestOmUtilClass(BaseTestCase):
 
         # Make sure regular (custom) attributes are accessible
         normal_plug = om_util.get_mplug_of_mobj(test_node_mobj, self.long_name_attr)
-        self.assertEqual(type(normal_plug), OpenMaya.MPlug)
+        self.assertIsInstance(normal_plug, OpenMaya.MPlug)
         self.assertEqual(str(normal_plug), "{}.{}".format(self.test_node, self.long_name_attr))
 
         # Check whether an aliased attribute is accessible
         aliased_plug = om_util.get_mplug_of_mobj(test_node_mobj, self.aliased_attr)
-        self.assertEqual(type(aliased_plug), OpenMaya.MPlug)
+        self.assertIsInstance(aliased_plug, OpenMaya.MPlug)
         self.assertEqual(str(aliased_plug), "{}.{}".format(self.test_node, self.aliased_attr))
 
         # Check whether an aliased attribute can still be found via its actual name as well.
         aliased_orig_plug = om_util.get_mplug_of_mobj(test_node_mobj, self.aliased_attr_orig)
-        self.assertEqual(type(aliased_orig_plug), OpenMaya.MPlug)
+        self.assertIsInstance(aliased_orig_plug, OpenMaya.MPlug)
         self.assertEqual(str(aliased_orig_plug), "{}.{}".format(self.test_node, self.aliased_attr))
 
         # Check whether an attribute that doesn't exist returns None.
         bogus_plug = om_util.get_mplug_of_mobj(test_node_mobj, "someBogusName")
         self.assertIsNone(bogus_plug)
+
+    def test_aliased_indexed_attrs(self):
+        """ """
+        test_node_mobj = om_util.get_mobj(self.test_node)
+
+        duplicate_name = "duplicate_node"
+        duplicate_node = cmds.duplicate(self.test_node, name=duplicate_name)[0]
+
+        blendshape = cmds.blendShape(duplicate_node, self.test_node, name="test_blendShape")[0]
+
+        plug = om_util.get_mplug_of_node_and_attr(
+            node=blendshape,
+            attr_str=duplicate_name,
+        )
+
+        self.assertIsInstance(plug, OpenMaya.MPlug)
+        self.assertEqual(str(plug), "{}.{}".format(blendshape, duplicate_name))
 
     def test_plug(self):
         """ """
@@ -232,10 +249,10 @@ class TestOmUtilClass(BaseTestCase):
 
         # Test getting an mplug from a plug
         mplug = om_util.get_mplug_of_plug("{}.{}".format(self.test_operator, array_attr))
-        self.assertEqual(type(mplug), OpenMaya.MPlug)
+        self.assertIsInstance(mplug, OpenMaya.MPlug)
         self.assertEqual(str(mplug), "{}.{}".format(self.test_operator, array_attr))
         mplug = om_util.get_mplug_of_node_and_attr(self.test_operator, array_attr)
-        self.assertEqual(type(mplug), OpenMaya.MPlug)
+        self.assertIsInstance(mplug, OpenMaya.MPlug)
         self.assertEqual(str(mplug), "{}.{}".format(self.test_operator, array_attr))
 
         self.assertEqual(om_util.is_valid_mplug(mplug), True)
@@ -248,7 +265,7 @@ class TestOmUtilClass(BaseTestCase):
 
         # Test mplug query
         parent_plug = om_util.get_mplug_of_mobj(operator_mobj, parent_attr)
-        self.assertEqual(type(parent_plug), OpenMaya.MPlug)
+        self.assertIsInstance(parent_plug, OpenMaya.MPlug)
         self.assertEqual(str(parent_plug), "{}.{}".format(self.test_operator, parent_attr))
 
         # Test array attribute access

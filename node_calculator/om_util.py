@@ -591,6 +591,7 @@ def get_mplug_of_node_and_attr(
 
     attrs = split_attr_string(attr_str)
     mplug = None
+
     for attr, index in attrs:
         # In the first loop the first mplug must be found.
         if mplug is None:
@@ -600,7 +601,7 @@ def get_mplug_of_node_and_attr(
         else:
             mplug = get_child_mplug(mplug, attr)
 
-        # In case no mplug was found: Check for it on potential shape nodes.
+        # In case no mplug was found: Check for it on potential shape attrs.
         if not mplug:
             # Get the shape...
             if mobj.hasFn(OpenMaya.MFn.kTransform) and expand_to_shape:
@@ -660,7 +661,11 @@ def get_mplug_of_mobj(mobj, attr):
         alias_list = node_mfn_dep_node.getAliasList()
         for alias, attr_name in alias_list:
             if attr == alias:
-                mplug = get_mplug_of_mobj(mobj, attr_name)
+                mplug = get_mplug_of_node_and_attr(
+                    node=mobj,
+                    attr_str=attr_name,
+                    expand_to_shape=False,
+                )
 
     return mplug
 
