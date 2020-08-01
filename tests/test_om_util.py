@@ -237,6 +237,20 @@ class TestOmUtilClass(BaseTestCase):
         self.assertIsInstance(plug, OpenMaya.MPlug)
         self.assertEqual(str(plug), "{}.{}".format(blendshape, duplicate_name))
 
+    def test_foster_child_attrs(self):
+        """ """
+        ramp_name = "testRamp"
+        attr_name = "colorEntryList[0].colorR"
+
+        test_node_mobj = om_util.get_mobj(cmds.createNode("ramp", name=ramp_name))
+        plug = om_util.get_mplug_of_node_and_attr(
+            node=test_node_mobj,
+            attr_str=attr_name,
+        )
+
+        self.assertIsInstance(plug, OpenMaya.MPlug)
+        self.assertEqual(str(plug), "{}.{}".format(ramp_name, attr_name))
+
     def test_plug(self):
         """ """
         test_node_mobj = om_util.get_mobj(self.test_node)
