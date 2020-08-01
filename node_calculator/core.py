@@ -1640,8 +1640,8 @@ class NcAttrs(NcBaseNode):
 
         if not isinstance(holder_node, NcNode):
             msg = (
-                "holder_node must be of type NcNode! Given: {0} "
-                "type: {1}".format(holder_node, type(holder_node))
+                "holder_node for NcAttrs initialization must be of type "
+                "NcNode! Given: {0} {1}".format(holder_node, type(holder_node))
             )
             raise TypeError(msg)
 
@@ -1882,6 +1882,45 @@ class NcList(NcBaseClass, list):
                         "Could not set %s to value %s. Maybe this attribute "
                         "doesn't exist on the node!", current_node, value)
 
+    def __getattr__(self, name):
+        """Get a list of NcAttrs instances, all with the requested attribute.
+
+        Note:
+            There are certain keywords that will NOT return a new NcAttrs:
+
+            * attrs: Returns currently stored NcAttrs of this NcNode instance.
+            * attrs_list: Returns stored attrs: [attr, ...] (list of strings).
+            * node: Returns name of Maya node in scene (str).
+            * nodes: Returns name of Maya node in scene in a list ([str]).
+            * plugs: Returns stored plugs: [node.attr, ...] (list of strings).
+
+        Args:
+            name (str): Name of requested attribute
+
+        Returns:
+            NcList: New NcList with requested NcAttrs.
+
+        Example:
+            ::
+
+                # getattr is invoked by .attribute:
+                a = Node(["pCube1.ty", "pSphere1.tx"])  # Initialize NcList.
+                Op.average(a.attrs)  # Average .ty on first with .tx on second.
+                Op.average(a.tz)  # Average .tz on both nodes.
+        """
+        LOG.debug("%s __getattr__ (%s)", self.__class__.__name__, name)
+
+        return_list = NcList()
+
+        # Take care of keyword attrs!
+        if name == "attrs":
+            [return_list.append(item.attrs) for item in self._items]
+            return return_list
+
+        [return_list.append(NcAttrs(item, attrs=name)) for item in self._items]
+
+        return return_list
+
     def __getitem__(self, index):
         """Get stored item at given index.
 
@@ -2018,6 +2057,30 @@ class NcList(NcBaseClass, list):
 
         return return_list
 
+    def attr(self, attr=None):
+        """Get new NcList instance with given attr (using keywords is allowed).
+
+        Note:
+            Basically a new NcList with .attr() run on all its items.
+
+        Args:
+            attr (str): Attribute on the Maya nodes.
+
+        Returns:
+            NcList: Instance containing NcAttrs or an empty NcList when no attr
+                was specified.
+        """
+        if attr is None:
+            LOG.warn(
+                "%s 'attr()' method call without arguments. Did you mean to "
+                "use 'attrs'?", self.__class__.__name__
+            )
+            return NcList()
+
+        return_list = NcList()
+        [return_list.append(NcNode(item, attr)) for item in self._items]
+        return return_list
+
     def get(self):
         """Get current value of all items within this NcList instance.
 
@@ -2037,6 +2100,22 @@ class NcList(NcBaseClass, list):
                 return_list.append(item)
 
         return return_list
+
+    def set(self, value):
+        """Set or connect the value of all NcNode/NcAttrs-attributes in NcList.
+
+        Note:
+            Similar to a cmds.setAttr() on a list of plugs.
+
+        Args:
+            value (NcNode or NcAttrs or str or int or float or list or tuple):
+                Connect attribute to this value (=plug)
+                or set attribute to this value/array.
+        """
+        LOG.debug("%s set (%s)", self.__class__.__name__, value)
+
+        for item in self._items:
+            _unravel_and_set_or_connect_a_to_b(item, value)
 
     def append(self, value):
         """Append value to list of items.
