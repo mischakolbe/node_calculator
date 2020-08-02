@@ -1,9 +1,10 @@
-"""Basic NodeCalculator functions."""
-# This is an extension that is loaded by default.
+"""Basic NodeCalculator functions.
 
-# The main difference to the base_operators is that functions rely on operators!
-# They combine existing operators to create more complex setups.
+This is an extension that is loaded by default.
 
+The main difference to the base_operators is that functions rely on operators!
+They combine existing operators to create more complex setups.
+"""
 from node_calculator.core import noca_op
 from node_calculator.core import Op
 
@@ -51,13 +52,13 @@ def soft_approach(in_value, fade_in_range=0.5, target_value=1):
     is_range_valid_condition = Op.condition(
         fade_in_range > 0,
         soft_approach_value,
-        target_value
+        target_value,
     )
 
     is_in_range_condition = Op.condition(
         in_value > start_val,
         is_range_valid_condition,
-        in_value
+        in_value,
     )
 
     return is_in_range_condition

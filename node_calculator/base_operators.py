@@ -1,9 +1,10 @@
-"""Basic NodeCalculator operators."""
-# This is an extension that is loaded by default.
+"""Basic NodeCalculator operators.
 
-# The main difference to the base_functions is that operators are stand-alone
-# functions that create a Maya node.
+This is an extension that is loaded by default.
 
+The main difference to the base_functions is that operators are stand-alone
+functions that create a Maya node.
+"""
 import math
 
 from maya import cmds
