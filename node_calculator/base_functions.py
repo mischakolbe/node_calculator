@@ -17,18 +17,18 @@ EXTENSION_OPERATORS = {}
 
 
 @noca_op
-def soft_approach(in_value, fade_in_range=0.5, target_value=1):
-    """Follow in_value, but approach the target_value slowly.
+def soft_approach(attr_a, fade_in_range=0.5, target_value=1):
+    """Follow attr_a, but approach the target_value slowly.
 
     Note:
         Only works for 1D inputs!
 
     Args:
-        in_value (NcNode or NcAttrs or str or int or float): Value or attr
+        attr_a (NcNode or NcAttrs or str or int or float): Value or attr
         fade_in_range (NcNode or NcAttrs or str or int or float): Value or
             attr. This defines a range over which the target_value will be
-            approached. Before the in_value is within this range the output
-            of this and the in_value will be equal. Defaults to 0.5.
+            approached. Before the attr_a is within this range the output
+            of this and the attr_a will be equal. Defaults to 0.5.
         target_value (NcNode or NcAttrs or str or int or float): Value or
             attr. This is the value that will be approached slowly.
             Defaults to 1.
@@ -46,7 +46,7 @@ def soft_approach(in_value, fade_in_range=0.5, target_value=1):
     """
     start_val = target_value - fade_in_range
 
-    exponent = ((start_val) - in_value) / fade_in_range
+    exponent = ((start_val) - attr_a) / fade_in_range
     soft_approach_value = target_value - fade_in_range * Op.exp(exponent)
 
     is_range_valid_condition = Op.condition(
@@ -56,9 +56,9 @@ def soft_approach(in_value, fade_in_range=0.5, target_value=1):
     )
 
     is_in_range_condition = Op.condition(
-        in_value > start_val,
+        attr_a > start_val,
         is_range_valid_condition,
-        in_value,
+        attr_a,
     )
 
     return is_in_range_condition
