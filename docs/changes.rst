@@ -2,6 +2,28 @@ Changes
 ==============================================================================
 
 
+Release 2.1.5
+********************
+
+Features added
+--------------------
+* Added getattr, attr and set methods to NcList class. > node_calculator/issues/93
+* Added trigonometry operators: > node_calculator/issues/94
+    * Thanks for the basic idea, Chad Vernon! https://www.chadvernon.com/blog/trig-maya/
+    * sin
+    * cos
+    * tan
+    * asin
+    * acos
+    * atan
+    * atan2
+
+Bugs fixed
+--------------------
+* Fixed MPlug retrieval of indexed AND aliased attrs (such as blendshape target weights) > node_calculator/issues/91
+* Including foster children in MPlug search (such as ramp_node.colorEntryList[0].colorR) > node_calculator/issues/92
+
+
 Release 2.1.4
 ********************
 
