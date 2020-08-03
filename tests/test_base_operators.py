@@ -1,16 +1,6 @@
-"""
-Unit tests for noca.Op
-"""
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# IMPORTS
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Python imports
-
-# Third party imports
+"""Unit tests for noca.Op (from base_operators.py)"""
 from maya import cmds
 
-# Local imports
 from base import BaseTestCase
 import node_calculator.core as noca
 from node_calculator import om_util
