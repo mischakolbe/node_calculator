@@ -2947,8 +2947,8 @@ def _traced_create_node(node_type, **kwargs):
     """Create a Maya node and add it to the _traced_nodes if Tracer is active.
 
     Note:
-        This is simply an overloaded cmds.createNode(node_type, **kwargs). It
-        includes the cmds.parent-command if parenting flags are given.
+        This is simply an overloaded `cmds.createNode(node_type, **kwargs)`.
+        It includes the cmds.parent-command if parenting flags are given.
 
         If Tracer is active: Created nodes are associated with a variable.
         If they are referred to later on in the NodeCalculator statement, the
