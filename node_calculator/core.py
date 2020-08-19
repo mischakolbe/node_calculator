@@ -1914,11 +1914,12 @@ class NcList(NcBaseClass, list):
 
         # Take care of keyword attrs!
         if name == "attrs":
-            [return_list.append(item.attrs) for item in self._items]
+            for item in self._items:
+                return_list.append(item.attrs)
             return return_list
 
-        [return_list.append(NcAttrs(item, attrs=name)) for item in self._items]
-
+        for item in self._items:
+            return_list.append(NcAttrs(item, attrs=name))
         return return_list
 
     def __getitem__(self, index):
@@ -2058,7 +2059,7 @@ class NcList(NcBaseClass, list):
         return return_list
 
     def attr(self, attr=None):
-        """Get new NcList instance with given attr (using keywords is allowed).
+        """Get new NcList instance with given attribute (keywords are allowed).
 
         Note:
             Basically a new NcList with .attr() run on all its items.
@@ -2078,7 +2079,8 @@ class NcList(NcBaseClass, list):
             return NcList()
 
         return_list = NcList()
-        [return_list.append(NcNode(item, attr)) for item in self._items]
+        for item in self._items:
+            return_list.append(NcNode(item, attr))
         return return_list
 
     def get(self):
@@ -2909,7 +2911,7 @@ def _create_node_name(operation, *args):
             involved_args.append("UNK" + str(arg))
 
     # Remove invalid characters from args, to prevent Maya warning message.
-    involved_args = [re.sub('[^\w_]*', '', arg) for arg in involved_args]
+    involved_args = [re.sub('[^\w_]*', '', arg_) for arg_ in involved_args]
 
     # Combine all name-elements
     name_elements = [

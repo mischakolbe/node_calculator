@@ -86,8 +86,8 @@ def sin(attr_a):
             in_attr = Node("pCube.tx")
             Op.sin(in_attr)
     """
-    sin = Op.euler_to_quat(attr_a * 2).outputQuatX
-    return sin
+    sine = Op.euler_to_quat(attr_a * 2).outputQuatX
+    return sine
 
 
 @noca_op
@@ -112,8 +112,8 @@ def cos(attr_a):
             in_attr = Node("pCube.tx")
             Op.cos(in_attr)
     """
-    cos = Op.euler_to_quat(attr_a * 2).outputQuatW
-    return cos
+    cosine = Op.euler_to_quat(attr_a * 2).outputQuatW
+    return cosine
 
 
 @noca_op
@@ -138,10 +138,10 @@ def tan(attr_a):
             in_attr = Node("pCube.tx")
             Op.tan(in_attr)
     """
-    sin = Op.sin(attr_a)
-    cos = Op.cos(attr_a)
-    tan = sin / cos
-    divide_by_zero_safety = Op.condition(cos == 0, 0, tan)
+    sine = Op.sin(attr_a)
+    cosine = Op.cos(attr_a)
+    tangent = sine / cosine
+    divide_by_zero_safety = Op.condition(cosine == 0, 0, tangent)
     return divide_by_zero_safety
 
 
